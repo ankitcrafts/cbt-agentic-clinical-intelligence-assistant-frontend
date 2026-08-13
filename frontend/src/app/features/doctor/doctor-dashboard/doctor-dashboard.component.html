@@ -1,0 +1,70 @@
+<div class="dashboard-page">
+  <div class="page-header">
+    <div>
+      <h1>Welcome back, Dr. Rahul</h1>
+      <p class="subtitle">Here's your practice overview</p>
+    </div>
+    <button class="btn btn-primary" (click)="startConsultation()">
+      <i class="fa-solid fa-plus"></i> New Consultation
+    </button>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <div class="card stat-card hover-lift">
+      <span class="stat-title">Today's Consultations</span>
+      <div class="stat-value">{{ mockData.doctorStats().todaysConsultations }}</div>
+    </div>
+    <div class="card stat-card hover-lift">
+      <span class="stat-title">Recordings</span>
+      <div class="stat-value">{{ mockData.doctorStats().recordings }}</div>
+    </div>
+    <div class="card stat-card hover-lift">
+      <span class="stat-title">Reports Generated</span>
+      <div class="stat-value">{{ mockData.doctorStats().reportsGenerated }}</div>
+    </div>
+    <div class="card stat-card hover-lift alert-border">
+      <span class="stat-title">Pending Reports</span>
+      <div class="stat-value font-red">{{ mockData.doctorStats().pendingReports }}</div>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="content-grid">
+    <!-- Today's Schedule -->
+    <div class="card schedule-card">
+      <div class="card-header">
+        <h3>Today's Schedule</h3>
+      </div>
+      <div class="schedule-list">
+        <div class="schedule-item" *ngFor="let item of mockData.doctorSchedule()">
+          <div class="item-time">{{ item.time }}</div>
+          <div class="item-patient">
+            <span class="name">{{ item.patientName }}</span>
+            <span class="type">{{ item.type }}</span>
+          </div>
+          <button class="btn btn-outline btn-sm" (click)="startConsultation()">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Recordings -->
+    <div class="card recordings-card">
+      <div class="card-header">
+        <h3>Recent Recordings</h3>
+        <a href="javascript:void(0)" class="view-all">View All</a>
+      </div>
+      <div class="recordings-list">
+        <div class="recording-item" *ngFor="let rec of mockData.recordings().slice(0, 3)">
+          <div class="rec-info">
+            <span class="patient-name">{{ rec.patientName }}</span>
+            <span class="date">{{ rec.date }}</span>
+          </div>
+          <span class="badge" [class.badge-processed]="rec.status === 'Processed'" [class.badge-processing]="rec.status === 'Processing'">
+            {{ rec.status }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

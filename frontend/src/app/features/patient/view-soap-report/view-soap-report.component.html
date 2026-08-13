@@ -1,0 +1,42 @@
+<div class="soap-page">
+  <div class="card main-card">
+    <div class="card-header">
+      <h3>SOAP Clinical Report</h3>
+      <button class="btn btn-outline btn-sm"><i class="fa-solid fa-file-pdf"></i> Download PDF</button>
+    </div>
+
+    <div class="soap-content">
+      <div class="soap-box subjective font-blue">
+        <div class="letter-badge">S</div>
+        <div class="box-text">
+          <h4>Subjective</h4>
+          <p>{{ consultation.soapNote.subjective }}</p>
+        </div>
+      </div>
+
+      <div class="soap-box objective font-green">
+        <div class="letter-badge">O</div>
+        <div class="box-text">
+          <h4>Objective</h4>
+          <p>{{ consultation.soapNote.objective }}</p>
+        </div>
+      </div>
+
+      <div class="soap-box assessment font-orange">
+        <div class="letter-badge">A</div>
+        <div class="box-text">
+          <h4>Assessment</h4>
+          <p>{{ consultation.soapNote.assessment }}</p>
+        </div>
+      </div>
+
+      <div class="soap-box plan font-purple">
+        <div class="letter-badge">P</div>
+        <div class="box-text">
+          <h4>Plan</h4>
+          <p>{{ consultation.soapNote.plan }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

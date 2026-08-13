@@ -1,0 +1,43 @@
+<div class="recording-page">
+  <div class="card recording-card">
+    <div class="patient-header">
+      <div class="patient-avatar"><i class="fa-solid fa-user-injured"></i></div>
+      <div class="patient-details">
+        <span class="label">Patient</span>
+        <h2>Priya Verma</h2>
+        <span class="meta">32 Years, Female &bull; PID: P1245</span>
+      </div>
+    </div>
+
+    <div class="recording-status-box">
+      <span class="status-label">Recording</span>
+      <div class="timer-display">{{ formattedTime }}</div>
+
+      <!-- Animated Audio Waveform Visualizer -->
+      <div class="waveform-container" [class.paused]="isPaused">
+        <div 
+          *ngFor="let bar of waveformBars; let idx = index" 
+          class="wave-bar"
+          [style.animation-delay]="(idx * 0.08) + 's'"
+        ></div>
+      </div>
+
+      <!-- Recording Controls -->
+      <div class="controls-row">
+        <button class="control-btn pause-btn" (click)="togglePause()">
+          <i class="fa-solid" [ngClass]="isPaused ? 'fa-play' : 'fa-pause'"></i>
+          <span>{{ isPaused ? 'Resume' : 'Pause' }}</span>
+        </button>
+
+        <button class="control-btn stop-btn" (click)="finishRecording()">
+          <i class="fa-solid fa-square"></i>
+          <span>Stop</span>
+        </button>
+
+        <button class="btn btn-primary finish-btn" (click)="finishRecording()">
+          Finish Recording
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

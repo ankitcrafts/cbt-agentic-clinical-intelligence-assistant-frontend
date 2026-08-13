@@ -1,0 +1,58 @@
+<div class="management-page">
+  <div class="page-header">
+    <div>
+      <h1>Patients Management</h1>
+      <p class="subtitle">Manage all patients in the platform</p>
+    </div>
+  </div>
+
+  <div class="card table-card">
+    <div class="filter-bar">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Search patients...">
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Gender</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let pat of filteredPatients">
+            <td class="font-bold">{{ pat.name }}</td>
+            <td>{{ pat.age }}</td>
+            <td>{{ pat.gender }}</td>
+            <td class="text-muted">{{ pat.phone }}</td>
+            <td>
+              <span class="badge" [class.badge-active]="pat.status === 'Active'" [class.badge-inactive]="pat.status === 'Inactive'">
+                <span class="badge-dot"></span> {{ pat.status }}
+              </span>
+            </td>
+            <td>
+              <button class="action-icon-btn" title="View Patient Details"><i class="fa-regular fa-eye"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-footer">
+      <span>Showing 1 to {{ filteredPatients.length }} of 1,245 patients</span>
+      <div class="pagination">
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <span>... 250</span>
+      </div>
+    </div>
+  </div>
+</div>

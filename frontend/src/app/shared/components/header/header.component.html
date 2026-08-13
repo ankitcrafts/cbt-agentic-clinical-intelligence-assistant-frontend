@@ -1,0 +1,39 @@
+<header class="app-header">
+  <div class="header-title">
+    <div class="header-logo-badge">
+      <i class="fa-solid fa-notes-medical"></i>
+    </div>
+    <div class="title-text-group">
+      <h2>AI MEDICAL CONSULTATION PLATFORM</h2>
+      <span class="role-pill" [class]="authService.currentRole().toLowerCase()">{{ roleBadgeText }}</span>
+    </div>
+  </div>
+
+  <div class="header-right-controls">
+    <!-- Dark / Light Theme Toggle -->
+    <button 
+      class="theme-toggle-btn" 
+      (click)="authService.toggleTheme()" 
+      [title]="authService.isDarkMode() ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+    >
+      <i class="fa-solid" [class.fa-sun]="authService.isDarkMode()" [class.fa-moon]="!authService.isDarkMode()"></i>
+      <span class="theme-label">{{ authService.isDarkMode() ? 'Light' : 'Dark' }}</span>
+    </button>
+
+    <!-- User Profile & Designation -->
+    <div class="user-profile" *ngIf="authService.isLoggedIn()">
+      <div class="avatar" [class]="authService.currentRole().toLowerCase()">
+        <i class="fa-solid fa-user-doctor" *ngIf="authService.currentRole() === 'DOCTOR'"></i>
+        <i class="fa-solid fa-user-shield" *ngIf="authService.currentRole() === 'ADMIN'"></i>
+        <i class="fa-solid fa-user" *ngIf="authService.currentRole() === 'PATIENT'"></i>
+      </div>
+      <div class="user-info">
+        <span class="user-name">{{ authService.currentUser().name }}</span>
+        <span class="user-designation">{{ authService.currentUser().designation }}</span>
+      </div>
+      <button class="logout-btn" (click)="authService.logout()" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </div>
+</header>

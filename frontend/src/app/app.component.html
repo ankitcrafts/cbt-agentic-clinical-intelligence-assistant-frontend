@@ -1,0 +1,21 @@
+<div class="app-layout">
+  <!-- Top Interactive Flow Switcher & Step Navigator -->
+  <app-flow-navigator></app-flow-navigator>
+
+  <!-- Header -->
+  <app-header></app-header>
+
+  <!-- Main Body with Sidebar and Content -->
+  <div class="app-body" [class.no-sidebar]="!authService.isLoggedIn()">
+    <app-sidebar *ngIf="authService.isLoggedIn()"></app-sidebar>
+
+    <main class="main-content" [class.full-width]="!authService.isLoggedIn()">
+      <app-admin-flow *ngIf="authService.currentRole() === 'ADMIN'"></app-admin-flow>
+      <app-doctor-flow *ngIf="authService.currentRole() === 'DOCTOR'"></app-doctor-flow>
+      <app-patient-flow *ngIf="authService.currentRole() === 'PATIENT'"></app-patient-flow>
+    </main>
+  </div>
+
+  <!-- Key Features Footer Ribbon -->
+  <app-key-features-bar></app-key-features-bar>
+</div>

@@ -1,0 +1,30 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+
+    &.no-sidebar {
+      .main-content {
+        width: 100%;
+      }
+    }
+
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg-gradient-start);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &.full-width {
+        width: 100%;
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+<div class="processing-page">
+  <div class="card processing-card">
+    <div class="card-header">
+      <h2>Processing Recording...</h2>
+      <p class="subtitle">This may take up to 1 minute</p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-section">
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" [style.width.%]="progress"></div>
+      </div>
+      <span class="progress-text">{{ progress }}%</span>
+    </div>
+
+    <!-- Multi-step checklist -->
+    <div class="steps-checklist">
+      <div class="step-item" *ngFor="let s of steps">
+        <div class="step-icon" [class.completed]="s.status === 'Completed'" [class.in-progress]="s.status === 'In-Progress'">
+          <i class="fa-solid fa-check" *ngIf="s.status === 'Completed'"></i>
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="s.status === 'In-Progress'"></i>
+          <i class="fa-regular fa-circle" *ngIf="s.status === 'Pending'"></i>
+        </div>
+        <span class="step-title">{{ s.title }}</span>
+        <span class="badge" [class.badge-completed]="s.status === 'Completed'" [class.badge-processing]="s.status === 'In-Progress'">
+          {{ s.status }}
+        </span>
+      </div>
+    </div>
+
+    <div class="processing-footer">
+      <span class="eta-text">Estimated time remaining: <strong>12 seconds</strong></span>
+      <button class="btn btn-outline btn-sm" (click)="skipProcessing()">Skip Demo Delay &rarr;</button>
+    </div>
+  </div>
+</div>

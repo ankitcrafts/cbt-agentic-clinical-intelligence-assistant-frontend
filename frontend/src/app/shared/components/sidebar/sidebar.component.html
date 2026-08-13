@@ -1,0 +1,87 @@
+<aside class="app-sidebar" [class]="currentRole.toLowerCase()">
+  <div class="brand">
+    <div class="logo-icon"><i class="fa-solid fa-notes-medical"></i></div>
+    <div class="brand-text">
+      <span class="brand-name">MediCare AI</span>
+      <span class="role-subtitle" *ngIf="currentRole === 'ADMIN'">System Administration</span>
+      <span class="role-subtitle" *ngIf="currentRole === 'DOCTOR'">Clinical Portal</span>
+      <span class="role-subtitle" *ngIf="currentRole === 'PATIENT'">Patient Care</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <!-- Admin Navigation Items -->
+    <ng-container *ngIf="currentRole === 'ADMIN'">
+      <div class="nav-section-title">ADMINISTRATION MENU</div>
+      <a class="nav-item" [class.active]="currentStep === 1" (click)="navigateToStep(1)">
+        <i class="fa-solid fa-chart-line"></i> <span>Dashboard</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 2" (click)="navigateToStep(2)">
+        <i class="fa-solid fa-user-doctor"></i> <span>Doctors Directory</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 3" (click)="navigateToStep(3)">
+        <i class="fa-solid fa-hospital-user"></i> <span>Patients Directory</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 4" (click)="navigateToStep(4)">
+        <i class="fa-solid fa-microphone"></i> <span>Recordings & Reports</span>
+      </a>
+      <a class="nav-item" (click)="navigateToStep(1)">
+        <i class="fa-solid fa-chart-pie"></i> <span>Analytics</span>
+      </a>
+      <a class="nav-item" (click)="navigateToStep(1)">
+        <i class="fa-solid fa-sliders"></i> <span>System Settings</span>
+      </a>
+    </ng-container>
+
+    <!-- Doctor Navigation Items -->
+    <ng-container *ngIf="currentRole === 'DOCTOR'">
+      <div class="nav-section-title">CLINICAL CARE MENU</div>
+      <a class="nav-item" [class.active]="currentStep === 1" (click)="navigateToStep(1)">
+        <i class="fa-solid fa-border-all"></i> <span>Doctor Dashboard</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 2" (click)="navigateToStep(2)">
+        <i class="fa-solid fa-microphone-lines"></i> <span>New Consultation</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 3" (click)="navigateToStep(3)">
+        <i class="fa-solid fa-microchip"></i> <span>AI Processing</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 4" (click)="navigateToStep(4)">
+        <i class="fa-solid fa-file-audio"></i> <span>Transcripts</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 5" (click)="navigateToStep(5)">
+        <i class="fa-solid fa-file-waveform"></i> <span>SOAP & Prescriptions</span>
+      </a>
+    </ng-container>
+
+    <!-- Patient Navigation Items -->
+    <ng-container *ngIf="currentRole === 'PATIENT'">
+      <div class="nav-section-title">MY HEALTH PORTAL</div>
+      <a class="nav-item" [class.active]="currentStep === 1" (click)="navigateToStep(1)">
+        <i class="fa-solid fa-house-medical"></i> <span>Health Dashboard</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 2" (click)="navigateToStep(2)">
+        <i class="fa-solid fa-calendar-check"></i> <span>Consultation History</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 3" (click)="navigateToStep(3)">
+        <i class="fa-solid fa-file-lines"></i> <span>My Transcripts</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 4" (click)="navigateToStep(4)">
+        <i class="fa-solid fa-notes-medical"></i> <span>SOAP Reports</span>
+      </a>
+      <a class="nav-item" [class.active]="currentStep === 5" (click)="navigateToStep(5)">
+        <i class="fa-solid fa-pills"></i> <span>Prescriptions & Meds</span>
+      </a>
+    </ng-container>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-quick-badge">
+      <div class="user-status-dot"></div>
+      <span class="user-role-label">{{ authService.currentUser().designation }}</span>
+    </div>
+    <div class="support-badge">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>HIPAA Compliant</span>
+    </div>
+  </div>
+</aside>

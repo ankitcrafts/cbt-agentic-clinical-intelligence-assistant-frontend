@@ -1,0 +1,63 @@
+<div class="dashboard-page">
+  <div class="page-header">
+    <div>
+      <h1>Welcome back, Priya</h1>
+      <p class="subtitle">Here's your health overview</p>
+    </div>
+  </div>
+
+  <!-- Stat Overview Cards -->
+  <div class="stats-grid">
+    <div class="card stat-card hover-lift">
+      <span class="stat-title">Total Consultations</span>
+      <div class="stat-value font-purple">{{ mockData.patientStats().totalConsultations }}</div>
+    </div>
+    <div class="card stat-card hover-lift">
+      <span class="stat-title">Reports</span>
+      <div class="stat-value font-green">{{ mockData.patientStats().reports }}</div>
+    </div>
+    <div class="card stat-card hover-lift">
+      <span class="stat-title">Prescriptions</span>
+      <div class="stat-value font-blue">{{ mockData.patientStats().prescriptions }}</div>
+    </div>
+    <div class="card stat-card hover-lift">
+      <span class="stat-title">Upcoming</span>
+      <div class="stat-value font-orange">{{ mockData.patientStats().upcoming }}</div>
+    </div>
+  </div>
+
+  <!-- Recent Consultations Table -->
+  <div class="card table-card">
+    <div class="card-header">
+      <h3>Recent Consultations</h3>
+      <a href="javascript:void(0)" class="view-all">View All</a>
+    </div>
+
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Doctor</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of recentConsultations">
+            <td>{{ c.date }}</td>
+            <td class="font-bold">{{ c.doctor }}</td>
+            <td>{{ c.type }}</td>
+            <td>
+              <span class="badge badge-completed">{{ c.status }}</span>
+            </td>
+            <td>
+              <button class="btn btn-outline btn-sm" (click)="viewConsultationDetails()">View</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

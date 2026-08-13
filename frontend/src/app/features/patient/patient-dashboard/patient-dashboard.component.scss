@@ -1,0 +1,73 @@
+.dashboard-page {
+  padding: 1.5rem;
+
+  .page-header {
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-family: var(--heading-font);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+
+    .stat-card {
+      .stat-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+
+      .stat-value {
+        font-family: var(--heading-font);
+        font-size: 2rem;
+        font-weight: 800;
+        margin-top: 0.5rem;
+
+        &.font-purple { color: var(--accent-purple); }
+        &.font-green { color: var(--accent-green); }
+        &.font-blue { color: var(--accent-blue); }
+        &.font-orange { color: var(--accent-orange); }
+      }
+    }
+  }
+
+  .table-card {
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+
+      h3 {
+        font-family: var(--heading-font);
+        font-size: 1.125rem;
+        font-weight: 700;
+      }
+
+      .view-all {
+        font-size: 0.8125rem;
+        color: var(--accent-purple);
+        text-decoration: none;
+        font-weight: 600;
+      }
+    }
+
+    .btn-sm {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+    }
+  }
+}

@@ -1,0 +1,95 @@
+<div class="dashboard-page">
+  <div class="page-header">
+    <div>
+      <h1>Dashboard Overview</h1>
+      <p class="subtitle">Welcome back, Admin</p>
+    </div>
+  </div>
+
+  <!-- Stat Cards Row -->
+  <div class="stats-grid">
+    <div class="card stat-card hover-lift">
+      <div class="stat-header">
+        <span class="stat-title">Doctors</span>
+        <div class="stat-icon green"><i class="fa-solid fa-user-doctor"></i></div>
+      </div>
+      <div class="stat-value">{{ mockData.adminStats().doctorsCount }}</div>
+      <div class="stat-sub font-green"><i class="fa-solid fa-circle-check"></i> 48 Active</div>
+    </div>
+
+    <div class="card stat-card hover-lift">
+      <div class="stat-header">
+        <span class="stat-title">Patients</span>
+        <div class="stat-icon blue"><i class="fa-solid fa-hospital-user"></i></div>
+      </div>
+      <div class="stat-value">{{ mockData.adminStats().patientsCount | number }}</div>
+      <div class="stat-sub text-muted">Total Registered</div>
+    </div>
+
+    <div class="card stat-card hover-lift">
+      <div class="stat-header">
+        <span class="stat-title">Recordings</span>
+        <div class="stat-icon purple"><i class="fa-solid fa-microphone"></i></div>
+      </div>
+      <div class="stat-value">{{ mockData.adminStats().recordingsCount | number }}</div>
+      <div class="stat-sub text-muted">This Month</div>
+    </div>
+
+    <div class="card stat-card hover-lift">
+      <div class="stat-header">
+        <span class="stat-title">Reports</span>
+        <div class="stat-icon orange"><i class="fa-solid fa-file-invoice"></i></div>
+      </div>
+      <div class="stat-value">{{ mockData.adminStats().reportsCount | number }}</div>
+      <div class="stat-sub text-muted">Generated</div>
+    </div>
+  </div>
+
+  <!-- Content Grid: Consultations Overview Chart & Recent Activity -->
+  <div class="content-grid">
+    <div class="card chart-card">
+      <div class="card-header">
+        <h3>Consultations Overview</h3>
+        <span class="badge badge-active">Live</span>
+      </div>
+      <!-- SVG Simulated Line Chart -->
+      <div class="chart-wrapper">
+        <svg viewBox="0 0 500 180" class="line-chart">
+          <defs>
+            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#10b981" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M 20,130 Q 80,60 140,110 T 260,70 T 380,100 T 480,40" fill="none" stroke="#10b981" stroke-width="3"/>
+          <path d="M 20,130 Q 80,60 140,110 T 260,70 T 380,100 T 480,40 L 480,170 L 20,170 Z" fill="url(#chartGrad)"/>
+          <circle cx="140" cy="110" r="4" fill="#10b981"/>
+          <circle cx="260" cy="70" r="4" fill="#10b981"/>
+          <circle cx="480" cy="40" r="4" fill="#10b981"/>
+        </svg>
+        <div class="chart-labels">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card activity-card">
+      <div class="card-header">
+        <h3>Recent Activity</h3>
+        <a href="javascript:void(0)" class="view-all">View All</a>
+      </div>
+      <div class="activity-list">
+        <div class="activity-item" *ngFor="let act of recentActivities">
+          <div class="act-icon" [style.background-color]="act.color + '15'" [style.color]="act.color">
+            <i class="fa-solid" [ngClass]="act.icon"></i>
+          </div>
+          <div class="act-details">
+            <span class="act-title">{{ act.title }}</span>
+            <span class="act-desc">{{ act.desc }}</span>
+          </div>
+          <span class="act-time">{{ act.time }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

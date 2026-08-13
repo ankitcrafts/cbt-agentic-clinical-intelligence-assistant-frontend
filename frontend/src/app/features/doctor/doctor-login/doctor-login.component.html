@@ -1,0 +1,48 @@
+<div class="login-wrapper">
+  <div class="login-card card">
+    <div class="auth-tabs">
+      <button type="button" class="tab-btn" [class.active]="isLoginMode" (click)="isLoginMode = true">Sign In</button>
+      <button type="button" class="tab-btn" [class.active]="!isLoginMode" (click)="isLoginMode = false">Create Account</button>
+    </div>
+
+    <div class="login-header">
+      <div class="icon-circle doctor-icon"><i class="fa-solid fa-user-doctor"></i></div>
+      <h2>{{ isLoginMode ? 'Clinical Practitioner Portal' : 'Register Medical Clinician' }}</h2>
+      <p class="subtitle">{{ isLoginMode ? 'Access AI ambient clinical documentation & SOAP tools' : 'Create your verified medical practitioner account' }}</p>
+      <div class="designation-pill doctor-badge">
+        <i class="fa-solid fa-user-check"></i> Designation: {{ designation }}
+      </div>
+    </div>
+
+    <form (ngSubmit)="onLogin()">
+      <div class="form-group" *ngIf="!isLoginMode">
+        <label>Full Name & Title</label>
+        <input type="text" [(ngModel)]="fullName" name="fullName" required placeholder="Dr. Rahul Sharma">
+      </div>
+
+      <div class="form-group" *ngIf="!isLoginMode">
+        <label>Specialty / Designation</label>
+        <input type="text" [(ngModel)]="designation" name="designation" required placeholder="Senior Cardiologist">
+      </div>
+
+      <div class="form-group">
+        <label>Work Email</label>
+        <input type="email" [(ngModel)]="email" name="email" required placeholder="doctor@hospital.com">
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" [(ngModel)]="password" name="password" required>
+        <a href="javascript:void(0)" class="forgot-link" *ngIf="isLoginMode">Forgot Password?</a>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        {{ isLoginMode ? 'Sign In to Clinical Workspace' : 'Register Medical Account' }} <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <span><i class="fa-solid fa-shield-halved"></i> HIPAA Compliant Clinical Workspace</span>
+    </div>
+  </div>
+</div>

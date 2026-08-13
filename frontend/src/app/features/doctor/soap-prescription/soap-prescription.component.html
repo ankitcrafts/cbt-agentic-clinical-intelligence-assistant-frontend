@@ -1,0 +1,83 @@
+<div class="soap-page">
+  <!-- Success Toast Alert -->
+  <div class="toast-alert" *ngIf="sentToast">
+    <i class="fa-solid fa-circle-check"></i> SOAP Note & Prescription sent to patient successfully!
+  </div>
+
+  <div class="card main-card">
+    <div class="card-header">
+      <div class="tabs">
+        <button class="tab-btn" [class.active]="activeTab === 'SOAP'" (click)="activeTab = 'SOAP'">SOAP Note</button>
+        <button class="tab-btn" [class.active]="activeTab === 'Prescription'" (click)="activeTab = 'Prescription'">Prescription</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-outline btn-sm"><i class="fa-solid fa-file-pdf"></i> Download PDF</button>
+        <button class="btn btn-primary btn-sm" (click)="sendToPatient()"><i class="fa-solid fa-paper-plane"></i> Send to Patient</button>
+      </div>
+    </div>
+
+    <!-- SOAP Note Content -->
+    <div class="soap-content" *ngIf="activeTab === 'SOAP'">
+      <div class="soap-box subjective font-blue">
+        <div class="letter-badge">S</div>
+        <div class="box-text">
+          <h4>Subjective</h4>
+          <p>{{ consultation.soapNote.subjective }}</p>
+        </div>
+      </div>
+
+      <div class="soap-box objective font-green">
+        <div class="letter-badge">O</div>
+        <div class="box-text">
+          <h4>Objective</h4>
+          <p>{{ consultation.soapNote.objective }}</p>
+        </div>
+      </div>
+
+      <div class="soap-box assessment font-orange">
+        <div class="letter-badge">A</div>
+        <div class="box-text">
+          <h4>Assessment</h4>
+          <p>{{ consultation.soapNote.assessment }}</p>
+        </div>
+      </div>
+
+      <div class="soap-box plan font-purple">
+        <div class="letter-badge">P</div>
+        <div class="box-text">
+          <h4>Plan</h4>
+          <p>{{ consultation.soapNote.plan }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prescription Content -->
+    <div class="prescription-content" *ngIf="activeTab === 'Prescription'">
+      <h3>Medications</h3>
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Medication</th>
+            <th>Dosage & Frequency</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let med of consultation.prescription.medications">
+            <td class="font-bold">{{ med.name }}</td>
+            <td>{{ med.dosage }} ({{ med.frequency }})</td>
+            <td>{{ med.duration }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 class="advice-heading">Doctor Advice</h3>
+      <ul class="advice-list">
+        <li *ngFor="let adv of consultation.prescription.advice">
+          <i class="fa-solid fa-check font-green"></i> {{ adv }}
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

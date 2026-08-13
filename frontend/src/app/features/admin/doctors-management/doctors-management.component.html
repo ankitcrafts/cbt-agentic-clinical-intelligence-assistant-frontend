@@ -1,0 +1,87 @@
+<div class="management-page">
+  <div class="page-header">
+    <div>
+      <h1>Doctors Management</h1>
+      <p class="subtitle">Manage all doctors in the hospital</p>
+    </div>
+    <button class="btn btn-success" (click)="toggleAddModal()">
+      <i class="fa-solid fa-plus"></i> Add Doctor
+    </button>
+  </div>
+
+  <div class="card table-card">
+    <div class="filter-bar">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Search doctors...">
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Specialization</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let doc of filteredDoctors">
+            <td class="font-bold">{{ doc.name }}</td>
+            <td>{{ doc.specialization }}</td>
+            <td class="text-muted">{{ doc.email }}</td>
+            <td>
+              <span class="badge" [class.badge-active]="doc.status === 'Active'" [class.badge-inactive]="doc.status === 'Inactive'">
+                <span class="badge-dot"></span> {{ doc.status }}
+              </span>
+            </td>
+            <td>
+              <button class="action-icon-btn" title="View/Edit"><i class="fa-regular fa-eye"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-footer">
+      <span>Showing 1 to {{ filteredDoctors.length }} of 48 doctors</span>
+      <div class="pagination">
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <span>... 10</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Doctor Modal -->
+  <div class="modal-backdrop" *ngIf="showAddModal">
+    <div class="card modal-card">
+      <div class="modal-header">
+        <h3>Add New Doctor</h3>
+        <button class="close-btn" (click)="toggleAddModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" [(ngModel)]="newDoctor.name" placeholder="Dr. John Doe">
+        </div>
+        <div class="form-group">
+          <label>Specialization</label>
+          <input type="text" [(ngModel)]="newDoctor.specialization" placeholder="Cardiologist">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" [(ngModel)]="newDoctor.email" placeholder="john@hospital.com">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="toggleAddModal()">Cancel</button>
+        <button class="btn btn-success" (click)="addDoctor()">Save Doctor</button>
+      </div>
+    </div>
+  </div>
+</div>

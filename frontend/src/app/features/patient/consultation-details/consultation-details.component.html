@@ -1,0 +1,59 @@
+<div class="details-page">
+  <div class="card details-card">
+    <div class="card-header">
+      <div>
+        <h2>Consultation Details</h2>
+        <span class="date-text">09 May 2026 12:45 PM</span>
+      </div>
+      <span class="badge badge-completed">{{ consultation.status }}</span>
+    </div>
+
+    <!-- Doctor Card -->
+    <div class="doctor-profile-card">
+      <div class="doc-avatar"><i class="fa-solid fa-user-doctor"></i></div>
+      <div class="doc-info">
+        <h3>{{ consultation.doctorName }}</h3>
+        <p>{{ consultation.doctorSpecialization }}</p>
+      </div>
+    </div>
+
+    <!-- Visit Specs -->
+    <div class="visit-grid">
+      <div class="visit-item">
+        <span class="label">Duration</span>
+        <span class="val">{{ consultation.duration }}</span>
+      </div>
+      <div class="visit-item">
+        <span class="label">Reason</span>
+        <span class="val">{{ consultation.reasonForVisit }}</span>
+      </div>
+    </div>
+
+    <!-- Audio Recording Player -->
+    <div class="audio-player-box">
+      <span class="player-label">Recording</span>
+      <div class="player-controls">
+        <button class="play-btn" (click)="togglePlay()">
+          <i class="fa-solid" [ngClass]="isPlaying ? 'fa-pause' : 'fa-play'"></i>
+        </button>
+        <span class="time">0:00 / {{ consultation.duration }}</span>
+        <div class="scrubber">
+          <div class="scrubber-fill" [style.width.%]="isPlaying ? 35 : 0"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Navigation Links -->
+    <div class="nav-actions">
+      <button class="btn btn-outline btn-sm" (click)="goToStep(3)">
+        <i class="fa-solid fa-file-audio"></i> View Transcript
+      </button>
+      <button class="btn btn-outline btn-sm" (click)="goToStep(4)">
+        <i class="fa-solid fa-file-lines"></i> View SOAP Report
+      </button>
+      <button class="btn btn-purple btn-sm" (click)="goToStep(5)">
+        <i class="fa-solid fa-pills"></i> View Prescription
+      </button>
+    </div>
+  </div>
+</div>

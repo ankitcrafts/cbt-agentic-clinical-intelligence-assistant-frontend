@@ -1,0 +1,161 @@
+.soap-page {
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+
+  .toast-alert {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .main-card {
+    padding: 0;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+
+      .tabs {
+        display: flex;
+        gap: 1rem;
+
+        .tab-btn {
+          background: none;
+          border: none;
+          font-family: var(--heading-font);
+          font-size: 0.9375rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          cursor: pointer;
+          padding-bottom: 0.25rem;
+          border-bottom: 2px solid transparent;
+
+          &.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+          }
+        }
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.75rem;
+      }
+    }
+
+    .soap-content {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .soap-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+
+        .letter-badge {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--heading-font);
+          font-weight: 800;
+          font-size: 1.125rem;
+          color: #ffffff;
+          flex-shrink: 0;
+        }
+
+        .box-text {
+          h4 {
+            font-family: var(--heading-font);
+            font-size: 0.9375rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+          }
+
+          p {
+            font-size: 0.875rem;
+            color: var(--text-main);
+            line-height: 1.5;
+          }
+        }
+
+        &.subjective {
+          background: #f0f9ff;
+          border-color: #bae6fd;
+          .letter-badge { background: #0284c7; }
+        }
+
+        &.objective {
+          background: #f0fdf4;
+          border-color: #bbf7d0;
+          .letter-badge { background: #10b981; }
+        }
+
+        &.assessment {
+          background: #fffbeb;
+          border-color: #fde68a;
+          .letter-badge { background: #f59e0b; }
+        }
+
+        &.plan {
+          background: #faf5ff;
+          border-color: #e9d5ff;
+          .letter-badge { background: #8b5cf6; }
+        }
+      }
+    }
+
+    .prescription-content {
+      padding: 1.5rem;
+
+      h3 {
+        font-family: var(--heading-font);
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .advice-heading {
+        margin-top: 1.5rem;
+      }
+
+      .advice-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        li {
+          font-size: 0.875rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          i {
+            color: var(--accent-green);
+          }
+        }
+      }
+    }
+  }
+}

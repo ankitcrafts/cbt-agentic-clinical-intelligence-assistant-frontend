@@ -1,0 +1,17 @@
+<footer class="features-bar">
+  <div class="features-label">
+    <span>KEY FEATURES</span>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-item" *ngFor="let item of features">
+      <div class="feature-icon">
+        <i class="fa-solid" [ngClass]="item.icon"></i>
+      </div>
+      <div class="feature-content">
+        <span class="feature-title">{{ item.title }}</span>
+        <span class="feature-subtitle">{{ item.subtitle }}</span>
+      </div>
+    </div>
+  </div>
+</footer>

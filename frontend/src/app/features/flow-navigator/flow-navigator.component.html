@@ -1,0 +1,29 @@
+<div class="flow-navigator-container">
+  <div class="roles-tabs">
+    <button 
+      *ngFor="let r of roles"
+      class="role-tab-btn"
+      [class.active]="authService.currentRole() === r.id"
+      [style.--tab-color]="r.color"
+      (click)="selectRole(r.id)"
+    >
+      <span class="role-badge">{{ r.title }}</span>
+    </button>
+  </div>
+
+  <div class="steps-stepper">
+    <ng-container *for="let r of roles">
+      <div class="steps-row" *ngIf="authService.currentRole() === r.id">
+        <button 
+          *ngFor="let stepLabel of r.steps; let idx = index"
+          class="step-chip"
+          [class.active]="authService.currentStep() === idx"
+          (click)="selectStep(idx)"
+        >
+          <span class="step-num">{{ idx + 1 }}</span>
+          <span class="step-name">{{ stepLabel }}</span>
+        </button>
+      </div>
+    </ng-container>
+  </div>
+</div>

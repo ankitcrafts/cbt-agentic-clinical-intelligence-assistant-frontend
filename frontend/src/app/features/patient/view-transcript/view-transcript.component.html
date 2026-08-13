@@ -1,0 +1,29 @@
+<div class="transcript-page">
+  <div class="card transcript-card">
+    <div class="card-header">
+      <div class="tabs">
+        <button class="tab-btn" [class.active]="activeTab === 'Transcript'" (click)="activeTab = 'Transcript'">Transcript</button>
+        <button class="tab-btn" [class.active]="activeTab === 'Summary'" (click)="activeTab = 'Summary'">Summary</button>
+      </div>
+      <button class="btn btn-outline btn-sm"><i class="fa-solid fa-download"></i> Download</button>
+    </div>
+
+    <div class="transcript-body" *ngIf="activeTab === 'Transcript'">
+      <div class="dialogue-turn" *ngFor="let turn of consultation.transcript">
+        <span class="speaker" [class.doctor-speaker]="turn.speaker === 'Doctor'" [class.patient-speaker]="turn.speaker === 'Patient'">
+          {{ turn.speaker }}:
+        </span>
+        <span class="text">{{ turn.text }}</span>
+      </div>
+    </div>
+
+    <div class="summary-body" *ngIf="activeTab === 'Summary'">
+      <p>Patient consulted regarding headache and dizziness over 3 days. No fever reported. Vital signs checked and tension headache diagnosed. Rest and medication prescribed.</p>
+    </div>
+
+    <div class="card-footer">
+      <span>Words: <strong>{{ consultation.wordCount }}</strong></span>
+      <span>Duration: <strong>{{ consultation.duration }}</strong></span>
+    </div>
+  </div>
+</div>
