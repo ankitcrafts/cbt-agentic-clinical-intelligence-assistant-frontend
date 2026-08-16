@@ -16,37 +16,101 @@
         <div class="recording-top-row">
           <div class="recording-meta">
             <h3 class="box-title">Session Recording</h3>
-            <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · {{ visitDetails.duration }}</span>
+            <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · {{ currentState === 'RECORDING' || currentState === 'PAUSED' ? formattedTimer : visitDetails.duration }}</span>
           </div>
-          <div class="live-pill">
-            <span class="live-dot"></span>
-            <span>Live</span>
+          <div class="live-pill" [class.paused]="currentState === 'PAUSED'" [class.stopped]="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED'">
+            <span class="live-dot" [class.paused-dot]="currentState === 'PAUSED'"></span>
+            <span>
+              {{ currentState === 'RECORDING' ? 'Live' : (currentState === 'PAUSED' ? 'Paused' : (currentState === 'REQUESTING_PERMISSION' ? 'Connecting...' : (currentState === 'UPLOADING' ? 'Uploading...' : (currentState === 'UPLOADED' ? 'Uploaded' : (currentState === 'FAILED' ? 'Error' : 'Ready'))))) }}
+            </span>
           </div>
         </div>
 
         <!-- Waveform Progress Bar -->
         <div class="waveform-progress-bar">
           <div class="audio-waveform-line">
-            <div class="waveform-dots">
+            <div class="waveform-dots" [class.recording-anim]="currentState === 'RECORDING'">
               <span *ngFor="let i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]" class="wave-dot"></span>
             </div>
             <div class="progress-track-bg">
-              <div class="progress-fill-line" style="width: 62%;">
+              <div class="progress-fill-line" [style.width]="currentState === 'RECORDING' || currentState === 'PAUSED' ? '100%' : '62%'">
                 <span class="scrubber-handle"></span>
               </div>
             </div>
           </div>
           <div class="time-readout font-mono">
-            <span>{{ currentTime }}</span>
-            <span>{{ totalTime }}</span>
+            <span>{{ currentState === 'IDLE' ? '00:00' : formattedTimer }}</span>
+            <span>{{ recordingService.sessionMetadata()?.fileName || '18:42' }}</span>
           </div>
         </div>
 
-        <div class="recording-controls-row">
-          <button type="button" class="btn-play-pause" (click)="togglePlay()">
-            <i class="fa-solid" [class.fa-play]="!isPlaying" [class.fa-pause]="isPlaying"></i>
-            <span>{{ isPlaying ? 'Recording live...' : 'Paused · Auto-transcribed in real-time' }}</span>
+        <!-- Controls Row -->
+        <div class="recording-controls-row" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <!-- Start Recording Button (when IDLE or FAILED without file) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || (currentState === 'FAILED' && !recordingService.recordedFile())" (click)="startRecording()">
+            <i class="fa-solid fa-microphone"></i>
+            <span>Start Recording</span>
           </button>
+
+          <!-- Pause Button (when RECORDING) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'RECORDING'" (click)="pauseRecording()">
+            <i class="fa-solid fa-pause"></i>
+            <span>Pause Recording</span>
+          </button>
+
+          <!-- Resume Button (when PAUSED) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'PAUSED'" (click)="resumeRecording()">
+            <i class="fa-solid fa-play"></i>
+            <span>Resume Recording</span>
+          </button>
+
+          <!-- Stop Button (when RECORDING or PAUSED) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'RECORDING' || currentState === 'PAUSED'" (click)="stopRecording()" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4);">
+            <i class="fa-solid fa-square" style="background: #ef4444; color: #fff;"></i>
+            <span>Stop Recording</span>
+          </button>
+
+          <!-- Preview Playback Button (when audioUrl exists) -->
+          <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="togglePreviewPlayback()">
+            <i class="fa-solid" [class.fa-play]="!isPlayingPreview" [class.fa-pause]="isPlayingPreview"></i>
+            <span>{{ isPlayingPreview ? 'Playing preview...' : 'Play Recording Preview' }}</span>
+          </button>
+
+          <!-- Download Audio File Button (when audioUrl exists) -->
+          <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="downloadRecording()" title="Download recorded audio file to local computer">
+            <i class="fa-solid fa-download"></i>
+            <span>Download Audio</span>
+          </button>
+
+
+          <!-- Upload Recording Button (when READY_TO_UPLOAD) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD'" (click)="uploadRecording()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
+            <i class="fa-solid fa-cloud-arrow-up" style="background: #10b981; color: #fff;"></i>
+            <span>Upload Recording</span>
+          </button>
+
+          <!-- Retry Upload Button (when FAILED with file) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'FAILED' && recordingService.recordedFile()" (click)="retryUpload()" style="background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4);">
+            <i class="fa-solid fa-rotate-right" style="background: #f59e0b; color: #fff;"></i>
+            <span>Retry Upload</span>
+          </button>
+
+          <!-- Reset / New Session Button (when READY_TO_UPLOAD, UPLOADED, or FAILED) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED' || currentState === 'FAILED'" (click)="recordingService.resetState()" style="opacity: 0.8;">
+            <i class="fa-solid fa-plus"></i>
+            <span>New Session</span>
+          </button>
+        </div>
+
+        <!-- Hidden Audio Player element for playback -->
+        <audio #audioPlayer *ngIf="recordingService.audioUrl()" [src]="recordingService.audioUrl()" (ended)="onAudioEnded()" style="display: none;"></audio>
+
+        <!-- Status & Error Feedback Banner -->
+        <div class="recording-feedback-msg" *ngIf="recordingService.errorMessage()" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.8rem;">
+          <i class="fa-solid fa-circle-exclamation"></i> {{ recordingService.errorMessage() }}
+        </div>
+        <div class="recording-feedback-msg" *ngIf="currentState === 'UPLOADED'" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; font-size: 0.8rem;">
+          <i class="fa-solid fa-circle-check"></i> Recording successfully uploaded to backend contract. Storage-agnostic payload ready.
         </div>
       </div>
 

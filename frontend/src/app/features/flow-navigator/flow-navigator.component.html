@@ -12,7 +12,7 @@
   </div>
 
   <div class="steps-stepper">
-    <ng-container *for="let r of roles">
+    <ng-container *ngFor="let r of roles">
       <div class="steps-row" *ngIf="authService.currentRole() === r.id">
         <button 
           *ngFor="let stepLabel of r.steps; let idx = index"

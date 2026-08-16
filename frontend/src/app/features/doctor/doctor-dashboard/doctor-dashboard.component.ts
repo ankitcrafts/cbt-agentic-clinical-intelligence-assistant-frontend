@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { MockDataService } from '../../../core/services/mock-data.service';
+import { RecordingService } from '../../../core/services/recording.service';
 
 @Component({
   selector: 'app-doctor-dashboard',
@@ -9,12 +11,14 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './doctor-dashboard.component.html',
   styleUrls: ['./doctor-dashboard.component.scss']
 })
-export class DoctorDashboardComponent {
+export class DoctorDashboardComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
+  mockData = inject(MockDataService);
+  recordingService = inject(RecordingService);
 
-  isPlaying = false;
-  currentTime = '11:36';
-  totalTime = '18:42';
+  @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
+
+  isPlayingPreview = false;
 
   visitDetails = {
     patientName: 'Marcus Delgado',
@@ -130,11 +134,100 @@ export class DoctorDashboardComponent {
     nextFollowUp: 'Aug 25, 2026'
   };
 
-  togglePlay() {
-    this.isPlaying = !this.isPlaying;
+  ngOnInit(): void {}
+
+  ngOnDestroy(): void {
+    if (this.recordingService.state() === 'RECORDING' || this.recordingService.state() === 'PAUSED') {
+      this.recordingService.stopRecording();
+    } else {
+      this.recordingService.stopMicrophoneTracks();
+    }
+  }
+
+  async startRecording(): Promise<void> {
+    try {
+      const activeCons = this.mockData.activeConsultation();
+      await this.recordingService.startRecording({
+        encounterId: activeCons.id || 'CONS-41233',
+        doctorId: 'DOC-001',
+        patientId: activeCons.patientPid || 'P1245'
+      });
+    } catch (e) {
+      console.error('Failed to start recording:', e);
+    }
+  }
+
+  pauseRecording(): void {
+    this.recordingService.pauseRecording();
+  }
+
+  resumeRecording(): void {
+    this.recordingService.resumeRecording();
+  }
+
+  async stopRecording(): Promise<void> {
+    const activeCons = this.mockData.activeConsultation();
+    await this.recordingService.stopRecording({
+      encounterId: activeCons.id || 'CONS-41233',
+      doctorId: 'DOC-001',
+      patientId: activeCons.patientPid || 'P1245'
+    });
+  }
+
+  uploadRecording(): void {
+    const activeCons = this.mockData.activeConsultation();
+    this.recordingService.uploadRecording({
+      encounterId: activeCons.id || 'CONS-41233',
+      doctorId: 'DOC-001',
+      patientId: activeCons.patientPid || 'P1245'
+    }).subscribe({
+      next: (res) => {
+        console.log('Upload successful:', res);
+      },
+      error: (err) => {
+        console.error('Upload failed:', err);
+      }
+    });
+  }
+
+  retryUpload(): void {
+    this.uploadRecording();
+  }
+
+  downloadRecording(): void {
+    this.recordingService.downloadRecording();
+  }
+
+
+  togglePreviewPlayback(): void {
+    const audioEl = this.audioPlayerRef?.nativeElement;
+    if (!audioEl) return;
+
+    if (this.isPlayingPreview) {
+      audioEl.pause();
+      this.isPlayingPreview = false;
+    } else {
+      audioEl.play().then(() => {
+        this.isPlayingPreview = true;
+      }).catch(err => {
+        console.error('Playback error:', err);
+      });
+    }
+  }
+
+  onAudioEnded(): void {
+    this.isPlayingPreview = false;
   }
 
   dismissQuestion(id: number) {
     this.aiQuestions = this.aiQuestions.filter(q => q.id !== id);
+  }
+
+  get currentState() {
+    return this.recordingService.state();
+  }
+
+  get formattedTimer(): string {
+    return this.recordingService.formatDuration(this.recordingService.durationSeconds());
   }
 }

@@ -4,6 +4,11 @@
   </ng-container>
 
   <ng-container *ngIf="authService.isLoggedIn()">
-    <app-doctor-dashboard></app-doctor-dashboard>
+    <app-doctor-dashboard *ngIf="authService.currentStep() === 0 || authService.currentStep() === 1"></app-doctor-dashboard>
+    <app-consultation-recording *ngIf="authService.currentStep() === 2"></app-consultation-recording>
+    <app-processing-transcript *ngIf="authService.currentStep() === 3"></app-processing-transcript>
+    <app-transcript-ready *ngIf="authService.currentStep() === 4"></app-transcript-ready>
+    <app-soap-prescription *ngIf="authService.currentStep() === 5"></app-soap-prescription>
   </ng-container>
 </div>
+
