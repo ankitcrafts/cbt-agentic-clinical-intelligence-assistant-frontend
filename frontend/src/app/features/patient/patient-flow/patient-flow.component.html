@@ -4,10 +4,6 @@
   </ng-container>
 
   <ng-container *ngIf="authService.isLoggedIn()">
-    <app-patient-dashboard *ngIf="authService.currentStep() === 0 || authService.currentStep() === 1"></app-patient-dashboard>
-    <app-consultation-details *ngIf="authService.currentStep() === 2"></app-consultation-details>
-    <app-view-transcript *ngIf="authService.currentStep() === 3"></app-view-transcript>
-    <app-view-soap-report *ngIf="authService.currentStep() === 4"></app-view-soap-report>
-    <app-view-prescription *ngIf="authService.currentStep() === 5"></app-view-prescription>
+    <app-patient-dashboard></app-patient-dashboard>
   </ng-container>
 </div>

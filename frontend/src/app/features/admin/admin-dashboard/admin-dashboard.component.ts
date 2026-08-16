@@ -12,6 +12,17 @@ import { MockDataService } from '../../../core/services/mock-data.service';
 export class AdminDashboardComponent {
   mockData = inject(MockDataService);
 
+  todayDate = 'August 13, 2026';
+
+  clinicians = [
+    { initials: 'AO', name: 'Dr. Amara Osei', specialty: 'Cardiology', available: true, status: 'On duty', patients: 18, loadPct: 51, loadColor: '#0d9488' },
+    { initials: 'LF', name: 'Dr. Lena Fischer', specialty: 'Neurology', available: false, status: 'Off duty', patients: 12, loadPct: 34, loadColor: '#0d9488' },
+    { initials: 'RM', name: 'Dr. Ravi Menon', specialty: 'Internal Medicine', available: true, status: 'On duty', patients: 24, loadPct: 69, loadColor: '#0d9488' },
+    { initials: 'SR', name: 'Dr. Sofia Reyes', specialty: 'Oncology', available: true, status: 'On duty', patients: 9, loadPct: 26, loadColor: '#0d9488' },
+    { initials: 'JW', name: 'Dr. James Whitfield', specialty: 'Orthopedics', available: false, status: 'Off duty', patients: 15, loadPct: 43, loadColor: '#0d9488' },
+    { initials: 'YT', name: 'Dr. Yuki Tanaka', specialty: 'Pediatrics', available: true, status: 'On duty', patients: 31, loadPct: 89, loadColor: '#d97706' }
+  ];
+
   recentActivities = [
     { title: 'New doctor registered', desc: 'Dr. Rahul Sharma', time: '2 min ago', icon: 'fa-user-plus', color: '#10b981' },
     { title: 'New patient registered', desc: 'Priya Verma', time: '15 min ago', icon: 'fa-hospital-user', color: '#0284c7' },

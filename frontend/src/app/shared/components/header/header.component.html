@@ -1,12 +1,12 @@
 <header class="app-header">
   <div class="header-title">
     <div class="header-logo-badge">
-      <i class="fa-solid fa-notes-medical"></i>
+      <span class="cliniq-logo-icon">CI</span>
     </div>
-    <div class="title-text-group">
-      <h2>AI MEDICAL CONSULTATION PLATFORM</h2>
-      <span class="role-pill" [class]="authService.currentRole().toLowerCase()">{{ roleBadgeText }}</span>
-    </div>
+    <span class="brand-name">ClinIQ</span>
+    <span class="role-pill" [class]="authService.currentRole().toLowerCase()">
+      {{ roleBadgeText }}
+    </span>
   </div>
 
   <div class="header-right-controls">
@@ -20,20 +20,10 @@
       <span class="theme-label">{{ authService.isDarkMode() ? 'Light' : 'Dark' }}</span>
     </button>
 
-    <!-- User Profile & Designation -->
-    <div class="user-profile" *ngIf="authService.isLoggedIn()">
-      <div class="avatar" [class]="authService.currentRole().toLowerCase()">
-        <i class="fa-solid fa-user-doctor" *ngIf="authService.currentRole() === 'DOCTOR'"></i>
-        <i class="fa-solid fa-user-shield" *ngIf="authService.currentRole() === 'ADMIN'"></i>
-        <i class="fa-solid fa-user" *ngIf="authService.currentRole() === 'PATIENT'"></i>
-      </div>
-      <div class="user-info">
-        <span class="user-name">{{ authService.currentUser().name }}</span>
-        <span class="user-designation">{{ authService.currentUser().designation }}</span>
-      </div>
-      <button class="logout-btn" (click)="authService.logout()" title="Logout">
-        <i class="fa-solid fa-right-from-bracket"></i>
-      </button>
-    </div>
+    <!-- Sign Out Button matching Figma -->
+    <button class="sign-out-btn" *ngIf="authService.isLoggedIn()" (click)="authService.logout()">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      <span>Sign out</span>
+    </button>
   </div>
 </header>

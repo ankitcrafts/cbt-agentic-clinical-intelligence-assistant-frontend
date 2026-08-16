@@ -1,95 +1,122 @@
-<div class="dashboard-page">
-  <div class="page-header">
-    <div>
-      <h1>Dashboard Overview</h1>
-      <p class="subtitle">Welcome back, Admin</p>
+<div class="cliniq-dashboard-page">
+  <!-- Title Header -->
+  <div class="dashboard-title-header">
+    <h1 class="main-title serif-title">Hospital Overview</h1>
+    <p class="subtitle">Real-time staffing and patient load — {{ todayDate }}</p>
+  </div>
+
+  <!-- Top KPI Cards (4 Cards Grid) -->
+  <div class="kpi-cards-grid">
+    <div class="cliniq-card kpi-card">
+      <span class="kpi-label">PHYSICIANS ON DUTY</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title">4/6</span>
+      </div>
+      <span class="kpi-sub">Available today</span>
+    </div>
+
+    <div class="cliniq-card kpi-card">
+      <span class="kpi-label">TOTAL PATIENTS</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title">109</span>
+      </div>
+      <span class="kpi-sub">Across all departments</span>
+    </div>
+
+    <div class="cliniq-card kpi-card">
+      <span class="kpi-label">AVG LOAD PER DR</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title">18</span>
+      </div>
+      <span class="kpi-sub">Patients</span>
+    </div>
+
+    <div class="cliniq-card kpi-card">
+      <span class="kpi-label">BEDS AVAILABLE</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title">47</span>
+      </div>
+      <span class="kpi-sub">Out of 120 total</span>
     </div>
   </div>
 
-  <!-- Stat Cards Row -->
-  <div class="stats-grid">
-    <div class="card stat-card hover-lift">
-      <div class="stat-header">
-        <span class="stat-title">Doctors</span>
-        <div class="stat-icon green"><i class="fa-solid fa-user-doctor"></i></div>
-      </div>
-      <div class="stat-value">{{ mockData.adminStats().doctorsCount }}</div>
-      <div class="stat-sub font-green"><i class="fa-solid fa-circle-check"></i> 48 Active</div>
-    </div>
+  <!-- Clinician Availability Section -->
+  <div class="section-block">
+    <h3 class="section-eyebrow">CLINICIAN AVAILABILITY</h3>
+    <div class="clinicians-grid">
+      <div class="cliniq-card clinician-card" *ngFor="let dr of clinicians">
+        <div class="card-top-row">
+          <div class="dr-profile">
+            <div class="avatar-circle">{{ dr.initials }}</div>
+            <div class="dr-info">
+              <h4 class="dr-name">{{ dr.name }}</h4>
+              <span class="dr-specialty">{{ dr.specialty }}</span>
+            </div>
+          </div>
+          <div class="status-pill" [class.available]="dr.available" [class.unavailable]="!dr.available">
+            <span class="dot"></span>
+            <span>{{ dr.available ? 'Available' : 'Unavailable' }}</span>
+          </div>
+        </div>
 
-    <div class="card stat-card hover-lift">
-      <div class="stat-header">
-        <span class="stat-title">Patients</span>
-        <div class="stat-icon blue"><i class="fa-solid fa-hospital-user"></i></div>
+        <div class="card-bottom-row">
+          <div class="patients-count">
+            <span class="count-num serif-title">{{ dr.patients }}</span>
+            <span class="count-label">patients assigned</span>
+          </div>
+          <div class="load-bar-group">
+            <div class="load-text">
+              <span class="label">Load</span>
+              <span class="pct">{{ dr.loadPct }}%</span>
+            </div>
+            <div class="progress-track">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="dr.loadPct"
+                [style.background-color]="dr.loadColor"
+              ></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="stat-value">{{ mockData.adminStats().patientsCount | number }}</div>
-      <div class="stat-sub text-muted">Total Registered</div>
-    </div>
-
-    <div class="card stat-card hover-lift">
-      <div class="stat-header">
-        <span class="stat-title">Recordings</span>
-        <div class="stat-icon purple"><i class="fa-solid fa-microphone"></i></div>
-      </div>
-      <div class="stat-value">{{ mockData.adminStats().recordingsCount | number }}</div>
-      <div class="stat-sub text-muted">This Month</div>
-    </div>
-
-    <div class="card stat-card hover-lift">
-      <div class="stat-header">
-        <span class="stat-title">Reports</span>
-        <div class="stat-icon orange"><i class="fa-solid fa-file-invoice"></i></div>
-      </div>
-      <div class="stat-value">{{ mockData.adminStats().reportsCount | number }}</div>
-      <div class="stat-sub text-muted">Generated</div>
     </div>
   </div>
 
-  <!-- Content Grid: Consultations Overview Chart & Recent Activity -->
-  <div class="content-grid">
-    <div class="card chart-card">
-      <div class="card-header">
-        <h3>Consultations Overview</h3>
-        <span class="badge badge-active">Live</span>
-      </div>
-      <!-- SVG Simulated Line Chart -->
-      <div class="chart-wrapper">
-        <svg viewBox="0 0 500 180" class="line-chart">
-          <defs>
-            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#10b981" stop-opacity="0.3"/>
-              <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-          <path d="M 20,130 Q 80,60 140,110 T 260,70 T 380,100 T 480,40" fill="none" stroke="#10b981" stroke-width="3"/>
-          <path d="M 20,130 Q 80,60 140,110 T 260,70 T 380,100 T 480,40 L 480,170 L 20,170 Z" fill="url(#chartGrad)"/>
-          <circle cx="140" cy="110" r="4" fill="#10b981"/>
-          <circle cx="260" cy="70" r="4" fill="#10b981"/>
-          <circle cx="480" cy="40" r="4" fill="#10b981"/>
-        </svg>
-        <div class="chart-labels">
-          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="card activity-card">
-      <div class="card-header">
-        <h3>Recent Activity</h3>
-        <a href="javascript:void(0)" class="view-all">View All</a>
-      </div>
-      <div class="activity-list">
-        <div class="activity-item" *ngFor="let act of recentActivities">
-          <div class="act-icon" [style.background-color]="act.color + '15'" [style.color]="act.color">
-            <i class="fa-solid" [ngClass]="act.icon"></i>
-          </div>
-          <div class="act-details">
-            <span class="act-title">{{ act.title }}</span>
-            <span class="act-desc">{{ act.desc }}</span>
-          </div>
-          <span class="act-time">{{ act.time }}</span>
-        </div>
-      </div>
+  <!-- Department Load Section -->
+  <div class="section-block">
+    <h3 class="section-eyebrow">DEPARTMENT LOAD</h3>
+    <div class="table-container cliniq-card p-0">
+      <table class="cliniq-table">
+        <thead>
+          <tr>
+            <th>CLINICIAN</th>
+            <th>SPECIALTY</th>
+            <th>STATUS</th>
+            <th class="text-right">PATIENTS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let dr of clinicians">
+            <td>
+              <div class="dr-table-user">
+                <div class="table-avatar">{{ dr.initials }}</div>
+                <span class="table-dr-name">{{ dr.name }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="table-text-muted">{{ dr.specialty }}</span>
+            </td>
+            <td>
+              <div class="status-pill" [class.on-duty]="dr.status === 'On duty'" [class.off-duty]="dr.status === 'Off duty'">
+                <span>{{ dr.status }}</span>
+              </div>
+            </td>
+            <td class="text-right">
+              <span class="patient-num font-mono">{{ dr.patients }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

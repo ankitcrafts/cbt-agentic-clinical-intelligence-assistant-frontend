@@ -1,63 +1,128 @@
-<div class="dashboard-page">
-  <div class="page-header">
-    <div>
-      <h1>Welcome back, Priya</h1>
-      <p class="subtitle">Here's your health overview</p>
+<div class="cliniq-summary-page">
+  <!-- Title & Profile Header -->
+  <div class="page-title-header">
+    <h1 class="main-title serif-title">Your Health Summary</h1>
+    <p class="subtitle">
+      {{ patientProfile.name }} · DOB {{ patientProfile.dob }} · MRN {{ patientProfile.mrn }}
+    </p>
+  </div>
+
+  <!-- Filter Pill Tabs -->
+  <div class="filter-tabs-row">
+    <button 
+      type="button" 
+      class="tab-pill" 
+      [class.active]="activeTab === 'alerts'" 
+      (click)="selectTab('alerts')"
+    >
+      <span>Follow-up Alerts</span>
+      <span class="count-badge">{{ followUpAlerts.length }}</span>
+    </button>
+
+    <button 
+      type="button" 
+      class="tab-pill" 
+      [class.active]="activeTab === 'records'" 
+      (click)="selectTab('records')"
+    >
+      <span>Medical Records</span>
+      <span class="count-badge">{{ medicalRecords.length }}</span>
+    </button>
+
+    <button 
+      type="button" 
+      class="tab-pill" 
+      [class.active]="activeTab === 'prescriptions'" 
+      (click)="selectTab('prescriptions')"
+    >
+      <span>Prescriptions</span>
+      <span class="count-badge">{{ prescriptions.length }}</span>
+    </button>
+  </div>
+
+  <!-- Tab 1: Follow-up Alerts -->
+  <div class="tab-content-area" *ngIf="activeTab === 'alerts'">
+    <div class="summary-cards-list">
+      <div class="cliniq-card alert-summary-card" *ngFor="let item of followUpAlerts">
+        <div class="card-left-section">
+          <div class="title-with-dot">
+            <span class="status-dot" [style.background-color]="item.dotColor"></span>
+            <h3 class="card-item-title">{{ item.title }}</h3>
+          </div>
+          <div class="doctor-subtext">{{ item.doctor }}</div>
+          <div class="date-subtext">{{ item.date }}</div>
+        </div>
+
+        <div class="card-right-section">
+          <span class="priority-pill" [class]="item.priorityClass">
+            {{ item.priority }}
+          </span>
+          <span class="days-away-text">{{ item.daysAway }}</span>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Stat Overview Cards -->
-  <div class="stats-grid">
-    <div class="card stat-card hover-lift">
-      <span class="stat-title">Total Consultations</span>
-      <div class="stat-value font-purple">{{ mockData.patientStats().totalConsultations }}</div>
-    </div>
-    <div class="card stat-card hover-lift">
-      <span class="stat-title">Reports</span>
-      <div class="stat-value font-green">{{ mockData.patientStats().reports }}</div>
-    </div>
-    <div class="card stat-card hover-lift">
-      <span class="stat-title">Prescriptions</span>
-      <div class="stat-value font-blue">{{ mockData.patientStats().prescriptions }}</div>
-    </div>
-    <div class="card stat-card hover-lift">
-      <span class="stat-title">Upcoming</span>
-      <div class="stat-value font-orange">{{ mockData.patientStats().upcoming }}</div>
+  <!-- Tab 2: Medical Records -->
+  <div class="tab-content-area" *ngIf="activeTab === 'records'">
+    <div class="summary-cards-list">
+      <div class="cliniq-card medical-record-card" *ngFor="let rec of medicalRecords">
+        <div class="record-header">
+          <div class="record-title-group">
+            <h3 class="record-item-title">{{ rec.title }}</h3>
+            <span class="record-type-badge">{{ rec.badge }}</span>
+          </div>
+          <div class="doctor-date-line">{{ rec.doctorDate }}</div>
+        </div>
+
+        <p class="record-notes-text">{{ rec.notes }}</p>
+
+        <!-- Vitals Metric Box (4 Columns) -->
+        <div class="vitals-metrics-grid">
+          <div class="vital-item font-mono">
+            <span class="vital-label">BLOOD PRESSURE</span>
+            <span class="vital-value">{{ rec.vitals.bp }}</span>
+          </div>
+
+          <div class="vital-item font-mono">
+            <span class="vital-label">HEART RATE</span>
+            <span class="vital-value">{{ rec.vitals.hr }}</span>
+          </div>
+
+          <div class="vital-item font-mono">
+            <span class="vital-label">WEIGHT</span>
+            <span class="vital-value">{{ rec.vitals.weight }}</span>
+          </div>
+
+          <div class="vital-item font-mono">
+            <span class="vital-label">TEMP</span>
+            <span class="vital-value">{{ rec.vitals.temp }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Recent Consultations Table -->
-  <div class="card table-card">
-    <div class="card-header">
-      <h3>Recent Consultations</h3>
-      <a href="javascript:void(0)" class="view-all">View All</a>
-    </div>
+  <!-- Tab 3: Prescriptions -->
+  <div class="tab-content-area" *ngIf="activeTab === 'prescriptions'">
+    <div class="summary-cards-list">
+      <div class="cliniq-card prescription-card" *ngFor="let rx of prescriptions">
+        <div class="rx-left-group">
+          <div class="rx-icon-box">
+            <i class="fa-solid fa-prescription-bottle-medical"></i>
+          </div>
+          <div class="rx-info-body">
+            <h3 class="rx-item-title">{{ rx.title }}</h3>
+            <div class="rx-instructions-text">{{ rx.instructions }}</div>
+            <div class="rx-doctor-line">{{ rx.doctorDate }}</div>
+          </div>
+        </div>
 
-    <div class="table-container">
-      <table class="custom-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Doctor</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let c of recentConsultations">
-            <td>{{ c.date }}</td>
-            <td class="font-bold">{{ c.doctor }}</td>
-            <td>{{ c.type }}</td>
-            <td>
-              <span class="badge badge-completed">{{ c.status }}</span>
-            </td>
-            <td>
-              <button class="btn btn-outline btn-sm" (click)="viewConsultationDetails()">View</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <div class="rx-right-group">
+          <span class="rx-status-badge" [class]="rx.statusClass">{{ rx.badge }}</span>
+          <div class="rx-refill-text">{{ rx.refillInfo }}</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

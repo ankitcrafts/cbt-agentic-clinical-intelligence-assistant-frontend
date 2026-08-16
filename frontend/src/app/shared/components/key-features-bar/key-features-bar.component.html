@@ -1,16 +1,49 @@
-<footer class="features-bar">
-  <div class="features-label">
-    <span>KEY FEATURES</span>
+<footer class="cookie-banner-container" *ngIf="isVisible">
+  <div class="cookie-banner-content">
+    <p class="cookie-text">
+      This website uses cookies, pixel tags, and local storage for performance, personalization, and marketing purposes. 
+      We use our own cookies and some from third parties. Only essential cookies are turned on by default. 
+      <a href="javascript:void(0)" class="cookie-settings-link" (click)="openSettings()">Cookies settings</a>
+    </p>
+
+    <div class="cookie-actions">
+      <button type="button" class="btn-cookie-decline" (click)="declineCookies()">
+        Do not allow cookies
+      </button>
+      <button type="button" class="btn-cookie-accept" (click)="allowAll()">
+        Allow all cookies
+      </button>
+      <button type="button" class="btn-cookie-close" (click)="dismissBanner()" title="Close banner">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
   </div>
 
-  <div class="features-grid">
-    <div class="feature-item" *ngFor="let item of features">
-      <div class="feature-icon">
-        <i class="fa-solid" [ngClass]="item.icon"></i>
+  <!-- Cookies Settings Modal -->
+  <div class="cookie-modal-overlay" *ngIf="showSettingsModal" (click)="openSettings()">
+    <div class="cookie-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Cookie Preferences</h3>
+        <button class="close-modal-btn" (click)="openSettings()"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="feature-content">
-        <span class="feature-title">{{ item.title }}</span>
-        <span class="feature-subtitle">{{ item.subtitle }}</span>
+      <div class="modal-body">
+        <div class="pref-item">
+          <div class="pref-title">
+            <strong>Essential Cookies</strong>
+            <span class="badge-required">Always Active</span>
+          </div>
+          <p>Necessary for the core operation of the ClinIQ medical dashboard and secure session management.</p>
+        </div>
+        <div class="pref-item">
+          <div class="pref-title">
+            <strong>Analytics & Performance</strong>
+          </div>
+          <p>Helps us understand platform usage to optimize clinical workflow response times.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="saveSettings(true)">Essential Only</button>
+        <button class="btn-primary" (click)="saveSettings(false)">Save Preferences</button>
       </div>
     </div>
   </div>

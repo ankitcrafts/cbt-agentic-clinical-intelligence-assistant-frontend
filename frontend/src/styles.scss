@@ -1,35 +1,43 @@
-/* Global Medical Platform Design System with Light & Dark Theme Support */
+/* Global Medical Platform Design System - ClinIQ Figma Parity */
 :root, body[data-theme="light"] {
-  --primary-navy: #1e293b;
-  --primary-dark: #0f172a;
-  --sidebar-bg: #1e293b;
-  --sidebar-hover: #334155;
+  --cliniq-dark-teal: #0b3c35;
+  --cliniq-dark-teal-hover: #072722;
+  --cliniq-teal: #0d9488;
+  --cliniq-teal-hover: #0b7a6e;
+  --cliniq-teal-bg: #e6f4f1;
+  --cliniq-bg: #f4f9f8;
+  --cliniq-border: #e2ede9;
+
+  --primary-navy: #0b3c35;
+  --primary-dark: #072722;
+  --sidebar-bg: #0b3c35;
+  --sidebar-hover: #0f5249;
   --sidebar-text: #ffffff;
   --sidebar-text-muted: #94a3b8;
-  --header-bg: #ffffff;
-  --header-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --theme-toggle-bg: #f1f5f9;
-  --profile-bg: #f8fafc;
-  --accent-blue: #0284c7;
-  --accent-blue-hover: #0369a1;
-  --accent-green: #10b981;
-  --accent-green-bg: #d1fae5;
+  --header-bg: #f4f9f8;
+  --header-shadow: 0 1px 3px rgba(11, 60, 53, 0.05);
+  --theme-toggle-bg: #e6f4f1;
+  --profile-bg: #ffffff;
+  --accent-blue: #0d9488;
+  --accent-blue-hover: #0b7a6e;
+  --accent-green: #0d9488;
+  --accent-green-bg: #e6f4f1;
   --accent-purple: #8b5cf6;
   --accent-orange: #f59e0b;
   --accent-red: #ef4444;
-  --bg-gradient-start: #f8fafc;
-  --bg-gradient-end: #f1f5f9;
+  --bg-gradient-start: #f4f9f8;
+  --bg-gradient-end: #edf5f3;
   --card-bg: #ffffff;
-  --card-hover-bg: #f8fafc;
+  --card-hover-bg: #fafdfc;
   --text-main: #0f172a;
   --text-muted: #64748b;
   --text-light: #94a3b8;
-  --border-color: #e2e8f0;
-  --table-header-bg: #f8fafc;
-  --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
-  --card-hover-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.12);
+  --border-color: #e2ede9;
+  --table-header-bg: #f4f9f8;
+  --card-shadow: 0 4px 20px -2px rgba(11, 60, 53, 0.04), 0 2px 6px -1px rgba(11, 60, 53, 0.02);
+  --card-hover-shadow: 0 12px 30px -4px rgba(11, 60, 53, 0.08);
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --heading-font: 'Outfit', sans-serif;
+  --heading-font: 'Newsreader', 'Playfair Display', Georgia, serif;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -37,32 +45,40 @@
 }
 
 body[data-theme="dark"] {
-  --primary-navy: #0f172a;
-  --primary-dark: #020617;
-  --sidebar-bg: #0b1329;
-  --sidebar-hover: #162447;
+  --cliniq-dark-teal: #082924;
+  --cliniq-dark-teal-hover: #051d19;
+  --cliniq-teal: #14b8a6;
+  --cliniq-teal-hover: #0d9488;
+  --cliniq-teal-bg: rgba(20, 184, 166, 0.15);
+  --cliniq-bg: #091312;
+  --cliniq-border: #152c28;
+
+  --primary-navy: #0b1e1b;
+  --primary-dark: #050e0d;
+  --sidebar-bg: #081a17;
+  --sidebar-hover: #12332e;
   --sidebar-text: #f8fafc;
   --sidebar-text-muted: #94a3b8;
-  --header-bg: #0f172a;
+  --header-bg: #091312;
   --header-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  --theme-toggle-bg: #1e293b;
-  --profile-bg: #1e293b;
-  --accent-blue: #38bdf8;
-  --accent-blue-hover: #0284c7;
-  --accent-green: #34d399;
-  --accent-green-bg: rgba(52, 211, 153, 0.15);
+  --theme-toggle-bg: #152c28;
+  --profile-bg: #122421;
+  --accent-blue: #2dd4bf;
+  --accent-blue-hover: #14b8a6;
+  --accent-green: #2dd4bf;
+  --accent-green-bg: rgba(45, 212, 191, 0.15);
   --accent-purple: #a78bfa;
   --accent-orange: #fbbf24;
   --accent-red: #f87171;
-  --bg-gradient-start: #0b0f19;
-  --bg-gradient-end: #0f172a;
-  --card-bg: #162032;
-  --card-hover-bg: #1e293b;
+  --bg-gradient-start: #070f0e;
+  --bg-gradient-end: #0c1817;
+  --card-bg: #0f1f1d;
+  --card-hover-bg: #152926;
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-light: #64748b;
-  --border-color: #1e293b;
-  --table-header-bg: #0f172a;
+  --border-color: #152c28;
+  --table-header-bg: #0c1817;
   --card-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
   --card-hover-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.6);
 }
@@ -310,3 +326,1068 @@ body {
   0%, 100% { height: 10px; }
   50% { height: 35px; }
 }
+
+/* ClinIQ Custom Utilities */
+.serif-title {
+  font-family: var(--heading-font);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.cliniq-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(11, 60, 53, 0.03);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+
+  &.available, &.on-duty {
+    background: #e6f4f1;
+    color: #0b7a6e;
+    .dot { background-color: #0d9488; }
+  }
+
+  &.unavailable, &.off-duty {
+    background: #f1f5f9;
+    color: #64748b;
+    .dot { background-color: #94a3b8; }
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+}
+
+/* ClinIQ Split Screen Login Global Styles */
+.cliniq-login-container {
+  display: flex;
+  min-height: calc(100vh - 60px);
+  width: 100%;
+  background: var(--card-bg);
+
+  .login-left-panel {
+    flex: 1;
+    background: #0b3c35;
+    color: #ffffff;
+    padding: 3.5rem 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    .panel-header {
+      .brand-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+
+        .logo-box {
+          width: 30px;
+          height: 30px;
+          background: #0d9488;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 0.8rem;
+          color: #ffffff;
+        }
+
+        .brand-title {
+          font-weight: 700;
+          font-size: 1.15rem;
+          color: #ffffff;
+          letter-spacing: -0.02em;
+        }
+      }
+    }
+
+    .panel-hero {
+      max-width: 520px;
+      margin: 2rem 0;
+
+      .eyebrow {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: #14b8a6;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 1.25rem;
+      }
+
+      .hero-title {
+        font-size: 2.25rem;
+        line-height: 1.25;
+        font-weight: 400;
+        margin-bottom: 1.25rem;
+        color: #ffffff;
+      }
+
+      .hero-subtitle {
+        font-size: 0.925rem;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.75);
+        margin-bottom: 2.5rem;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+
+        .feature-item {
+          .feature-icon {
+            font-size: 1rem;
+            color: #14b8a6;
+            margin-bottom: 0.6rem;
+          }
+
+          .feature-content {
+            h4 {
+              font-size: 0.85rem;
+              font-weight: 600;
+              color: #ffffff;
+              margin-bottom: 0.25rem;
+            }
+
+            p {
+              font-size: 0.75rem;
+              line-height: 1.4;
+              color: rgba(255, 255, 255, 0.65);
+            }
+          }
+        }
+      }
+    }
+
+    .panel-footer-ribbon {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.55);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .divider {
+        opacity: 0.4;
+      }
+    }
+  }
+
+  .login-right-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3.5rem;
+    background: var(--card-bg);
+
+    .auth-form-card {
+      width: 100%;
+      max-width: 420px;
+
+      .auth-title {
+        font-size: 2.25rem;
+        color: var(--text-main);
+        margin-bottom: 0.4rem;
+      }
+
+      .auth-subtitle {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+      }
+
+      .role-selector-group {
+        margin-bottom: 1.75rem;
+
+        .section-label {
+          font-size: 0.7rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          color: var(--text-light);
+          text-transform: uppercase;
+          display: block;
+          margin-bottom: 0.6rem;
+        }
+
+        .role-tabs-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.4rem;
+          background: var(--cliniq-bg);
+          padding: 0.3rem;
+          border-radius: 10px;
+          border: 1px solid var(--border-color);
+          margin-bottom: 0.6rem;
+
+          .role-tab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.65rem 0.4rem;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            i {
+              font-size: 0.85rem;
+            }
+
+            &.active {
+              background: #0d9488;
+              color: #ffffff;
+              box-shadow: 0 2px 6px rgba(13, 148, 136, 0.2);
+            }
+
+            &:hover:not(.active) {
+              color: var(--text-main);
+            }
+          }
+        }
+
+        .role-desc {
+          font-size: 0.78rem;
+          color: var(--text-muted);
+        }
+      }
+
+      .login-fields-form {
+        .form-group {
+          margin-bottom: 1.25rem;
+
+          label {
+            display: block;
+            font-size: 0.825rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.4rem;
+          }
+
+          input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 0.875rem;
+
+            &:focus {
+              outline: none;
+              border-color: #0d9488;
+              box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+            }
+          }
+        }
+
+        .submit-btn {
+          width: 100%;
+          padding: 0.85rem 1rem;
+          border-radius: 8px;
+          border: none;
+          background: #0d9488;
+          color: #ffffff;
+          font-weight: 600;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: background 0.2s ease;
+          margin-top: 0.5rem;
+
+          &:hover {
+            background: #0b7a6e;
+          }
+        }
+      }
+
+      .disclaimer-text {
+        font-size: 0.75rem;
+        color: var(--text-light);
+        text-align: center;
+        margin-top: 1.5rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .cliniq-login-container {
+    flex-direction: column;
+    .login-left-panel {
+      padding: 2rem;
+    }
+    .login-right-panel {
+      padding: 2rem;
+    }
+  }
+}
+
+/* ClinIQ Health Summary Global Dashboard Styles */
+.cliniq-summary-page {
+  padding: 2.5rem 3rem;
+  background: var(--cliniq-bg);
+  min-height: calc(100vh - 60px);
+
+  .page-title-header {
+    margin-bottom: 2rem;
+
+    .main-title {
+      font-size: 2.25rem;
+      font-weight: 400;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .filter-tabs-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+
+    .tab-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.15rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      .count-badge {
+        font-size: 0.75rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 9999px;
+        background: #e6f4f1;
+        color: #0b7a6e;
+      }
+
+      &.active {
+        background: var(--card-bg);
+        border-color: #0d9488;
+        color: var(--text-main);
+        box-shadow: 0 2px 8px rgba(11, 60, 53, 0.06);
+
+        .count-badge {
+          background: #0d9488;
+          color: #ffffff;
+        }
+      }
+
+      &:hover:not(.active) {
+        background: var(--card-hover-bg);
+        color: var(--text-main);
+      }
+    }
+  }
+
+  .summary-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+
+    .alert-summary-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 1.75rem;
+
+      .card-left-section {
+        .title-with-dot {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          margin-bottom: 0.35rem;
+
+          .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+          }
+
+          .card-item-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
+          }
+        }
+
+        .doctor-subtext {
+          font-size: 0.825rem;
+          color: var(--text-muted);
+          margin-bottom: 0.25rem;
+        }
+
+        .date-subtext {
+          font-size: 0.78rem;
+          color: var(--text-light);
+        }
+      }
+
+      .card-right-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5rem;
+
+        .priority-pill {
+          padding: 0.25rem 0.85rem;
+          border-radius: 9999px;
+          font-size: 0.75rem;
+          font-weight: 600;
+
+          &.high {
+            background: #fdf2f2;
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+          }
+
+          &.medium {
+            background: #fef3c7;
+            color: #d97706;
+            border: 1px solid rgba(217, 119, 6, 0.2);
+          }
+
+          &.low {
+            background: #e6f4f1;
+            color: #0b7a6e;
+            border: 1px solid rgba(13, 148, 136, 0.2);
+          }
+        }
+
+        .days-away-text {
+          font-size: 0.78rem;
+          color: var(--text-muted);
+        }
+      }
+    }
+
+    .medical-record-card {
+      padding: 1.75rem;
+
+      .record-header {
+        margin-bottom: 0.75rem;
+
+        .record-title-group {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: 0.25rem;
+
+          .record-item-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+          }
+
+          .record-type-badge {
+            font-size: 0.725rem;
+            font-weight: 600;
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            background: #e6f4f1;
+            color: #0b7a6e;
+          }
+        }
+
+        .doctor-date-line {
+          font-size: 0.825rem;
+          color: var(--text-muted);
+        }
+      }
+
+      .record-notes-text {
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: var(--text-main);
+        margin-bottom: 1.25rem;
+      }
+
+      .vitals-metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        background: var(--cliniq-bg);
+        border: 1px solid var(--border-color);
+        padding: 1rem 1.25rem;
+        border-radius: 10px;
+
+        .vital-item {
+          display: flex;
+          flex-direction: column;
+
+          .vital-label {
+            font-size: 0.675rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+          }
+
+          .vital-value {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+          }
+        }
+      }
+    }
+
+    .prescription-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 1.75rem;
+
+      .rx-left-group {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+
+        .rx-icon-box {
+          width: 44px;
+          height: 44px;
+          border-radius: 10px;
+          background: #e6f4f1;
+          color: #0b7a6e;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.15rem;
+          flex-shrink: 0;
+        }
+
+        .rx-info-body {
+          .rx-item-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.2rem;
+          }
+
+          .rx-instructions-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.2rem;
+          }
+
+          .rx-doctor-line {
+            font-size: 0.78rem;
+            color: var(--text-light);
+          }
+        }
+      }
+
+      .rx-right-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.4rem;
+
+        .rx-status-badge {
+          font-size: 0.725rem;
+          font-weight: 600;
+          padding: 0.2rem 0.75rem;
+          border-radius: 9999px;
+
+          &.active {
+            background: #e6f4f1;
+            color: #0b7a6e;
+            border: 1px solid rgba(13, 148, 136, 0.2);
+          }
+
+          &.expired {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+          }
+        }
+
+        .rx-refill-text {
+          font-size: 0.78rem;
+          color: var(--text-muted);
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .cliniq-summary-page {
+    padding: 1.5rem;
+    .medical-record-card .vitals-metrics-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+}
+
+/* ClinIQ Consultation Support Workspace Styles */
+.cliniq-consultation-page {
+  padding: 2.25rem 2.75rem;
+  background: var(--cliniq-bg);
+  min-height: calc(100vh - 60px);
+
+  .page-title-header {
+    margin-bottom: 1.75rem;
+
+    .main-title {
+      font-size: 2.25rem;
+      font-weight: 400;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.5rem;
+    align-items: start;
+
+    .workspace-col-left {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      .session-recording-box {
+        background: #0b3c35;
+        border-radius: 14px;
+        padding: 1.5rem 1.75rem;
+        color: #ffffff;
+        box-shadow: 0 4px 20px rgba(11, 60, 53, 0.15);
+
+        .recording-top-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1.25rem;
+
+          .recording-meta {
+            .box-title {
+              font-size: 1.15rem;
+              font-weight: 600;
+              color: #ffffff;
+              margin-bottom: 0.2rem;
+            }
+
+            .box-sub {
+              font-size: 0.8rem;
+              color: rgba(255, 255, 255, 0.7);
+            }
+          }
+
+          .live-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #0b3c35;
+            font-size: 0.75rem;
+            font-weight: 700;
+
+            .live-dot {
+              width: 7px;
+              height: 7px;
+              border-radius: 50%;
+              background: #0d9488;
+              animation: pulse 1.5s infinite;
+            }
+          }
+        }
+
+        .waveform-progress-bar {
+          margin-bottom: 1.25rem;
+
+          .audio-waveform-line {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+
+            .waveform-dots {
+              display: flex;
+              align-items: center;
+              gap: 5px;
+              height: 16px;
+
+              .wave-dot {
+                flex: 1;
+                height: 6px;
+                border-radius: 3px;
+                background: #2dd4bf;
+
+                &:nth-child(3n) { height: 14px; }
+                &:nth-child(4n) { height: 10px; }
+                &:nth-child(5n) { height: 16px; }
+              }
+            }
+
+            .progress-track-bg {
+              height: 4px;
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 2px;
+              position: relative;
+
+              .progress-fill-line {
+                height: 100%;
+                background: #2dd4bf;
+                border-radius: 2px;
+                position: relative;
+
+                .scrubber-handle {
+                  width: 12px;
+                  height: 12px;
+                  border-radius: 50%;
+                  background: #ffffff;
+                  position: absolute;
+                  right: -6px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+                }
+              }
+            }
+          }
+
+          .time-readout {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.8);
+          }
+        }
+
+        .recording-controls-row {
+          .btn-play-pause {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.55rem 1.1rem;
+            border-radius: 9999px;
+            font-size: 0.825rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            i {
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              background: #2dd4bf;
+              color: #0b3c35;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.75rem;
+            }
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.2);
+            }
+          }
+        }
+      }
+
+      .transcript-box {
+        padding: 1.75rem;
+
+        .transcript-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1.5rem;
+          padding-bottom: 0.75rem;
+          border-bottom: 1px solid var(--border-color);
+
+          .box-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-main);
+          }
+
+          .transcript-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+          }
+        }
+
+        .transcript-messages-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+
+          .chat-bubble-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+
+            .avatar-bubble {
+              width: 34px;
+              height: 34px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.75rem;
+              font-weight: 700;
+              flex-shrink: 0;
+
+              &.doctor-avatar {
+                background: #e6f4f1;
+                color: #0b7a6e;
+              }
+
+              &.patient-avatar {
+                background: #f1f5f9;
+                color: #64748b;
+              }
+            }
+
+            .bubble-content {
+              padding: 0.85rem 1.15rem;
+              border-radius: 12px;
+              max-width: 80%;
+
+              .bubble-text {
+                font-size: 0.875rem;
+                line-height: 1.55;
+                color: var(--text-main);
+                margin: 0;
+              }
+            }
+
+            &.doctor-row {
+              .bubble-content {
+                background: #f4f9f8;
+                border: 1px solid #e2ede9;
+                border-top-left-radius: 2px;
+              }
+            }
+
+            &.patient-row {
+              flex-direction: row-reverse;
+              .bubble-content {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-top-right-radius: 2px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .workspace-col-right {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      .ai-suggestions-box {
+        padding: 1.5rem;
+
+        .ai-box-header {
+          margin-bottom: 1.25rem;
+
+          .ai-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+
+            .ai-sparkle-icon {
+              color: #0d9488;
+              font-size: 1rem;
+            }
+
+            .box-title {
+              font-size: 1.05rem;
+              font-weight: 600;
+              color: var(--text-main);
+            }
+          }
+
+          .ai-meta {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+          }
+        }
+
+        .suggestions-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.85rem;
+
+          .suggestion-card {
+            padding: 1rem 1.15rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+
+            &.high {
+              border-color: rgba(239, 68, 68, 0.25);
+              background: #fffafa;
+            }
+
+            &.medium {
+              border-color: rgba(217, 119, 6, 0.25);
+              background: #fffdfa;
+            }
+
+            &.low {
+              border-color: rgba(13, 148, 136, 0.25);
+              background: #fdfefe;
+            }
+
+            .card-top {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 0.5rem;
+
+              .priority-tag {
+                font-size: 0.7rem;
+                font-weight: 600;
+                padding: 0.15rem 0.6rem;
+                border-radius: 9999px;
+
+                &.high {
+                  background: #fdf2f2;
+                  color: #ef4444;
+                }
+
+                &.medium {
+                  background: #fef3c7;
+                  color: #d97706;
+                }
+
+                &.low {
+                  background: #e6f4f1;
+                  color: #0b7a6e;
+                }
+              }
+
+              .dismiss-btn {
+                background: transparent;
+                border: none;
+                color: var(--text-muted);
+                cursor: pointer;
+                font-size: 0.85rem;
+                padding: 0.2rem;
+                transition: color 0.15s ease;
+
+                &:hover {
+                  color: #ef4444;
+                }
+              }
+            }
+
+            .question-text {
+              font-size: 0.85rem;
+              line-height: 1.5;
+              color: var(--text-main);
+              font-weight: 500;
+              margin-bottom: 0.6rem;
+            }
+
+            .category-eyebrow {
+              font-size: 0.65rem;
+              font-weight: 700;
+              letter-spacing: 0.06em;
+              color: var(--text-muted);
+              text-transform: uppercase;
+            }
+          }
+        }
+      }
+
+      .patient-snapshot-box {
+        padding: 1.5rem;
+
+        .snapshot-header {
+          font-size: 0.725rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          color: #0d9488;
+          text-transform: uppercase;
+          margin-bottom: 1rem;
+        }
+
+        .snapshot-list {
+          display: flex;
+          flex-direction: column;
+
+          .snapshot-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 0;
+            border-bottom: 1px solid var(--border-color);
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            .label {
+              font-size: 0.825rem;
+              color: var(--text-muted);
+            }
+
+            .val {
+              font-size: 0.85rem;
+              color: var(--text-main);
+              text-align: right;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .cliniq-consultation-page {
+    padding: 1.5rem;
+    .workspace-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+

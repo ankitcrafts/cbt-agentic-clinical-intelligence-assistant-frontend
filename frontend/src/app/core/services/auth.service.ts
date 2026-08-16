@@ -39,19 +39,19 @@ export class AuthService {
     if (role === 'ADMIN') {
       this.currentUser.set({
         name: 'Ankit Sharma',
-        email: 'admin@hospital.com',
+        email: 'admin@cliniq.health',
         designation: 'System Administrator'
       });
     } else if (role === 'DOCTOR') {
       this.currentUser.set({
         name: 'Dr. Rahul Sharma',
-        email: 'doctor@hospital.com',
+        email: 'doctor@cliniq.health',
         designation: 'Senior Cardiologist'
       });
     } else {
       this.currentUser.set({
         name: 'Priya Verma',
-        email: 'patient@email.com',
+        email: 'patient@cliniq.health',
         designation: 'Patient (ID: P-90823)'
       });
     }

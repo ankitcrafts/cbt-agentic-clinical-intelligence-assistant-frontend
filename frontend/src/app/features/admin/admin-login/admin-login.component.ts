@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
+import { UserRole } from '../../../core/models/platform.model';
 
 @Component({
   selector: 'app-admin-login',
@@ -13,19 +14,17 @@ import { AuthService } from '../../../core/services/auth.service';
 export class AdminLoginComponent {
   authService = inject(AuthService);
 
-  isLoginMode = true;
-  fullName = 'Ankit Sharma';
-  email = 'admin@hospital.com';
+  email = 'admin@cliniq.health';
   password = '••••••••••••';
 
+  selectRole(role: UserRole) {
+    this.authService.setRole(role);
+    if (role === 'ADMIN') this.email = 'admin@cliniq.health';
+    else if (role === 'DOCTOR') this.email = 'doctor@cliniq.health';
+    else this.email = 'patient@cliniq.health';
+  }
+
   onLogin() {
-    if (!this.isLoginMode) {
-      this.authService.currentUser.set({
-        name: this.fullName || 'Ankit Sharma',
-        email: this.email,
-        designation: 'System Administrator'
-      });
-    }
     this.authService.login();
   }
 }

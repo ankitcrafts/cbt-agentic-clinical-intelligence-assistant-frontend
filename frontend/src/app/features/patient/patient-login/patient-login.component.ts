@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
+import { UserRole } from '../../../core/models/platform.model';
 
 @Component({
   selector: 'app-patient-login',
@@ -13,20 +14,17 @@ import { AuthService } from '../../../core/services/auth.service';
 export class PatientLoginComponent {
   authService = inject(AuthService);
 
-  isLoginMode = true;
-  fullName = 'Priya Verma';
-  email = 'patient@email.com';
+  email = 'patient@cliniq.health';
   password = '••••••••••••';
-  patientId = 'P-90823';
+
+  selectRole(role: UserRole) {
+    this.authService.setRole(role);
+    if (role === 'ADMIN') this.email = 'admin@cliniq.health';
+    else if (role === 'DOCTOR') this.email = 'doctor@cliniq.health';
+    else this.email = 'patient@cliniq.health';
+  }
 
   onLogin() {
-    if (!this.isLoginMode) {
-      this.authService.currentUser.set({
-        name: this.fullName || 'Priya Verma',
-        email: this.email,
-        designation: `Patient (ID: ${this.patientId || 'P-90823'})`
-      });
-    }
     this.authService.login();
   }
 }
