@@ -1,0 +1,16 @@
+<div class="app-layout">
+  <!-- Header -->
+  <app-header></app-header>
+
+  <!-- Main Body with Content -->
+  <div class="app-body no-sidebar">
+    <main class="main-content full-width">
+      <app-admin-flow *ngIf="authService.currentRole() === 'ADMIN'"></app-admin-flow>
+      <app-doctor-flow *ngIf="authService.currentRole() === 'DOCTOR'"></app-doctor-flow>
+      <app-patient-flow *ngIf="authService.currentRole() === 'PATIENT'"></app-patient-flow>
+    </main>
+  </div>
+
+  <!-- Key Features Footer Ribbon -->
+  <app-key-features-bar></app-key-features-bar>
+</div>

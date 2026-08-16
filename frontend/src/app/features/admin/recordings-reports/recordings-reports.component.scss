@@ -1,0 +1,131 @@
+.management-page {
+  padding: 1.5rem;
+
+  .page-header {
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-family: var(--heading-font);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .table-card {
+    padding: 0;
+
+    .tab-header {
+      padding: 1rem 1.25rem 0;
+      border-bottom: 1px solid var(--border-color);
+
+      .tabs {
+        display: flex;
+        gap: 1.5rem;
+
+        .tab-btn {
+          background: none;
+          border: none;
+          padding-bottom: 0.75rem;
+          font-family: var(--heading-font);
+          font-size: 0.9375rem;
+          font-weight: 600;
+          color: var(--text-muted);
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+
+          &.active {
+            color: var(--accent-green);
+            border-bottom-color: var(--accent-green);
+          }
+        }
+      }
+    }
+
+    .filter-bar {
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+
+      .search-box {
+        position: relative;
+        width: 300px;
+
+        i {
+          position: absolute;
+          left: 0.875rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-light);
+        }
+
+        input {
+          padding-left: 2.25rem;
+        }
+      }
+
+      .filters {
+        display: flex;
+        gap: 0.75rem;
+
+        select {
+          padding: 0.5rem 0.875rem;
+          font-size: 0.8125rem;
+        }
+      }
+    }
+
+    .table-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+
+      .pagination {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+
+        .page-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border-color);
+          background: #ffffff;
+          font-size: 0.75rem;
+          cursor: pointer;
+
+          &.active {
+            background: var(--accent-green);
+            color: #ffffff;
+            border-color: var(--accent-green);
+          }
+        }
+      }
+    }
+
+    .action-icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.375rem;
+      border-radius: var(--radius-sm);
+
+      &:hover {
+        color: var(--accent-blue);
+        background: #e0f2fe;
+      }
+    }
+  }
+}

@@ -1,0 +1,122 @@
+<div class="cliniq-dashboard-page">
+  <!-- Title Header -->
+  <div class="dashboard-title-header">
+    <h1 class="main-title serif-title">Hospital Overview</h1>
+    <p class="subtitle">Real-time staffing and patient load — {{ todayDate }}</p>
+  </div>
+
+  <!-- Top KPI Cards (4 Cards Grid) -->
+  <div class="kpi-cards-grid">
+    <div class="cliniq-card kpi-card">
+      <span class="kpi-label">PHYSICIANS ON DUTY</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title">4/6</span>
+      </div>
+      <span class="kpi-sub">Available today</span>
+    </div>
+
+    <div class="cliniq-card kpi-card">
+      <span class="kpi-label">TOTAL PATIENTS</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title">109</span>
+      </div>
+      <span class="kpi-sub">Across all departments</span>
+    </div>
+
+    <div class="cliniq-card kpi-card">
+      <span class="kpi-label">AVG LOAD PER DR</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title">18</span>
+      </div>
+      <span class="kpi-sub">Patients</span>
+    </div>
+
+    <div class="cliniq-card kpi-card">
+      <span class="kpi-label">BEDS AVAILABLE</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title">47</span>
+      </div>
+      <span class="kpi-sub">Out of 120 total</span>
+    </div>
+  </div>
+
+  <!-- Clinician Availability Section -->
+  <div class="section-block">
+    <h3 class="section-eyebrow">CLINICIAN AVAILABILITY</h3>
+    <div class="clinicians-grid">
+      <div class="cliniq-card clinician-card" *ngFor="let dr of clinicians">
+        <div class="card-top-row">
+          <div class="dr-profile">
+            <div class="avatar-circle">{{ dr.initials }}</div>
+            <div class="dr-info">
+              <h4 class="dr-name">{{ dr.name }}</h4>
+              <span class="dr-specialty">{{ dr.specialty }}</span>
+            </div>
+          </div>
+          <div class="status-pill" [class.available]="dr.available" [class.unavailable]="!dr.available">
+            <span class="dot"></span>
+            <span>{{ dr.available ? 'Available' : 'Unavailable' }}</span>
+          </div>
+        </div>
+
+        <div class="card-bottom-row">
+          <div class="patients-count">
+            <span class="count-num serif-title">{{ dr.patients }}</span>
+            <span class="count-label">patients assigned</span>
+          </div>
+          <div class="load-bar-group">
+            <div class="load-text">
+              <span class="label">Load</span>
+              <span class="pct">{{ dr.loadPct }}%</span>
+            </div>
+            <div class="progress-track">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="dr.loadPct"
+                [style.background-color]="dr.loadColor"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Department Load Section -->
+  <div class="section-block">
+    <h3 class="section-eyebrow">DEPARTMENT LOAD</h3>
+    <div class="table-container cliniq-card p-0">
+      <table class="cliniq-table">
+        <thead>
+          <tr>
+            <th>CLINICIAN</th>
+            <th>SPECIALTY</th>
+            <th>STATUS</th>
+            <th class="text-right">PATIENTS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let dr of clinicians">
+            <td>
+              <div class="dr-table-user">
+                <div class="table-avatar">{{ dr.initials }}</div>
+                <span class="table-dr-name">{{ dr.name }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="table-text-muted">{{ dr.specialty }}</span>
+            </td>
+            <td>
+              <div class="status-pill" [class.on-duty]="dr.status === 'On duty'" [class.off-duty]="dr.status === 'Off duty'">
+                <span>{{ dr.status }}</span>
+              </div>
+            </td>
+            <td class="text-right">
+              <span class="patient-num font-mono">{{ dr.patients }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,29 @@
+<header class="app-header">
+  <div class="header-title">
+    <div class="header-logo-badge">
+      <span class="cliniq-logo-icon">CI</span>
+    </div>
+    <span class="brand-name">ClinIQ</span>
+    <span class="role-pill" [class]="authService.currentRole().toLowerCase()">
+      {{ roleBadgeText }}
+    </span>
+  </div>
+
+  <div class="header-right-controls">
+    <!-- Dark / Light Theme Toggle -->
+    <button 
+      class="theme-toggle-btn" 
+      (click)="authService.toggleTheme()" 
+      [title]="authService.isDarkMode() ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+    >
+      <i class="fa-solid" [class.fa-sun]="authService.isDarkMode()" [class.fa-moon]="!authService.isDarkMode()"></i>
+      <span class="theme-label">{{ authService.isDarkMode() ? 'Light' : 'Dark' }}</span>
+    </button>
+
+    <!-- Sign Out Button matching Figma -->
+    <button class="sign-out-btn" *ngIf="authService.isLoggedIn()" (click)="authService.logout()">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      <span>Sign out</span>
+    </button>
+  </div>
+</header>

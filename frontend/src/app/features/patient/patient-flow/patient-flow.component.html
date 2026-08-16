@@ -1,0 +1,9 @@
+<div class="patient-flow-container">
+  <ng-container *ngIf="!authService.isLoggedIn()">
+    <app-patient-login></app-patient-login>
+  </ng-container>
+
+  <ng-container *ngIf="authService.isLoggedIn()">
+    <app-patient-dashboard></app-patient-dashboard>
+  </ng-container>
+</div>

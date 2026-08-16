@@ -1,0 +1,38 @@
+<div class="prescription-page">
+  <div class="card main-card">
+    <div class="card-header">
+      <div class="rx-header-title">
+        <i class="fa-solid fa-prescription"></i>
+        <h3>Medical Prescription</h3>
+      </div>
+      <button class="btn btn-purple btn-sm"><i class="fa-solid fa-download"></i> Download Prescription</button>
+    </div>
+
+    <div class="prescription-body">
+      <h3>Medications</h3>
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Medication</th>
+            <th>Dosage & Frequency</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let med of consultation.prescription.medications">
+            <td class="font-bold">{{ med.name }}</td>
+            <td>{{ med.dosage }} ({{ med.frequency }})</td>
+            <td>{{ med.duration }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 class="advice-heading">Advice</h3>
+      <ul class="advice-list">
+        <li *ngFor="let adv of consultation.prescription.advice">
+          <i class="fa-solid fa-check font-purple"></i> {{ adv }}
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,95 @@
+.flow-navigator-container {
+  background: var(--header-bg);
+  color: var(--text-main);
+  padding: 0.625rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
+
+  .roles-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .role-tab-btn {
+      background: var(--theme-toggle-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--heading-font);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--card-hover-bg);
+        color: var(--text-main);
+      }
+
+      &.active {
+        background: var(--tab-color);
+        border-color: var(--tab-color);
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+
+  .steps-stepper {
+    .steps-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+
+      .step-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        background: var(--theme-toggle-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        padding: 0.35rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+
+        .step-num {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.6875rem;
+        }
+
+        &:hover {
+          background: var(--card-hover-bg);
+          color: var(--text-main);
+        }
+
+        &.active {
+          background: var(--accent-blue);
+          color: #ffffff;
+          border-color: var(--accent-blue);
+          font-weight: 700;
+
+          .step-num {
+            background: #ffffff;
+            color: var(--accent-blue);
+          }
+        }
+      }
+    }
+  }
+}

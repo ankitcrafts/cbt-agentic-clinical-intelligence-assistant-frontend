@@ -1,0 +1,12 @@
+<div class="admin-flow-container">
+  <ng-container *ngIf="!authService.isLoggedIn()">
+    <app-admin-login></app-admin-login>
+  </ng-container>
+
+  <ng-container *ngIf="authService.isLoggedIn()">
+    <app-admin-dashboard *ngIf="authService.currentStep() === 0 || authService.currentStep() === 1"></app-admin-dashboard>
+    <app-doctors-management *ngIf="authService.currentStep() === 2"></app-doctors-management>
+    <app-patients-management *ngIf="authService.currentStep() === 3"></app-patients-management>
+    <app-recordings-reports *ngIf="authService.currentStep() === 4"></app-recordings-reports>
+  </ng-container>
+</div>

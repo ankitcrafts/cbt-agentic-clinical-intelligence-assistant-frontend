@@ -1,0 +1,72 @@
+.prescription-page {
+  padding: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+
+  .main-card {
+    padding: 0;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+
+      .rx-header-title {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+
+        i {
+          font-size: 1.25rem;
+          color: var(--accent-purple);
+        }
+
+        h3 {
+          font-family: var(--heading-font);
+          font-size: 1.125rem;
+          font-weight: 700;
+        }
+      }
+
+      .btn-purple {
+        background: var(--accent-purple);
+        color: #ffffff;
+      }
+    }
+
+    .prescription-body {
+      padding: 1.5rem;
+
+      h3 {
+        font-family: var(--heading-font);
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .advice-heading {
+        margin-top: 1.5rem;
+      }
+
+      .advice-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        li {
+          font-size: 0.875rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          i {
+            color: var(--accent-purple);
+          }
+        }
+      }
+    }
+  }
+}

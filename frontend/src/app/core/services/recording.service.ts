@@ -1,0 +1,410 @@
+import { Injectable, inject, signal, OnDestroy } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, delay, tap } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
+import { AuthService } from './auth.service';
+import { MockDataService } from './mock-data.service';
+import {
+  RecordingState,
+  RecordingSessionMetadata,
+  RecordingUploadResponse
+} from '../models/recording.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class RecordingService implements OnDestroy {
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+  private mockData = inject(MockDataService);
+
+  // Reactive State Signals
+  readonly state = signal<RecordingState>('IDLE');
+  readonly durationSeconds = signal<number>(0);
+  readonly errorMessage = signal<string | null>(null);
+  readonly recordedBlob = signal<Blob | null>(null);
+  readonly recordedFile = signal<File | null>(null);
+  readonly audioUrl = signal<string | null>(null);
+  readonly sessionMetadata = signal<RecordingSessionMetadata | null>(null);
+  readonly mimeType = signal<string>('audio/webm');
+
+  // Internal Web API References
+  private mediaRecorder: MediaRecorder | null = null;
+  private mediaStream: MediaStream | null = null;
+  private audioChunks: Blob[] = [];
+  private timerInterval: any = null;
+  private startTimeIso: string | null = null;
+  private endTimeIso: string | null = null;
+
+  constructor() {}
+
+  ngOnDestroy(): void {
+    this.cleanupRecording();
+  }
+
+  /**
+   * Detects browser-supported MIME type dynamically.
+   * Preserves actual supported format instead of falsely labeling WebM as WAV/MP3.
+   */
+  getSupportedMimeType(): string {
+    if (typeof MediaRecorder === 'undefined') {
+      return '';
+    }
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+      'audio/wav'
+    ];
+
+    for (const type of candidates) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        return type;
+      }
+    }
+    return ''; // Browser default
+  }
+
+  /**
+   * Returns proper file extension based on MIME type.
+   */
+  getFileExtension(mimeType: string): string {
+    const lower = mimeType.toLowerCase();
+    if (lower.includes('mp4') || lower.includes('m4a')) {
+      return 'mp4';
+    }
+    if (lower.includes('ogg')) {
+      return 'ogg';
+    }
+    if (lower.includes('wav')) {
+      return 'wav';
+    }
+    return 'webm';
+  }
+
+  /**
+   * Formats duration in seconds to mm:ss format.
+   */
+  formatDuration(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Starts microphone recording.
+   */
+  async startRecording(context?: { encounterId?: string; doctorId?: string; patientId?: string }): Promise<void> {
+    this.errorMessage.set(null);
+    this.state.set('REQUESTING_PERMISSION');
+
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      const err = 'Microphone access is not supported by your browser environment.';
+      this.errorMessage.set(err);
+      this.state.set('FAILED');
+      throw new Error(err);
+    }
+
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err: any) {
+      const msg = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
+        ? 'Microphone permission denied. Please allow microphone access to record.'
+        : `Microphone access error: ${err.message || 'Unable to access microphone.'}`;
+      this.errorMessage.set(msg);
+      this.state.set('FAILED');
+      this.stopMicrophoneTracks();
+      throw err;
+    }
+
+    const detectedMimeType = this.getSupportedMimeType();
+    this.mimeType.set(detectedMimeType || 'audio/webm');
+
+    try {
+      const options = detectedMimeType ? { mimeType: detectedMimeType } : {};
+      this.mediaRecorder = new MediaRecorder(this.mediaStream, options);
+    } catch (err: any) {
+      const msg = `MediaRecorder initialization failed: ${err.message || 'Unsupported MIME type.'}`;
+      this.errorMessage.set(msg);
+      this.state.set('FAILED');
+      this.stopMicrophoneTracks();
+      throw err;
+    }
+
+    this.audioChunks = [];
+    this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
+      if (event.data && event.data.size > 0) {
+        this.audioChunks.push(event.data);
+      }
+    };
+
+    this.mediaRecorder.onerror = (event: any) => {
+      this.errorMessage.set(`Recording error occurred: ${event.error?.message || 'Unknown error'}`);
+      this.state.set('FAILED');
+      this.stopMicrophoneTracks();
+    };
+
+    this.startTimeIso = new Date().toISOString();
+    this.durationSeconds.set(0);
+    this.audioUrl.set(null);
+    this.recordedBlob.set(null);
+    this.recordedFile.set(null);
+    this.sessionMetadata.set(null);
+
+    this.mediaRecorder.start(1000);
+    this.state.set('RECORDING');
+    this.startTimer();
+  }
+
+  /**
+   * Pauses an active recording session.
+   */
+  pauseRecording(): void {
+    if (this.state() === 'RECORDING' && this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.pause();
+      this.state.set('PAUSED');
+    }
+  }
+
+  /**
+   * Resumes a paused recording session.
+   */
+  resumeRecording(): void {
+    if (this.state() === 'PAUSED' && this.mediaRecorder && this.mediaRecorder.state === 'paused') {
+      this.mediaRecorder.resume();
+      this.state.set('RECORDING');
+    }
+  }
+
+  /**
+   * Stops recording, collects audio chunks, constructs Blob, File, and playback URL,
+   * and releases microphone hardware tracks.
+   */
+  stopRecording(context?: { encounterId?: string; doctorId?: string; patientId?: string }): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      this.stopTimer();
+
+      if (!this.mediaRecorder || (this.mediaRecorder.state !== 'recording' && this.mediaRecorder.state !== 'paused')) {
+        this.stopMicrophoneTracks();
+        resolve(this.recordedBlob());
+        return;
+      }
+
+      this.endTimeIso = new Date().toISOString();
+
+      this.mediaRecorder.onstop = () => {
+        this.stopMicrophoneTracks();
+
+        if (this.audioChunks.length === 0) {
+          this.errorMessage.set('Empty recording captured. Please try recording again.');
+          this.state.set('FAILED');
+          resolve(null);
+          return;
+        }
+
+        const currentMimeType = this.mimeType() || 'audio/webm';
+        const blob = new Blob(this.audioChunks, { type: currentMimeType });
+
+        if (blob.size === 0) {
+          this.errorMessage.set('Empty recording file created. Please try recording again.');
+          this.state.set('FAILED');
+          resolve(null);
+          return;
+        }
+
+        const encounterId = context?.encounterId || this.mockData.activeConsultation().id || 'CONS-41233';
+        const doctorId = context?.doctorId || 'DOC-001';
+        const patientId = context?.patientId || this.mockData.activeConsultation().patientPid || 'P1245';
+        const ext = this.getFileExtension(currentMimeType);
+        const fileName = `rec_${encounterId}_${Date.now()}.${ext}`;
+
+        const file = new File([blob], fileName, { type: currentMimeType });
+        const previewUrl = URL.createObjectURL(blob);
+
+        const metadata: RecordingSessionMetadata = {
+          encounterId,
+          doctorId,
+          patientId,
+          recordingStartedAt: this.startTimeIso || new Date().toISOString(),
+          recordingEndedAt: this.endTimeIso || new Date().toISOString(),
+          durationSeconds: this.durationSeconds(),
+          mimeType: currentMimeType,
+          fileName,
+          fileSize: blob.size
+        };
+
+        this.recordedBlob.set(blob);
+        this.recordedFile.set(file);
+        this.audioUrl.set(previewUrl);
+        this.sessionMetadata.set(metadata);
+        this.state.set('READY_TO_UPLOAD');
+
+        resolve(blob);
+      };
+
+      this.mediaRecorder.stop();
+    });
+  }
+
+  /**
+   * Prepares multipart/form-data payload and uploads recording to backend.
+   * DO NOT set Content-Type header manually; browser/HttpClient automatically handles boundary.
+   */
+  uploadRecording(overrideContext?: { encounterId?: string; doctorId?: string; patientId?: string }): Observable<RecordingUploadResponse> {
+    if (this.state() === 'UPLOADING') {
+      return throwError(() => new Error('Upload is already in progress.'));
+    }
+
+    const file = this.recordedFile();
+    const metadata = this.sessionMetadata();
+
+    if (!file || !metadata) {
+      const err = 'No recorded audio file available to upload.';
+      this.errorMessage.set(err);
+      this.state.set('FAILED');
+      return throwError(() => new Error(err));
+    }
+
+    this.state.set('UPLOADING');
+    this.errorMessage.set(null);
+
+    const encounterId = overrideContext?.encounterId || metadata.encounterId;
+    const doctorId = overrideContext?.doctorId || metadata.doctorId;
+    const patientId = overrideContext?.patientId || metadata.patientId;
+
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('encounter_id', encounterId);
+    formData.append('doctor_id', doctorId);
+    formData.append('patient_id', patientId);
+    formData.append('recording_started_at', metadata.recordingStartedAt);
+    formData.append('recording_ended_at', metadata.recordingEndedAt);
+    formData.append('duration_seconds', metadata.durationSeconds.toString());
+
+    // Mock upload mode support for development when FastAPI backend is not yet running
+    if (environment.useMockUpload) {
+      const mockResponse: RecordingUploadResponse = {
+        id: `REC-${Date.now()}`,
+        status: 'Uploaded',
+        encounterId,
+        audioUrl: this.audioUrl() || undefined,
+        message: 'Audio recording successfully uploaded (Mock Mode)'
+      };
+
+      return of(mockResponse).pipe(
+        delay(1200),
+        tap((res) => {
+          this.downloadRecording();
+          this.state.set('UPLOADED');
+        }),
+        catchError((err) => {
+          this.errorMessage.set('Mock upload error occurred. Local recording retained.');
+          this.state.set('FAILED');
+          return throwError(() => err);
+        })
+      );
+    }
+
+    // Real API POST call to configured FastAPI backend endpoint
+    const url = `${environment.apiBaseUrl}${environment.recordingEndpoint}`;
+
+    return this.http.post<RecordingUploadResponse>(url, formData).pipe(
+      tap((res) => {
+        this.state.set('UPLOADED');
+      }),
+      catchError((error) => {
+        const errorMsg = error.error?.detail || error.message || 'Upload failed due to network error. Local recording retained.';
+        this.errorMessage.set(errorMsg);
+        this.state.set('FAILED');
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Triggers browser download of the recorded audio file locally.
+   */
+  downloadRecording(): void {
+    const url = this.audioUrl();
+    const metadata = this.sessionMetadata();
+
+    if (!url || typeof document === 'undefined') {
+      return;
+    }
+
+    const fileName = metadata?.fileName || `recording_${Date.now()}.${this.getFileExtension(this.mimeType())}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+
+  /**
+   * Retries uploading retained local recording.
+   */
+  retryUpload(overrideContext?: { encounterId?: string; doctorId?: string; patientId?: string }): Observable<RecordingUploadResponse> {
+    return this.uploadRecording(overrideContext);
+  }
+
+  /**
+   * Stops all active microphone tracks to release hardware indicator.
+   */
+  stopMicrophoneTracks(): void {
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach((track) => {
+        if (track.readyState === 'live') {
+          track.stop();
+        }
+      });
+      this.mediaStream = null;
+    }
+  }
+
+  /**
+   * Resets recording state and cleans up resources.
+   */
+  resetState(): void {
+    this.cleanupRecording();
+    this.state.set('IDLE');
+    this.durationSeconds.set(0);
+    this.errorMessage.set(null);
+    this.recordedBlob.set(null);
+    this.recordedFile.set(null);
+    if (this.audioUrl()) {
+      URL.revokeObjectURL(this.audioUrl()!);
+      this.audioUrl.set(null);
+    }
+    this.sessionMetadata.set(null);
+  }
+
+  private startTimer(): void {
+    this.stopTimer();
+    this.timerInterval = setInterval(() => {
+      if (this.state() === 'RECORDING') {
+        this.durationSeconds.update((s) => s + 1);
+      }
+    }, 1000);
+  }
+
+  private stopTimer(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  private cleanupRecording(): void {
+    this.stopTimer();
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try {
+        this.mediaRecorder.stop();
+      } catch (e) {}
+    }
+    this.stopMicrophoneTracks();
+  }
+}

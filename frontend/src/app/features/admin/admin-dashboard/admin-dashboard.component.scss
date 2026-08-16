@@ -1,0 +1,272 @@
+.cliniq-dashboard-page {
+  padding: 2.5rem 3rem;
+  background: var(--cliniq-bg);
+  min-height: calc(100vh - 60px);
+
+  .dashboard-title-header {
+    margin-bottom: 2rem;
+
+    .main-title {
+      font-size: 2.25rem;
+      font-weight: 400;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .kpi-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+
+    .kpi-card {
+      padding: 1.25rem 1.5rem;
+
+      .kpi-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 0.75rem;
+      }
+
+      .kpi-value {
+        font-size: 2.25rem;
+        line-height: 1.1;
+        color: var(--text-main);
+        margin-bottom: 0.5rem;
+        display: block;
+      }
+
+      .kpi-sub {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+    }
+  }
+
+  .section-block {
+    margin-bottom: 2.5rem;
+
+    .section-eyebrow {
+      font-size: 0.725rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #0d9488;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+
+    .clinicians-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+
+      .clinician-card {
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        .card-top-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 1.5rem;
+
+          .dr-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+
+            .avatar-circle {
+              width: 38px;
+              height: 38px;
+              border-radius: 50%;
+              background: #e6f4f1;
+              color: #0b7a6e;
+              font-weight: 700;
+              font-size: 0.85rem;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .dr-info {
+              .dr-name {
+                font-size: 0.925rem;
+                font-weight: 600;
+                color: var(--text-main);
+                margin-bottom: 0.1rem;
+              }
+
+              .dr-specialty {
+                font-size: 0.78rem;
+                color: var(--text-muted);
+              }
+            }
+          }
+        }
+
+        .card-bottom-row {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+
+          .patients-count {
+            .count-num {
+              font-size: 1.75rem;
+              line-height: 1;
+              color: var(--text-main);
+              display: block;
+              margin-bottom: 0.2rem;
+            }
+
+            .count-label {
+              font-size: 0.75rem;
+              color: var(--text-muted);
+            }
+          }
+
+          .load-bar-group {
+            width: 110px;
+
+            .load-text {
+              display: flex;
+              justify-content: space-between;
+              font-size: 0.7rem;
+              color: var(--text-muted);
+              margin-bottom: 0.35rem;
+
+              .pct {
+                font-weight: 600;
+                color: var(--text-main);
+              }
+            }
+
+            .progress-track {
+              height: 6px;
+              width: 100%;
+              background: #f1f5f9;
+              border-radius: 9999px;
+              overflow: hidden;
+
+              .progress-fill {
+                height: 100%;
+                border-radius: 9999px;
+                transition: width 0.3s ease;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+
+      .cliniq-table {
+        width: 100%;
+        border-collapse: collapse;
+
+        th, td {
+          padding: 1rem 1.5rem;
+          text-align: left;
+        }
+
+        th {
+          background: var(--cliniq-bg);
+          font-size: 0.7rem;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+          border-bottom: 1px solid var(--border-color);
+          font-size: 0.875rem;
+          color: var(--text-main);
+
+          .dr-table-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+
+            .table-avatar {
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              background: #e6f4f1;
+              color: #0b7a6e;
+              font-weight: 700;
+              font-size: 0.75rem;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .table-dr-name {
+              font-weight: 600;
+              color: var(--text-main);
+            }
+          }
+
+          .table-text-muted {
+            color: var(--text-muted);
+          }
+
+          .patient-num {
+            font-weight: 600;
+          }
+        }
+
+        tbody tr:last-child td {
+          border-bottom: none;
+        }
+
+        tbody tr:hover {
+          background: var(--card-hover-bg);
+        }
+      }
+
+      .text-right {
+        text-align: right;
+      }
+    }
+  }
+}
+
+@media (max-width: 1100px) {
+  .cliniq-dashboard-page {
+    .kpi-cards-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .section-block .clinicians-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+}
+
+@media (max-width: 650px) {
+  .cliniq-dashboard-page {
+    padding: 1.5rem;
+    .kpi-cards-grid {
+      grid-template-columns: 1fr;
+    }
+    .section-block .clinicians-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
