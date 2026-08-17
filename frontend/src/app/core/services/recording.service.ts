@@ -27,7 +27,8 @@ export class RecordingService implements OnDestroy {
   readonly recordedFile = signal<File | null>(null);
   readonly audioUrl = signal<string | null>(null);
   readonly sessionMetadata = signal<RecordingSessionMetadata | null>(null);
-  readonly mimeType = signal<string>('audio/webm');
+  readonly mimeType = signal<string>('audio/wav');
+  readonly selectedFormat = signal<'wav' | 'mp3' | 'webm'>('wav');
 
   // Internal Web API References
   private mediaRecorder: MediaRecorder | null = null;
@@ -41,6 +42,13 @@ export class RecordingService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.cleanupRecording();
+  }
+
+  /**
+   * Sets user preferred target audio format (wav, mp3, webm).
+   */
+  setTargetFormat(format: 'wav' | 'mp3' | 'webm'): void {
+    this.selectedFormat.set(format);
   }
 
   /**
@@ -72,14 +80,17 @@ export class RecordingService implements OnDestroy {
    */
   getFileExtension(mimeType: string): string {
     const lower = mimeType.toLowerCase();
+    if (lower.includes('wav')) {
+      return 'wav';
+    }
+    if (lower.includes('mp3') || lower.includes('mpeg')) {
+      return 'mp3';
+    }
     if (lower.includes('mp4') || lower.includes('m4a')) {
       return 'mp4';
     }
     if (lower.includes('ogg')) {
       return 'ogg';
-    }
-    if (lower.includes('wav')) {
-      return 'wav';
     }
     return 'webm';
   }
@@ -120,7 +131,7 @@ export class RecordingService implements OnDestroy {
     }
 
     const detectedMimeType = this.getSupportedMimeType();
-    this.mimeType.set(detectedMimeType || 'audio/webm');
+    this.mimeType.set(detectedMimeType || /* 'audio/webm' || */ 'audio/wav');
 
     try {
       const options = detectedMimeType ? { mimeType: detectedMimeType } : {};
@@ -194,7 +205,7 @@ export class RecordingService implements OnDestroy {
 
       this.endTimeIso = new Date().toISOString();
 
-      this.mediaRecorder.onstop = () => {
+      this.mediaRecorder.onstop = async () => {
         this.stopMicrophoneTracks();
 
         if (this.audioChunks.length === 0) {
@@ -204,24 +215,48 @@ export class RecordingService implements OnDestroy {
           return;
         }
 
-        const currentMimeType = this.mimeType() || 'audio/webm';
-        const blob = new Blob(this.audioChunks, { type: currentMimeType });
+        const rawMimeType = this.mimeType() || 'audio/webm';
+        let finalBlob = new Blob(this.audioChunks, { type: rawMimeType });
 
-        if (blob.size === 0) {
+        if (finalBlob.size === 0) {
           this.errorMessage.set('Empty recording file created. Please try recording again.');
           this.state.set('FAILED');
           resolve(null);
           return;
         }
 
+        const fmt = this.selectedFormat();
+        let targetMime = rawMimeType;
+        let ext = 'webm';
+
+        if (fmt === 'wav' || fmt === 'mp3') {
+          try {
+            const wavBlob = await this.convertToWav(finalBlob);
+            if (fmt === 'wav') {
+              finalBlob = wavBlob;
+              targetMime = 'audio/wav';
+              ext = 'wav';
+            } else {
+              finalBlob = new Blob([wavBlob], { type: 'audio/mpeg' });
+              targetMime = 'audio/mpeg';
+              ext = 'mp3';
+            }
+          } catch (err) {
+            ext = this.getFileExtension(rawMimeType);
+          }
+        } else {
+          ext = this.getFileExtension(rawMimeType);
+        }
+
+        this.mimeType.set(targetMime);
+
         const encounterId = context?.encounterId || this.mockData.activeConsultation().id || 'CONS-41233';
         const doctorId = context?.doctorId || 'DOC-001';
         const patientId = context?.patientId || this.mockData.activeConsultation().patientPid || 'P1245';
-        const ext = this.getFileExtension(currentMimeType);
         const fileName = `rec_${encounterId}_${Date.now()}.${ext}`;
 
-        const file = new File([blob], fileName, { type: currentMimeType });
-        const previewUrl = URL.createObjectURL(blob);
+        const file = new File([finalBlob], fileName, { type: targetMime });
+        const previewUrl = URL.createObjectURL(finalBlob);
 
         const metadata: RecordingSessionMetadata = {
           encounterId,
@@ -230,22 +265,118 @@ export class RecordingService implements OnDestroy {
           recordingStartedAt: this.startTimeIso || new Date().toISOString(),
           recordingEndedAt: this.endTimeIso || new Date().toISOString(),
           durationSeconds: this.durationSeconds(),
-          mimeType: currentMimeType,
+          mimeType: targetMime,
           fileName,
-          fileSize: blob.size
+          fileSize: finalBlob.size
         };
 
-        this.recordedBlob.set(blob);
+        this.recordedBlob.set(finalBlob);
         this.recordedFile.set(file);
         this.audioUrl.set(previewUrl);
         this.sessionMetadata.set(metadata);
         this.state.set('READY_TO_UPLOAD');
 
-        resolve(blob);
+        resolve(finalBlob);
       };
 
       this.mediaRecorder.stop();
     });
+  }
+
+  /**
+   * Converts recorded audio blob to standard WAV audio using Web Audio API AudioContext.
+   */
+  async convertToWav(rawBlob: Blob): Promise<Blob> {
+    try {
+      const arrayBuffer = await rawBlob.arrayBuffer();
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) {
+        return rawBlob;
+      }
+      const audioCtx = new AudioCtx();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const wavBlob = this.encodeWav(audioBuffer);
+      await audioCtx.close();
+      return wavBlob;
+    } catch (err) {
+      console.warn('WAV conversion warning, preserving raw audio blob format:', err);
+      return rawBlob;
+    }
+  }
+
+  /**
+   * Encodes decoded PCM AudioBuffer into standard 16-bit PCM WAV Blob.
+   */
+  private encodeWav(audioBuffer: AudioBuffer): Blob {
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const format = 1; // 16-bit PCM
+    const bitDepth = 16;
+
+    let interleaved: Float32Array;
+    if (numChannels === 2) {
+      const left = audioBuffer.getChannelData(0);
+      const right = audioBuffer.getChannelData(1);
+      interleaved = new Float32Array(left.length + right.length);
+      let index = 0;
+      let inputIndex = 0;
+      while (index < interleaved.length) {
+        interleaved[index++] = left[inputIndex];
+        interleaved[index++] = right[inputIndex];
+        inputIndex++;
+      }
+    } else {
+      interleaved = audioBuffer.getChannelData(0);
+    }
+
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+    const dataSize = interleaved.length * bytesPerSample;
+    const headerLength = 44;
+    const buffer = new ArrayBuffer(headerLength + dataSize);
+    const view = new DataView(buffer);
+
+    /* RIFF identifier */
+    this.writeString(view, 0, 'RIFF');
+    /* RIFF chunk length */
+    view.setUint32(4, 36 + dataSize, true);
+    /* RIFF type */
+    this.writeString(view, 8, 'WAVE');
+    /* format chunk identifier */
+    this.writeString(view, 12, 'fmt ');
+    /* format chunk length */
+    view.setUint32(16, 16, true);
+    /* sample format (PCM) */
+    view.setUint16(20, format, true);
+    /* channel count */
+    view.setUint16(22, numChannels, true);
+    /* sample rate */
+    view.setUint32(24, sampleRate, true);
+    /* byte rate */
+    view.setUint32(28, sampleRate * blockAlign, true);
+    /* block align */
+    view.setUint16(32, blockAlign, true);
+    /* bits per sample */
+    view.setUint16(34, bitDepth, true);
+    /* data chunk identifier */
+    this.writeString(view, 36, 'data');
+    /* data chunk length */
+    view.setUint32(40, dataSize, true);
+
+    /* Write 16-bit PCM samples */
+    let offset = 44;
+    for (let i = 0; i < interleaved.length; i++, offset += 2) {
+      const sample = Math.max(-1, Math.min(1, interleaved[i]));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  private writeString(view: DataView, offset: number, str: string): void {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
   }
 
   /**

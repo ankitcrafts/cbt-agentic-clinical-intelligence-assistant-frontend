@@ -24,6 +24,40 @@
         ></div>
       </div>
 
+      <!-- Audio Format Selection -->
+      <div class="audio-format-bar">
+        <span class="format-label">Audio Format:</span>
+        <div class="format-pill-group">
+          <button 
+            type="button"
+            class="format-pill" 
+            [class.active]="recordingService.selectedFormat() === 'wav'" 
+            (click)="setAudioFormat('wav')"
+            [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+          >
+            <i class="fa-solid fa-file-waveform"></i> WAV (.wav)
+          </button>
+          <button 
+            type="button"
+            class="format-pill" 
+            [class.active]="recordingService.selectedFormat() === 'mp3'" 
+            (click)="setAudioFormat('mp3')"
+            [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+          >
+            <i class="fa-solid fa-file-audio"></i> MP3 (.mp3)
+          </button>
+          <button 
+            type="button"
+            class="format-pill" 
+            [class.active]="recordingService.selectedFormat() === 'webm'" 
+            (click)="setAudioFormat('webm')"
+            [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+          >
+            <i class="fa-solid fa-compact-disc"></i> WebM (.webm)
+          </button>
+        </div>
+      </div>
+
       <!-- Recording Controls -->
       <div class="controls-row">
         <button class="control-btn play-start-btn" *ngIf="currentState === 'IDLE'" (click)="startRecording()">

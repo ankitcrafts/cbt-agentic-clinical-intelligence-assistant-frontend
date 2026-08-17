@@ -54,7 +54,7 @@ body[data-theme="dark"] {
   --cliniq-border: #152c28;
 
   --primary-navy: #0b1e1b;
-  --primary-dark: #050e0d;
+  --primary-dark: #f8fafc;
   --sidebar-bg: #081a17;
   --sidebar-hover: #12332e;
   --sidebar-text: #f8fafc;
@@ -352,15 +352,15 @@ body {
   border-radius: 9999px;
 
   &.available, &.on-duty {
-    background: #e6f4f1;
-    color: #0b7a6e;
-    .dot { background-color: #0d9488; }
+    background: var(--accent-green-bg);
+    color: var(--accent-green);
+    .dot { background-color: var(--accent-green); }
   }
 
   &.unavailable, &.off-duty {
-    background: #f1f5f9;
-    color: #64748b;
-    .dot { background-color: #94a3b8; }
+    background: var(--theme-toggle-bg);
+    color: var(--text-muted);
+    .dot { background-color: var(--text-muted); }
   }
 
   .dot {
@@ -686,18 +686,18 @@ body {
         font-size: 0.75rem;
         padding: 0.1rem 0.45rem;
         border-radius: 9999px;
-        background: #e6f4f1;
-        color: #0b7a6e;
+        background: var(--accent-green-bg);
+        color: var(--accent-green);
       }
 
       &.active {
         background: var(--card-bg);
-        border-color: #0d9488;
+        border-color: var(--accent-green);
         color: var(--text-main);
         box-shadow: 0 2px 8px rgba(11, 60, 53, 0.06);
 
         .count-badge {
-          background: #0d9488;
+          background: var(--accent-green);
           color: #ffffff;
         }
       }
@@ -766,21 +766,21 @@ body {
           font-weight: 600;
 
           &.high {
-            background: #fdf2f2;
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.25);
           }
 
           &.medium {
-            background: #fef3c7;
-            color: #d97706;
-            border: 1px solid rgba(217, 119, 6, 0.2);
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-orange);
+            border: 1px solid rgba(245, 158, 11, 0.25);
           }
 
           &.low {
-            background: #e6f4f1;
-            color: #0b7a6e;
-            border: 1px solid rgba(13, 148, 136, 0.2);
+            background: var(--accent-green-bg);
+            color: var(--accent-green);
+            border: 1px solid rgba(13, 148, 136, 0.25);
           }
         }
 
@@ -814,8 +814,8 @@ body {
             font-weight: 600;
             padding: 0.2rem 0.65rem;
             border-radius: 9999px;
-            background: #e6f4f1;
-            color: #0b7a6e;
+            background: var(--accent-green-bg);
+            color: var(--accent-green);
           }
         }
 
@@ -877,8 +877,8 @@ body {
           width: 44px;
           height: 44px;
           border-radius: 10px;
-          background: #e6f4f1;
-          color: #0b7a6e;
+          background: var(--accent-green-bg);
+          color: var(--accent-green);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -920,15 +920,15 @@ body {
           border-radius: 9999px;
 
           &.active {
-            background: #e6f4f1;
-            color: #0b7a6e;
-            border: 1px solid rgba(13, 148, 136, 0.2);
+            background: var(--accent-green-bg);
+            color: var(--accent-green);
+            border: 1px solid rgba(13, 148, 136, 0.25);
           }
 
           &.expired {
-            background: #f1f5f9;
-            color: #64748b;
-            border: 1px solid #e2e8f0;
+            background: var(--theme-toggle-bg);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
           }
         }
 
@@ -984,11 +984,12 @@ body {
       gap: 1.5rem;
 
       .session-recording-box {
-        background: #0b3c35;
+        background: var(--cliniq-dark-teal);
+        border: 1px solid var(--border-color);
         border-radius: 14px;
         padding: 1.5rem 1.75rem;
         color: #ffffff;
-        box-shadow: 0 4px 20px rgba(11, 60, 53, 0.15);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 
         .recording-top-row {
           display: flex;
@@ -1172,13 +1173,13 @@ body {
               flex-shrink: 0;
 
               &.doctor-avatar {
-                background: #e6f4f1;
-                color: #0b7a6e;
+                background: var(--accent-green-bg);
+                color: var(--accent-green);
               }
 
               &.patient-avatar {
-                background: #f1f5f9;
-                color: #64748b;
+                background: var(--theme-toggle-bg);
+                color: var(--text-muted);
               }
             }
 
@@ -1197,8 +1198,8 @@ body {
 
             &.doctor-row {
               .bubble-content {
-                background: #f4f9f8;
-                border: 1px solid #e2ede9;
+                background: var(--cliniq-teal-bg);
+                border: 1px solid var(--border-color);
                 border-top-left-radius: 2px;
               }
             }
@@ -1206,8 +1207,8 @@ body {
             &.patient-row {
               flex-direction: row-reverse;
               .bubble-content {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
                 border-top-right-radius: 2px;
               }
             }
@@ -1262,18 +1263,18 @@ body {
             background: var(--card-bg);
 
             &.high {
-              border-color: rgba(239, 68, 68, 0.25);
-              background: #fffafa;
+              border-color: rgba(239, 68, 68, 0.3);
+              background: rgba(239, 68, 68, 0.08);
             }
 
             &.medium {
-              border-color: rgba(217, 119, 6, 0.25);
-              background: #fffdfa;
+              border-color: rgba(245, 158, 11, 0.3);
+              background: rgba(245, 158, 11, 0.08);
             }
 
             &.low {
-              border-color: rgba(13, 148, 136, 0.25);
-              background: #fdfefe;
+              border-color: rgba(13, 148, 136, 0.3);
+              background: rgba(20, 184, 166, 0.08);
             }
 
             .card-top {
@@ -1289,18 +1290,18 @@ body {
                 border-radius: 9999px;
 
                 &.high {
-                  background: #fdf2f2;
-                  color: #ef4444;
+                  background: rgba(239, 68, 68, 0.15);
+                  color: var(--accent-red);
                 }
 
                 &.medium {
-                  background: #fef3c7;
-                  color: #d97706;
+                  background: rgba(245, 158, 11, 0.15);
+                  color: var(--accent-orange);
                 }
 
                 &.low {
-                  background: #e6f4f1;
-                  color: #0b7a6e;
+                  background: var(--accent-green-bg);
+                  color: var(--accent-green);
                 }
               }
 
@@ -1345,7 +1346,7 @@ body {
           font-size: 0.725rem;
           font-weight: 700;
           letter-spacing: 0.08em;
-          color: #0d9488;
+          color: var(--accent-green);
           text-transform: uppercase;
           margin-bottom: 1rem;
         }

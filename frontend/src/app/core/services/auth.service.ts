@@ -46,7 +46,7 @@ export class AuthService {
       this.currentUser.set({
         name: 'Dr. Rahul Sharma',
         email: 'doctor@cliniq.health',
-        designation: 'Senior Cardiologist'
+        designation: 'Senior Cardiologist (ID: D-26801)'
       });
     } else {
       this.currentUser.set({
