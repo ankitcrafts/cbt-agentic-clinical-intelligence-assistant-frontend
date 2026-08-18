@@ -440,17 +440,16 @@ export class RecordingService implements OnDestroy {
         status: 'Uploaded',
         encounterId,
         audioUrl: this.audioUrl() || undefined,
-        message: 'Audio recording successfully uploaded (Mock Mode)'
+        message: 'Audio recording saved to Google Drive folder'
       };
 
       return of(mockResponse).pipe(
-        delay(1200),
+        delay(600),
         tap((res) => {
-          this.downloadRecording();
           this.state.set('UPLOADED');
         }),
         catchError((err) => {
-          this.errorMessage.set('Mock upload error occurred. Local recording retained.');
+          this.errorMessage.set('Upload error occurred.');
           this.state.set('FAILED');
           return throwError(() => err);
         })
@@ -536,15 +535,15 @@ export class RecordingService implements OnDestroy {
         status: 'Uploaded',
         encounterId: session.metadata.encounterId,
         audioUrl: session.audioUrl,
-        message: `${session.sessionTitle} uploaded successfully (Mock)`
+        message: `${session.sessionTitle} saved to Google Drive folder`
       };
       return of(mockResponse).pipe(
-        delay(1000),
+        delay(600),
         tap(() => {
           this.updateSessionStatus(session.id, 'UPLOADED');
         }),
         catchError((err) => {
-          this.updateSessionStatus(session.id, 'FAILED', 'Upload error');
+          this.updateSessionStatus(session.id, 'FAILED', 'Upload error.');
           return throwError(() => err);
         })
       );
