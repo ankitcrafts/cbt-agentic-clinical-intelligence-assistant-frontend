@@ -1044,18 +1044,35 @@ body {
             .waveform-dots {
               display: flex;
               align-items: center;
-              gap: 5px;
-              height: 16px;
+              gap: 4px;
+              height: 20px;
 
               .wave-dot {
                 flex: 1;
                 height: 6px;
                 border-radius: 3px;
-                background: #2dd4bf;
+                background: rgba(45, 212, 191, 0.4);
+                transition: height 0.2s ease, background 0.3s ease;
 
-                &:nth-child(3n) { height: 14px; }
-                &:nth-child(4n) { height: 10px; }
+                &:nth-child(3n) { height: 12px; }
+                &:nth-child(4n) { height: 8px; }
                 &:nth-child(5n) { height: 16px; }
+              }
+
+              &.recording-anim .wave-dot {
+                background: #2dd4bf;
+                animation: waveBounce 1.2s infinite ease-in-out alternate;
+
+                &:nth-child(2n) { animation-delay: 0.1s; }
+                &:nth-child(3n) { animation-delay: 0.25s; }
+                &:nth-child(4n) { animation-delay: 0.4s; }
+                &:nth-child(5n) { animation-delay: 0.15s; }
+                &:nth-child(7n) { animation-delay: 0.35s; }
+              }
+
+              &.paused-anim .wave-dot {
+                background: rgba(245, 158, 11, 0.6);
+                animation: none;
               }
             }
 
@@ -1067,20 +1084,27 @@ body {
 
               .progress-fill-line {
                 height: 100%;
-                background: #2dd4bf;
+                background: linear-gradient(90deg, #0d9488 0%, #2dd4bf 100%);
                 border-radius: 2px;
                 position: relative;
+                transition: width 0.3s linear;
 
                 .scrubber-handle {
-                  width: 12px;
-                  height: 12px;
+                  width: 14px;
+                  height: 14px;
                   border-radius: 50%;
                   background: #ffffff;
                   position: absolute;
-                  right: -6px;
+                  right: -7px;
                   top: 50%;
                   transform: translateY(-50%);
-                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+                  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+                  transition: transform 0.2s ease;
+
+                  &.pulse-handle {
+                    box-shadow: 0 0 0 6px rgba(45, 212, 191, 0.35);
+                    animation: handlePulse 1.5s infinite;
+                  }
                 }
               }
             }
@@ -1389,6 +1413,33 @@ body {
     .workspace-grid {
       grid-template-columns: 1fr;
     }
+  }
+}
+
+@keyframes waveBounce {
+  0% {
+    height: 4px;
+    opacity: 0.5;
+  }
+  50% {
+    height: 18px;
+    opacity: 1;
+  }
+  100% {
+    height: 6px;
+    opacity: 0.7;
+  }
+}
+
+@keyframes handlePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(45, 212, 191, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(45, 212, 191, 0);
   }
 }
 

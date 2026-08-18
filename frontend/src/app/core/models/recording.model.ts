@@ -27,3 +27,18 @@ export interface RecordingUploadResponse {
   audioUrl?: string;
   message?: string;
 }
+
+export interface RecordedSessionItem {
+  id: string;
+  sessionNumber: number;
+  sessionTitle: string;
+  durationSeconds: number;
+  formattedDuration: string;
+  timestamp: string;
+  recordedBlob: Blob;
+  recordedFile: File;
+  audioUrl: string;
+  metadata: RecordingSessionMetadata;
+  status: 'READY' | 'UPLOADING' | 'UPLOADED' | 'FAILED';
+  errorMessage?: string;
+}

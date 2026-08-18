@@ -15,8 +15,8 @@
       <div class="session-recording-box">
         <div class="recording-top-row">
           <div class="recording-meta">
-            <h3 class="box-title">Session Recording</h3>
-            <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · {{ currentState === 'RECORDING' || currentState === 'PAUSED' ? formattedTimer : visitDetails.duration }}</span>
+            <h3 class="box-title">{{ recordingService.sessionTitle() }}</h3>
+            <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · Max: 20 min</span>
           </div>
           <div class="live-pill" [class.paused]="currentState === 'PAUSED'" [class.stopped]="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED'">
             <span class="live-dot" [class.paused-dot]="currentState === 'PAUSED'"></span>
@@ -29,18 +29,18 @@
         <!-- Waveform Progress Bar -->
         <div class="waveform-progress-bar">
           <div class="audio-waveform-line">
-            <div class="waveform-dots" [class.recording-anim]="currentState === 'RECORDING'">
-              <span *ngFor="let i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]" class="wave-dot"></span>
+            <div class="waveform-dots" [class.recording-anim]="currentState === 'RECORDING'" [class.paused-anim]="currentState === 'PAUSED'">
+              <span *ngFor="let i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]" class="wave-dot"></span>
             </div>
             <div class="progress-track-bg">
-              <div class="progress-fill-line" [style.width]="currentState === 'RECORDING' || currentState === 'PAUSED' ? '100%' : '62%'">
-                <span class="scrubber-handle"></span>
+              <div class="progress-fill-line" [style.width]="progressPercent + '%'">
+                <span class="scrubber-handle" [class.pulse-handle]="currentState === 'RECORDING'"></span>
               </div>
             </div>
           </div>
           <div class="time-readout font-mono">
-            <span>{{ currentState === 'IDLE' ? '00:00' : formattedTimer }}</span>
-            <span>{{ recordingService.sessionMetadata()?.fileName || '18:42' }}</span>
+            <span>{{ formattedTimer }}</span>
+            <span>20:00</span>
           </div>
         </div>
 
@@ -103,7 +103,7 @@
         </div>
 
         <!-- Hidden Audio Player element for playback -->
-        <audio #audioPlayer *ngIf="recordingService.audioUrl()" [src]="recordingService.audioUrl()" (ended)="onAudioEnded()" style="display: none;"></audio>
+        <audio #audioPlayer [src]="activePlayingAudioUrl || recordingService.audioUrl()" (ended)="onAudioEnded()" style="display: none;"></audio>
 
         <!-- Status & Error Feedback Banner -->
         <div class="recording-feedback-msg" *ngIf="recordingService.errorMessage()" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.8rem;">
@@ -111,6 +111,53 @@
         </div>
         <div class="recording-feedback-msg" *ngIf="currentState === 'UPLOADED'" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; font-size: 0.8rem;">
           <i class="fa-solid fa-circle-check"></i> Recording successfully uploaded to backend contract. Storage-agnostic payload ready.
+        </div>
+
+        <!-- Recorded Sessions History List (Multiple Sessions) -->
+        <div class="recorded-sessions-history" *ngIf="recordedSessions.length > 0" style="margin-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 1rem;">
+          <div class="history-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+            <span style="font-size: 0.825rem; font-weight: 700; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i class="fa-solid fa-list-check"></i> Recorded Sessions List ({{ recordedSessions.length }})
+            </span>
+            <button type="button" class="btn-play-pause" *ngIf="hasPendingUploads" (click)="uploadAllSessions()" style="font-size: 0.75rem; padding: 0.3rem 0.75rem; background: rgba(45, 212, 191, 0.2); border-color: rgba(45, 212, 191, 0.4);">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Upload All Sessions
+            </button>
+          </div>
+
+          <div class="sessions-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto;">
+            <div class="session-item-row" *ngFor="let s of recordedSessions" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.85rem; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
+              <div class="item-left" style="display: flex; flex-direction: column; gap: 0.15rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-weight: 600; font-size: 0.85rem; color: #ffffff;">{{ s.sessionTitle }}</span>
+                  <span style="font-size: 0.7rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 600;" 
+                        [style.background]="s.status === 'UPLOADED' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(45, 212, 191, 0.2)'"
+                        [style.color]="s.status === 'UPLOADED' ? '#6ee7b7' : '#2dd4bf'">
+                    {{ s.status === 'UPLOADED' ? 'Uploaded' : (s.status === 'UPLOADING' ? 'Uploading...' : 'Ready') }}
+                  </span>
+                </div>
+                <span style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.65);">
+                  Duration: {{ s.formattedDuration }} &bull; Recorded: {{ s.timestamp }} &bull; {{ s.metadata.fileName }}
+                </span>
+              </div>
+
+              <div class="item-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                <!-- Play Preview Button -->
+                <button type="button" class="action-icon-btn" (click)="playSessionPreview(s)" [title]="activePlayingSessionId === s.id && isPlayingPreview ? 'Pause Preview' : 'Play Preview'" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="fa-solid" [class.fa-pause]="activePlayingSessionId === s.id && isPlayingPreview" [class.fa-play]="activePlayingSessionId !== s.id || !isPlayingPreview" style="font-size: 0.75rem;"></i>
+                </button>
+
+                <!-- Download Audio Icon Button -->
+                <button type="button" class="action-icon-btn" (click)="downloadSession(s)" title="Download Audio File" style="background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="fa-solid fa-download" style="font-size: 0.75rem;"></i>
+                </button>
+
+                <!-- Upload Audio Icon Button -->
+                <button type="button" class="action-icon-btn" [disabled]="s.status === 'UPLOADING' || s.status === 'UPLOADED'" (click)="uploadSession(s)" [title]="s.status === 'UPLOADED' ? 'Already Uploaded' : 'Upload Audio to Server'" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="fa-solid" [class.fa-check]="s.status === 'UPLOADED'" [class.fa-cloud-arrow-up]="s.status !== 'UPLOADED'" style="font-size: 0.75rem;"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

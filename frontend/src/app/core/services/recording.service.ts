@@ -8,7 +8,8 @@ import { MockDataService } from './mock-data.service';
 import {
   RecordingState,
   RecordingSessionMetadata,
-  RecordingUploadResponse
+  RecordingUploadResponse,
+  RecordedSessionItem
 } from '../models/recording.model';
 
 @Injectable({
@@ -29,6 +30,9 @@ export class RecordingService implements OnDestroy {
   readonly sessionMetadata = signal<RecordingSessionMetadata | null>(null);
   readonly mimeType = signal<string>('audio/wav');
   readonly selectedFormat = signal<'wav' | 'mp3' | 'webm'>('wav');
+
+  // Recorded Sessions History List
+  readonly recordedSessions = signal<RecordedSessionItem[]>([]);
 
   // Internal Web API References
   private mediaRecorder: MediaRecorder | null = null;
@@ -270,10 +274,25 @@ export class RecordingService implements OnDestroy {
           fileSize: finalBlob.size
         };
 
+        const sessionItem: RecordedSessionItem = {
+          id: `session_${Date.now()}_${this.sessionNumber()}`,
+          sessionNumber: this.sessionNumber(),
+          sessionTitle: this.sessionTitle(),
+          durationSeconds: metadata.durationSeconds,
+          formattedDuration: this.formatDuration(metadata.durationSeconds),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          recordedBlob: finalBlob,
+          recordedFile: file,
+          audioUrl: previewUrl,
+          metadata,
+          status: 'READY'
+        };
+
         this.recordedBlob.set(finalBlob);
         this.recordedFile.set(file);
         this.audioUrl.set(previewUrl);
         this.sessionMetadata.set(metadata);
+        this.recordedSessions.update(list => [...list, sessionItem]);
         this.state.set('READY_TO_UPLOAD');
 
         resolve(finalBlob);
@@ -497,6 +516,74 @@ export class RecordingService implements OnDestroy {
   }
 
   /**
+   * Uploads an individual recorded session item.
+   */
+  uploadSessionItem(session: RecordedSessionItem): Observable<RecordingUploadResponse> {
+    this.updateSessionStatus(session.id, 'UPLOADING');
+
+    const formData = new FormData();
+    formData.append('file', session.recordedFile, session.recordedFile.name);
+    formData.append('encounter_id', session.metadata.encounterId);
+    formData.append('doctor_id', session.metadata.doctorId);
+    formData.append('patient_id', session.metadata.patientId);
+    formData.append('recording_started_at', session.metadata.recordingStartedAt);
+    formData.append('recording_ended_at', session.metadata.recordingEndedAt);
+    formData.append('duration_seconds', session.metadata.durationSeconds.toString());
+
+    if (environment.useMockUpload) {
+      const mockResponse: RecordingUploadResponse = {
+        id: `REC-${Date.now()}`,
+        status: 'Uploaded',
+        encounterId: session.metadata.encounterId,
+        audioUrl: session.audioUrl,
+        message: `${session.sessionTitle} uploaded successfully (Mock)`
+      };
+      return of(mockResponse).pipe(
+        delay(1000),
+        tap(() => {
+          this.updateSessionStatus(session.id, 'UPLOADED');
+        }),
+        catchError((err) => {
+          this.updateSessionStatus(session.id, 'FAILED', 'Upload error');
+          return throwError(() => err);
+        })
+      );
+    }
+
+    const url = `${environment.apiBaseUrl}${environment.recordingEndpoint}`;
+    return this.http.post<RecordingUploadResponse>(url, formData).pipe(
+      tap(() => {
+        this.updateSessionStatus(session.id, 'UPLOADED');
+      }),
+      catchError((error) => {
+        const errorMsg = error.error?.detail || error.message || 'Upload failed.';
+        this.updateSessionStatus(session.id, 'FAILED', errorMsg);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Downloads an individual recorded session item.
+   */
+  downloadSessionItem(session: RecordedSessionItem): void {
+    if (!session.audioUrl || typeof document === 'undefined') return;
+    const a = document.createElement('a');
+    a.href = session.audioUrl;
+    a.download = session.metadata.fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  /**
+   * Updates status of a session item in history list.
+   */
+  updateSessionStatus(id: string, status: 'READY' | 'UPLOADING' | 'UPLOADED' | 'FAILED', errorMsg?: string): void {
+    this.recordedSessions.update(list => list.map(item => item.id === id ? { ...item, status, errorMessage: errorMsg } : item));
+  }
+
+  /**
    * Resets recording state and cleans up resources.
    */
   resetState(): void {
@@ -506,18 +593,29 @@ export class RecordingService implements OnDestroy {
     this.errorMessage.set(null);
     this.recordedBlob.set(null);
     this.recordedFile.set(null);
-    if (this.audioUrl()) {
-      URL.revokeObjectURL(this.audioUrl()!);
-      this.audioUrl.set(null);
-    }
     this.sessionMetadata.set(null);
+    this.sessionNumber.update(num => num + 1);
+    this.sessionTitle.set(`Session ${this.sessionNumber()}`);
   }
+
+  // Maximum duration per recording: 20 minutes (1200 seconds)
+  readonly MAX_DURATION_SECONDS = 1200;
+  
+  // Session tracking signal (e.g. Session 1, Session 2, etc.)
+  readonly sessionNumber = signal<number>(1);
+  readonly sessionTitle = signal<string>('Session 1');
 
   private startTimer(): void {
     this.stopTimer();
     this.timerInterval = setInterval(() => {
       if (this.state() === 'RECORDING') {
-        this.durationSeconds.update((s) => s + 1);
+        const nextDuration = this.durationSeconds() + 1;
+        this.durationSeconds.set(nextDuration);
+
+        // Auto-stop when reaching max 20 minutes (1200s)
+        if (nextDuration >= this.MAX_DURATION_SECONDS) {
+          this.stopRecording();
+        }
       }
     }, 1000);
   }

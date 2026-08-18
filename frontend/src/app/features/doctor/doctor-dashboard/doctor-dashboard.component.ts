@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { RecordingService } from '../../../core/services/recording.service';
+import { RecordedSessionItem } from '../../../core/models/recording.model';
 
 @Component({
   selector: 'app-doctor-dashboard',
@@ -19,6 +20,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
 
   isPlayingPreview = false;
+  activePlayingSessionId: string | null = null;
+  activePlayingAudioUrl: string | null = null;
 
   visitDetails = {
     patientName: 'Marcus Delgado',
@@ -215,8 +218,44 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  playSessionPreview(session: RecordedSessionItem): void {
+    const audioEl = this.audioPlayerRef?.nativeElement;
+    if (!audioEl) return;
+
+    if (this.activePlayingSessionId === session.id && this.isPlayingPreview) {
+      audioEl.pause();
+      this.isPlayingPreview = false;
+      this.activePlayingSessionId = null;
+    } else {
+      this.activePlayingSessionId = session.id;
+      this.activePlayingAudioUrl = session.audioUrl;
+      setTimeout(() => {
+        audioEl.play().then(() => {
+          this.isPlayingPreview = true;
+        }).catch(err => console.error('Playback error:', err));
+      }, 50);
+    }
+  }
+
+  downloadSession(session: RecordedSessionItem): void {
+    this.recordingService.downloadSessionItem(session);
+  }
+
+  uploadSession(session: RecordedSessionItem): void {
+    this.recordingService.uploadSessionItem(session).subscribe({
+      next: (res) => console.log('Session upload success:', res),
+      error: (err) => console.error('Session upload error:', err)
+    });
+  }
+
+  uploadAllSessions(): void {
+    const pending = this.recordingService.recordedSessions().filter(s => s.status !== 'UPLOADED');
+    pending.forEach(s => this.uploadSession(s));
+  }
+
   onAudioEnded(): void {
     this.isPlayingPreview = false;
+    this.activePlayingSessionId = null;
   }
 
   dismissQuestion(id: number) {
@@ -229,5 +268,19 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   get formattedTimer(): string {
     return this.recordingService.formatDuration(this.recordingService.durationSeconds());
+  }
+
+  get progressPercent(): number {
+    const current = this.recordingService.durationSeconds();
+    const max = this.recordingService.MAX_DURATION_SECONDS || 1200;
+    return Math.min(100, Math.max(0, (current / max) * 100));
+  }
+
+  get recordedSessions(): RecordedSessionItem[] {
+    return this.recordingService.recordedSessions();
+  }
+
+  get hasPendingUploads(): boolean {
+    return this.recordedSessions.some(s => s.status !== 'UPLOADED');
   }
 }

@@ -10,10 +10,13 @@
     </div>
 
     <div class="recording-status-box">
+      <div class="session-badge" style="margin-bottom: 0.5rem; font-weight: 700; color: #2dd4bf; letter-spacing: 0.5px; font-size: 0.95rem;">
+        {{ recordingService.sessionTitle() }} &bull; Max 20 min
+      </div>
       <span class="status-label">
         {{ currentState === 'RECORDING' ? 'Recording Live' : (currentState === 'PAUSED' ? 'Recording Paused' : (currentState === 'UPLOADING' ? 'Uploading Recording...' : (currentState === 'UPLOADED' ? 'Uploaded' : (currentState === 'FAILED' ? 'Recording Failed' : 'Ready to Record')))) }}
       </span>
-      <div class="timer-display">{{ formattedTime }}</div>
+      <div class="timer-display">{{ formattedTime }} <span style="font-size: 1rem; opacity: 0.6; font-weight: 400;">/ 20:00</span></div>
 
       <!-- Animated Audio Waveform Visualizer -->
       <div class="waveform-container" [class.paused]="isPaused">
