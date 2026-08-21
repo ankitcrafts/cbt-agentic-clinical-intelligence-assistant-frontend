@@ -52,6 +52,15 @@ describe('RecordingService', () => {
     expect(service.getFileExtension('audio/mp4')).toBe('mp4');
     expect(service.getFileExtension('audio/ogg;codecs=opus')).toBe('ogg');
     expect(service.getFileExtension('audio/wav')).toBe('wav');
+    expect(service.getFileExtension('audio/mpeg')).toBe('mp3');
+  });
+
+  it('should update selected audio format correctly', () => {
+    expect(service.selectedFormat()).toBe('wav');
+    service.setTargetFormat('mp3');
+    expect(service.selectedFormat()).toBe('mp3');
+    service.setTargetFormat('webm');
+    expect(service.selectedFormat()).toBe('webm');
   });
 
   it('should handle permission denial gracefully during startRecording', async () => {

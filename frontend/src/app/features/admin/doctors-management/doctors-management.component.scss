@@ -11,7 +11,7 @@
       font-family: var(--heading-font);
       font-size: 1.5rem;
       font-weight: 700;
-      color: var(--primary-dark);
+      color: var(--text-main);
     }
 
     .subtitle {
@@ -64,7 +64,8 @@
           height: 28px;
           border-radius: var(--radius-sm);
           border: 1px solid var(--border-color);
-          background: #ffffff;
+          background: var(--card-bg);
+          color: var(--text-main);
           font-size: 0.75rem;
           cursor: pointer;
 
@@ -87,7 +88,7 @@
 
       &:hover {
         color: var(--accent-blue);
-        background: #e0f2fe;
+        background: var(--cliniq-teal-bg);
       }
     }
   }
@@ -109,7 +110,9 @@
     .modal-card {
       width: 100%;
       max-width: 460px;
-      background: #ffffff;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
       padding: 1.5rem;
 
       .modal-header {

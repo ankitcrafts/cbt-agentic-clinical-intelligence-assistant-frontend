@@ -1,22 +1,228 @@
-<div class="cliniq-consultation-page">
-  <!-- Title & Visit Header -->
-  <div class="page-title-header">
-    <h1 class="main-title serif-title">Consultation Support</h1>
-    <p class="subtitle">
-      Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.reason }}
-    </p>
+<!-- VIEW 1: PATIENTS QUEUE LIST (Before Consultation Support) -->
+<div class="cliniq-patient-queue-page" *ngIf="viewMode === 'queue'">
+  <!-- Queue Header -->
+  <div class="queue-page-header">
+    <div class="header-left">
+      <h1 class="main-title serif-title">Patient Consultations Queue</h1>
+      <p class="subtitle">
+        Welcome, Dr. Yuki Tanaka · Today: Aug 13, 2026 · {{ totalAppointmentsCount }} Consultations Scheduled
+      </p>
+    </div>
+    <div class="header-right">
+      <span class="live-clock-badge">
+        <i class="fa-regular fa-clock"></i> Live Queue Updated
+      </span>
+    </div>
   </div>
 
-  <!-- 2-Column Main Workspace -->
+  <!-- KPI Summary Stats Cards -->
+  <div class="queue-stats-grid">
+    <div class="stat-kpi-card">
+      <div class="kpi-icon-wrap" style="background: rgba(13, 148, 136, 0.12); color: #0d9488;">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-val font-mono">{{ totalAppointmentsCount }}</span>
+        <span class="kpi-label">Today's Total</span>
+      </div>
+    </div>
+
+    <div class="stat-kpi-card">
+      <div class="kpi-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+        <i class="fa-solid fa-hourglass-half"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-val font-mono">{{ waitingCount }}</span>
+        <span class="kpi-label">Waiting in Queue</span>
+      </div>
+    </div>
+
+    <div class="stat-kpi-card">
+      <div class="kpi-icon-wrap" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+        <i class="fa-solid fa-stethoscope"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-val font-mono">{{ inProgressCount }}</span>
+        <span class="kpi-label">Active / In Progress</span>
+      </div>
+    </div>
+
+    <div class="stat-kpi-card">
+      <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-val font-mono">{{ completedCount }}</span>
+        <span class="kpi-label">Completed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="queue-filter-bar">
+    <div class="search-input-wrap">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Search patient by name, PID, or medical reason..." 
+        [(ngModel)]="searchTerm"
+      />
+      <button class="clear-search-btn" *ngIf="searchTerm" (click)="searchTerm = ''">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="status-filter-pills">
+      <button 
+        type="button" 
+        class="filter-pill-btn" 
+        [class.active]="statusFilter === 'ALL'" 
+        (click)="statusFilter = 'ALL'"
+      >
+        All ({{ totalAppointmentsCount }})
+      </button>
+      <button 
+        type="button" 
+        class="filter-pill-btn" 
+        [class.active]="statusFilter === 'IN_PROGRESS'" 
+        (click)="statusFilter = 'IN_PROGRESS'"
+      >
+        In Progress ({{ inProgressCount }})
+      </button>
+      <button 
+        type="button" 
+        class="filter-pill-btn" 
+        [class.active]="statusFilter === 'WAITING'" 
+        (click)="statusFilter = 'WAITING'"
+      >
+        Waiting ({{ waitingCount }})
+      </button>
+      <button 
+        type="button" 
+        class="filter-pill-btn" 
+        [class.active]="statusFilter === 'COMPLETED'" 
+        (click)="statusFilter = 'COMPLETED'"
+      >
+        Completed ({{ completedCount }})
+      </button>
+    </div>
+  </div>
+
+  <!-- Patient Queue Cards List -->
+  <div class="queue-cards-list">
+    <div 
+      class="patient-queue-card" 
+      *ngFor="let p of filteredPatients"
+      [class.active-highlight]="p.status === 'IN_PROGRESS'"
+      [class.completed-card]="p.status === 'COMPLETED'"
+    >
+      <div class="card-left-section">
+        <div class="patient-avatar-box" [class.active-avatar]="p.status === 'IN_PROGRESS'">
+          <span>{{ p.initials }}</span>
+        </div>
+
+        <div class="patient-primary-meta">
+          <div class="name-row">
+            <h3 class="patient-name">{{ p.name }}</h3>
+            <span class="demographics-tag">{{ p.age }}y &bull; {{ p.gender }}</span>
+            <span class="pid-badge">PID: {{ p.id }}</span>
+          </div>
+
+          <div class="visit-details-row">
+            <span class="time-slot"><i class="fa-regular fa-clock"></i> {{ p.time }}</span>
+            <span class="dot-divider">&bull;</span>
+            <span class="visit-type">{{ p.visitType }}</span>
+            <span class="dot-divider">&bull;</span>
+            <span class="reason-text">{{ p.reason }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-mid-vitals">
+        <div class="vital-pill">
+          <span class="vital-lbl">BP</span>
+          <span class="vital-val font-mono">{{ p.vitals.bp }}</span>
+        </div>
+        <div class="vital-pill">
+          <span class="vital-lbl">HR</span>
+          <span class="vital-val font-mono">{{ p.vitals.hr }}</span>
+        </div>
+        <div class="vital-pill" *ngIf="p.vitals.pain !== '0/10'">
+          <span class="vital-lbl">Pain</span>
+          <span class="vital-val font-mono">{{ p.vitals.pain }}</span>
+        </div>
+      </div>
+
+      <div class="card-right-actions">
+        <span 
+          class="queue-status-badge"
+          [class.status-in-progress]="p.status === 'IN_PROGRESS'"
+          [class.status-waiting]="p.status === 'WAITING'"
+          [class.status-scheduled]="p.status === 'SCHEDULED'"
+          [class.status-completed]="p.status === 'COMPLETED'"
+        >
+          <span class="status-dot"></span>
+          {{ p.statusLabel }}
+        </span>
+
+        <button 
+          type="button" 
+          class="btn-start-consult" 
+          [class.primary-btn]="p.status !== 'COMPLETED'"
+          (click)="openConsultation(p)"
+        >
+          <i class="fa-solid" [class.fa-stethoscope]="p.status !== 'COMPLETED'" [class.fa-eye]="p.status === 'COMPLETED'"></i>
+          <span>{{ p.status === 'IN_PROGRESS' ? 'Open Active Support' : (p.status === 'COMPLETED' ? 'View SOAP Note' : 'Start Consultation') }}</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty search state -->
+    <div class="empty-search-state" *ngIf="filteredPatients.length === 0">
+      <i class="fa-solid fa-user-slash empty-icon"></i>
+      <h4>No patients match the search or filter</h4>
+      <p>Try resetting the search keyword or switching filters.</p>
+      <button class="filter-pill-btn" (click)="searchTerm = ''; statusFilter = 'ALL'">Reset Filters</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW 2: DOCTOR CONSULTATION SUPPORT WORKSPACE -->
+<div class="cliniq-consultation-page" *ngIf="viewMode === 'consultation'">
+  <!-- Title & Visit Header with Back Navigation and Live Session Indicator -->
+  <div class="page-title-header">
+    <div class="title-left-group">
+      <div class="header-nav-row" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+        <button type="button" class="btn-back-queue" (click)="backToQueue()" title="Return to Patient Consultations Queue">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Patient Queue</span>
+        </button>
+        <span style="color: var(--text-muted); font-size: 0.85rem;">/</span>
+        <span style="color: var(--accent-green); font-size: 0.85rem; font-weight: 600;">Active Consultation</span>
+      </div>
+      <h1 class="main-title serif-title">Consultation Support</h1>
+      <p class="subtitle">
+        Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.reason }}
+      </p>
+    </div>
+    <div class="live-session-indicator">
+      <span class="live-pulse-dot"></span>
+      <span class="live-label">Live session</span>
+    </div>
+  </div>
+
+  <!-- 2-Column Main Workspace Grid -->
   <div class="workspace-grid">
     <!-- LEFT COLUMN -->
     <div class="workspace-col-left">
-      <!-- 1. Session Recording Box -->
+      <!-- 1. Session Recording Box (Preserved Intact) -->
       <div class="session-recording-box">
         <div class="recording-top-row">
           <div class="recording-meta">
-            <h3 class="box-title">Session Recording</h3>
-            <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · {{ currentState === 'RECORDING' || currentState === 'PAUSED' ? formattedTimer : visitDetails.duration }}</span>
+            <h3 class="box-title">{{ recordingService.sessionTitle() }}</h3>
+            <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · Max: 20 min</span>
           </div>
           <div class="live-pill" [class.paused]="currentState === 'PAUSED'" [class.stopped]="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED'">
             <span class="live-dot" [class.paused-dot]="currentState === 'PAUSED'"></span>
@@ -29,73 +235,72 @@
         <!-- Waveform Progress Bar -->
         <div class="waveform-progress-bar">
           <div class="audio-waveform-line">
-            <div class="waveform-dots" [class.recording-anim]="currentState === 'RECORDING'">
-              <span *ngFor="let i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]" class="wave-dot"></span>
+            <div class="waveform-dots" [class.recording-anim]="currentState === 'RECORDING'" [class.paused-anim]="currentState === 'PAUSED'">
+              <span *ngFor="let i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]" class="wave-dot"></span>
             </div>
             <div class="progress-track-bg">
-              <div class="progress-fill-line" [style.width]="currentState === 'RECORDING' || currentState === 'PAUSED' ? '100%' : '62%'">
-                <span class="scrubber-handle"></span>
+              <div class="progress-fill-line" [style.width]="progressPercent + '%'">
+                <span class="scrubber-handle" [class.pulse-handle]="currentState === 'RECORDING'"></span>
               </div>
             </div>
           </div>
           <div class="time-readout font-mono">
-            <span>{{ currentState === 'IDLE' ? '00:00' : formattedTimer }}</span>
-            <span>{{ recordingService.sessionMetadata()?.fileName || '18:42' }}</span>
+            <span>{{ formattedTimer }}</span>
+            <span>20:00</span>
           </div>
         </div>
 
         <!-- Controls Row -->
         <div class="recording-controls-row" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <!-- Start Recording Button (when IDLE or FAILED without file) -->
+          <!-- Start Recording Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || (currentState === 'FAILED' && !recordingService.recordedFile())" (click)="startRecording()">
             <i class="fa-solid fa-microphone"></i>
             <span>Start Recording</span>
           </button>
 
-          <!-- Pause Button (when RECORDING) -->
+          <!-- Pause Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'RECORDING'" (click)="pauseRecording()">
             <i class="fa-solid fa-pause"></i>
             <span>Pause Recording</span>
           </button>
 
-          <!-- Resume Button (when PAUSED) -->
+          <!-- Resume Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'PAUSED'" (click)="resumeRecording()">
             <i class="fa-solid fa-play"></i>
             <span>Resume Recording</span>
           </button>
 
-          <!-- Stop Button (when RECORDING or PAUSED) -->
+          <!-- Stop Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'RECORDING' || currentState === 'PAUSED'" (click)="stopRecording()" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4);">
             <i class="fa-solid fa-square" style="background: #ef4444; color: #fff;"></i>
             <span>Stop Recording</span>
           </button>
 
-          <!-- Preview Playback Button (when audioUrl exists) -->
+          <!-- Preview Playback Button -->
           <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="togglePreviewPlayback()">
             <i class="fa-solid" [class.fa-play]="!isPlayingPreview" [class.fa-pause]="isPlayingPreview"></i>
             <span>{{ isPlayingPreview ? 'Playing preview...' : 'Play Recording Preview' }}</span>
           </button>
 
-          <!-- Download Audio File Button (when audioUrl exists) -->
+          <!-- Download Audio File Button -->
           <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="downloadRecording()" title="Download recorded audio file to local computer">
             <i class="fa-solid fa-download"></i>
             <span>Download Audio</span>
           </button>
 
-
-          <!-- Upload Recording Button (when READY_TO_UPLOAD) -->
+          <!-- Upload Recording Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD'" (click)="uploadRecording()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
             <i class="fa-solid fa-cloud-arrow-up" style="background: #10b981; color: #fff;"></i>
             <span>Upload Recording</span>
           </button>
 
-          <!-- Retry Upload Button (when FAILED with file) -->
+          <!-- Retry Upload Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'FAILED' && recordingService.recordedFile()" (click)="retryUpload()" style="background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4);">
             <i class="fa-solid fa-rotate-right" style="background: #f59e0b; color: #fff;"></i>
             <span>Retry Upload</span>
           </button>
 
-          <!-- Reset / New Session Button (when READY_TO_UPLOAD, UPLOADED, or FAILED) -->
+          <!-- Reset / New Session Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED' || currentState === 'FAILED'" (click)="recordingService.resetState()" style="opacity: 0.8;">
             <i class="fa-solid fa-plus"></i>
             <span>New Session</span>
@@ -103,7 +308,7 @@
         </div>
 
         <!-- Hidden Audio Player element for playback -->
-        <audio #audioPlayer *ngIf="recordingService.audioUrl()" [src]="recordingService.audioUrl()" (ended)="onAudioEnded()" style="display: none;"></audio>
+        <audio #audioPlayer [src]="activePlayingAudioUrl || recordingService.audioUrl()" (ended)="onAudioEnded()" style="display: none;"></audio>
 
         <!-- Status & Error Feedback Banner -->
         <div class="recording-feedback-msg" *ngIf="recordingService.errorMessage()" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.8rem;">
@@ -111,6 +316,48 @@
         </div>
         <div class="recording-feedback-msg" *ngIf="currentState === 'UPLOADED'" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; font-size: 0.8rem;">
           <i class="fa-solid fa-circle-check"></i> Recording successfully uploaded to backend contract. Storage-agnostic payload ready.
+        </div>
+
+        <!-- Recorded Sessions History List (Multiple Sessions) -->
+        <div class="recorded-sessions-history" *ngIf="recordedSessions.length > 0" style="margin-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 1rem;">
+          <div class="history-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+            <span style="font-size: 0.825rem; font-weight: 700; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i class="fa-solid fa-list-check"></i> Recorded Sessions List ({{ recordedSessions.length }})
+            </span>
+            <button type="button" class="btn-play-pause" *ngIf="hasPendingUploads" (click)="uploadAllSessions()" style="font-size: 0.75rem; padding: 0.3rem 0.75rem; background: rgba(45, 212, 191, 0.2); border-color: rgba(45, 212, 191, 0.4);">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Upload All Sessions
+            </button>
+          </div>
+
+          <div class="sessions-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto;">
+            <div class="session-item-row" *ngFor="let s of recordedSessions" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.85rem; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;">
+              <div class="item-left" style="display: flex; flex-direction: column; gap: 0.15rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-weight: 600; font-size: 0.85rem; color: #ffffff;">{{ s.sessionTitle }}</span>
+                  <span style="font-size: 0.7rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 600;" 
+                        [style.background]="s.status === 'UPLOADED' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(45, 212, 191, 0.2)'"
+                        [style.color]="s.status === 'UPLOADED' ? '#6ee7b7' : '#2dd4bf'">
+                    {{ s.status === 'UPLOADED' ? 'Uploaded' : (s.status === 'UPLOADING' ? 'Uploading...' : 'Ready') }}
+                  </span>
+                </div>
+                <span style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.65);">
+                  Duration: {{ s.formattedDuration }} &bull; Recorded: {{ s.timestamp }} &bull; {{ s.metadata.fileName }}
+                </span>
+              </div>
+
+              <div class="item-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                <button type="button" class="action-icon-btn" (click)="playSessionPreview(s)" [title]="activePlayingSessionId === s.id && isPlayingPreview ? 'Pause Preview' : 'Play Preview'" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="fa-solid" [class.fa-pause]="activePlayingSessionId === s.id && isPlayingPreview" [class.fa-play]="activePlayingSessionId !== s.id || !isPlayingPreview" style="font-size: 0.75rem;"></i>
+                </button>
+                <button type="button" class="action-icon-btn" (click)="downloadSession(s)" title="Download Audio File" style="background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="fa-solid fa-download" style="font-size: 0.75rem;"></i>
+                </button>
+                <button type="button" class="action-icon-btn" [disabled]="s.status === 'UPLOADING' || s.status === 'UPLOADED'" (click)="uploadSession(s)" [title]="s.status === 'UPLOADED' ? 'Already Uploaded' : 'Upload Audio to Server'" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="fa-solid" [class.fa-check]="s.status === 'UPLOADED'" [class.fa-cloud-arrow-up]="s.status !== 'UPLOADED'" style="font-size: 0.75rem;"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -139,62 +386,248 @@
       </div>
     </div>
 
-    <!-- RIGHT COLUMN -->
+    <!-- RIGHT COLUMN: 5-Tab Clinical Intelligence Dashboard -->
     <div class="workspace-col-right">
-      <!-- 1. AI Suggested Questions Box -->
-      <div class="cliniq-card ai-suggestions-box">
-        <div class="ai-box-header">
-          <div class="ai-title-group">
-            <span class="ai-sparkle-icon">✨</span>
-            <h3 class="box-title">AI Suggested Questions</h3>
-          </div>
-          <span class="ai-meta">Based on conversation context — {{ aiQuestions.length }} remaining</span>
-        </div>
-
-        <div class="suggestions-list">
-          <div 
-            class="suggestion-card" 
-            *ngFor="let item of aiQuestions"
-            [class]="item.priority"
+      <div class="cliniq-card intelligence-panel-card">
+        <!-- Tab Navigation Bar matching Figma -->
+        <div class="intel-tabs-nav">
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'analysis'" 
+            (click)="setActiveTab('analysis')"
           >
-            <div class="card-top">
-              <span class="priority-tag" [class]="item.priority">{{ item.priorityLabel }}</span>
-              <button class="dismiss-btn" (click)="dismissQuestion(item.id)" title="Dismiss question">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-            <p class="question-text">{{ item.question }}</p>
-            <span class="category-eyebrow">{{ item.tag }}</span>
-          </div>
+            Analysis &amp; Summary
+          </button>
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'clinical'" 
+            (click)="setActiveTab('clinical')"
+          >
+            Clinical Decision
+          </button>
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'medicines'" 
+            (click)="setActiveTab('medicines')"
+          >
+            Medicines
+          </button>
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'confidence'" 
+            (click)="setActiveTab('confidence')"
+          >
+            Confidence
+          </button>
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'soap'" 
+            (click)="setActiveTab('soap')"
+          >
+            SOAP Report
+          </button>
         </div>
-      </div>
 
-      <!-- 2. Patient Snapshot Box -->
-      <div class="cliniq-card patient-snapshot-box">
-        <h4 class="snapshot-header">PATIENT SNAPSHOT</h4>
-        <div class="snapshot-list">
-          <div class="snapshot-row">
-            <span class="label">Condition</span>
-            <span class="val font-semibold">{{ patientSnapshot.condition }}</span>
+        <!-- Tab Body Content -->
+        <div class="intel-tab-content-area">
+          <!-- TAB 1: Analysis & Summary -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'analysis'">
+            <!-- Clinical Summary Section -->
+            <div class="intel-section">
+              <span class="eyebrow-tag">CLINICAL SUMMARY</span>
+              <div class="summary-narrative-card">
+                <p class="summary-text">{{ clinicalSummary }}</p>
+              </div>
+            </div>
+
+            <!-- Key Findings Section -->
+            <div class="intel-section">
+              <span class="eyebrow-tag">KEY FINDINGS</span>
+              <div class="key-findings-grid">
+                <div class="finding-card" *ngFor="let item of keyFindings">
+                  <span class="finding-label">{{ item.label }}</span>
+                  <span class="finding-val">{{ item.value }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Identified Issues Section -->
+            <div class="intel-section">
+              <span class="eyebrow-tag">IDENTIFIED ISSUES</span>
+              <div class="identified-issues-list">
+                <div class="issue-item-card" *ngFor="let issue of identifiedIssues" [class]="'issue-' + issue.type">
+                  <span class="issue-bullet" [style.color]="issue.dotColor">●</span>
+                  <span class="issue-text">{{ issue.text }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="snapshot-row">
-            <span class="label">Current Rx</span>
-            <span class="val">{{ patientSnapshot.currentRx }}</span>
+
+          <!-- TAB 2: Clinical Decision -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
+            <!-- Differential Diagnosis Ranking -->
+            <div class="intel-section">
+              <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
+              <div class="differential-ranking-list">
+                <div class="diff-diag-card" *ngFor="let diag of differentialDiagnoses">
+                  <div class="diag-header-row">
+                    <div class="diag-title-group">
+                      <span class="rank-circle">{{ diag.rank }}</span>
+                      <span class="diag-title">{{ diag.title }}</span>
+                      <span class="icd-tag">{{ diag.icdCode }}</span>
+                    </div>
+                    <div class="diag-meta-right">
+                      <span class="risk-pill" [class]="diag.risk">{{ diag.riskLabel }}</span>
+                    </div>
+                  </div>
+
+                  <div class="diag-progress-row">
+                    <div class="progress-track">
+                      <div class="progress-bar-fill" [style.width]="diag.percentage + '%'" [style.background]="diag.color"></div>
+                    </div>
+                    <span class="percentage-readout font-mono">{{ diag.percentage }}%</span>
+                  </div>
+
+                  <p class="diag-desc">{{ diag.description }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Clinical Red Flags Section -->
+            <div class="intel-section">
+              <span class="eyebrow-tag red-eyebrow">CLINICAL RED FLAGS</span>
+              <div class="red-flag-alert-box" *ngFor="let flag of clinicalRedFlags">
+                <div class="flag-top">
+                  <span class="critical-badge">{{ flag.tag }}</span>
+                  <span class="flag-title">{{ flag.title }}</span>
+                </div>
+                <div class="flag-action">&rarr; {{ flag.action }}</div>
+              </div>
+            </div>
           </div>
-          <div class="snapshot-row">
-            <span class="label">Last visit</span>
-            <span class="val">{{ patientSnapshot.lastVisit }}</span>
+
+          <!-- TAB 3: Medicines -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'medicines'">
+            <div class="medicines-rag-sub">
+              <span class="rag-dot">●</span>
+              <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
+            </div>
+
+            <div class="medicines-list">
+              <div class="med-card" *ngFor="let med of guidelineMedicines">
+                <div class="med-top-row">
+                  <div class="med-name-group">
+                    <span class="med-name">{{ med.name }}</span>
+                    <span class="med-class-tag">{{ med.drugClass }}</span>
+                  </div>
+                  <div class="med-grade-group">
+                    <span class="med-grade">{{ med.grade }}</span>
+                    <span class="med-source">{{ med.source }}</span>
+                  </div>
+                </div>
+
+                <div class="med-dosage-line">{{ med.dosage }}</div>
+                <p class="med-recommendation">{{ med.recommendation }}</p>
+
+                <div class="med-warning-box">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span>{{ med.warning }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="snapshot-row">
-            <span class="label">BP at last visit</span>
-            <span class="val font-mono font-semibold">{{ patientSnapshot.bpAtLastVisit }}</span>
+
+          <!-- TAB 4: Confidence -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
+            <div class="confidence-overview-card">
+              <div class="score-circle">
+                <span class="score-val">{{ confidenceMetrics.overallScore }}%</span>
+                <span class="score-lbl">AI Reliability</span>
+              </div>
+              <div class="overview-info">
+                <h4>{{ confidenceMetrics.overallLevel }}</h4>
+                <p>Fully calibrated against peer-reviewed clinical knowledge bases and medical guideline vector embeddings.</p>
+                <div class="confidence-badge-row">
+                  <span class="hallucination-pill">
+                    <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ confidenceMetrics.hallucinationRisk }}
+                  </span>
+                  <span class="verified-pill">
+                    <i class="fa-solid fa-circle-check"></i> {{ confidenceMetrics.guidelinesCited.length }} Guidelines Verified
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="intel-section" style="margin-top: 1.5rem;">
+              <span class="eyebrow-tag">PIPELINE ACCURACY BREAKDOWN</span>
+              <div class="confidence-breakdown-list">
+                <div class="breakdown-item" *ngFor="let p of confidenceMetrics.pipeline">
+                  <div class="breakdown-item-header">
+                    <span class="item-name">{{ p.name }}</span>
+                    <span class="item-score font-mono">{{ p.score }}% <span class="status-tag">({{ p.status }})</span></span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-bar-fill" [style.width]="p.score + '%'"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="intel-section" style="margin-top: 1.5rem;">
+              <span class="eyebrow-tag">EVIDENCE CITATION REPOSITORY</span>
+              <div class="sources-tags-wrap">
+                <span class="source-tag" *ngFor="let g of confidenceMetrics.guidelinesCited">
+                  <i class="fa-solid fa-book-medical"></i> {{ g }}
+                </span>
+              </div>
+            </div>
           </div>
-          <div class="snapshot-row">
-            <span class="label">Next follow-up</span>
-            <span class="val">{{ patientSnapshot.nextFollowUp }}</span>
+
+          <!-- TAB 5: SOAP Report -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'soap'">
+            <div class="soap-preview-container">
+              <div class="soap-box subjective">
+                <div class="letter-badge">S</div>
+                <div class="soap-text-block">
+                  <h4>Subjective</h4>
+                  <p>{{ soapReportData.subjective }}</p>
+                </div>
+              </div>
+
+              <div class="soap-box objective">
+                <div class="letter-badge">O</div>
+                <div class="soap-text-block">
+                  <h4>Objective</h4>
+                  <p>{{ soapReportData.objective }}</p>
+                </div>
+              </div>
+
+              <div class="soap-box assessment">
+                <div class="letter-badge">A</div>
+                <div class="soap-text-block">
+                  <h4>Assessment</h4>
+                  <p style="white-space: pre-line;">{{ soapReportData.assessment }}</p>
+                </div>
+              </div>
+
+              <div class="soap-box plan">
+                <div class="letter-badge">P</div>
+                <div class="soap-text-block">
+                  <h4>Plan</h4>
+                  <p style="white-space: pre-line;">{{ soapReportData.plan }}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+

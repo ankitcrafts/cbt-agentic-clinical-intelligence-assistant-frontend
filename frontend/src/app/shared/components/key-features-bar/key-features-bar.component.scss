@@ -155,8 +155,8 @@
             .badge-required {
               font-size: 0.7rem;
               font-weight: 600;
-              background: #e6f4f1;
-              color: #0b7a6e;
+              background: var(--accent-green-bg);
+              color: var(--accent-green);
               padding: 0.15rem 0.5rem;
               border-radius: 9999px;
             }

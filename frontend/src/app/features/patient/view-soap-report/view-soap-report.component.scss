@@ -64,26 +64,26 @@
         }
 
         &.subjective {
-          background: #f0f9ff;
-          border-color: #bae6fd;
+          background: rgba(2, 132, 199, 0.08);
+          border-color: rgba(2, 132, 199, 0.25);
           .letter-badge { background: #0284c7; }
         }
 
         &.objective {
-          background: #f0fdf4;
-          border-color: #bbf7d0;
+          background: rgba(16, 185, 129, 0.08);
+          border-color: rgba(16, 185, 129, 0.25);
           .letter-badge { background: #10b981; }
         }
 
         &.assessment {
-          background: #fffbeb;
-          border-color: #fde68a;
+          background: rgba(245, 158, 11, 0.08);
+          border-color: rgba(245, 158, 11, 0.25);
           .letter-badge { background: #f59e0b; }
         }
 
         &.plan {
-          background: #faf5ff;
-          border-color: #e9d5ff;
+          background: rgba(139, 92, 246, 0.08);
+          border-color: rgba(139, 92, 246, 0.25);
           .letter-badge { background: #8b5cf6; }
         }
       }

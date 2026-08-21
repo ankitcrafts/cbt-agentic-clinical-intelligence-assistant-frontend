@@ -34,7 +34,7 @@
       .progress-bar-container {
         flex: 1;
         height: 10px;
-        background: #e2e8f0;
+        background: var(--border-color);
         border-radius: var(--radius-full);
         overflow: hidden;
 
@@ -74,8 +74,8 @@
           font-size: 0.75rem;
           color: var(--text-light);
 
-          &.completed { background: #d1fae5; color: #10b981; }
-          &.in-progress { background: #fef3c7; color: #f59e0b; }
+          &.completed { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+          &.in-progress { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
         }
 
         .step-title {
