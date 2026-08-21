@@ -1,17 +1,23 @@
 <div class="cliniq-consultation-page">
-  <!-- Title & Visit Header -->
+  <!-- Title & Visit Header with Live Session Indicator -->
   <div class="page-title-header">
-    <h1 class="main-title serif-title">Consultation Support</h1>
-    <p class="subtitle">
-      Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.reason }}
-    </p>
+    <div class="title-left-group">
+      <h1 class="main-title serif-title">Consultation Support</h1>
+      <p class="subtitle">
+        Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.reason }}
+      </p>
+    </div>
+    <div class="live-session-indicator">
+      <span class="live-pulse-dot"></span>
+      <span class="live-label">Live session</span>
+    </div>
   </div>
 
-  <!-- 2-Column Main Workspace -->
+  <!-- 2-Column Main Workspace Grid -->
   <div class="workspace-grid">
     <!-- LEFT COLUMN -->
     <div class="workspace-col-left">
-      <!-- 1. Session Recording Box -->
+      <!-- 1. Session Recording Box (Preserved Intact) -->
       <div class="session-recording-box">
         <div class="recording-top-row">
           <div class="recording-meta">
@@ -46,56 +52,55 @@
 
         <!-- Controls Row -->
         <div class="recording-controls-row" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <!-- Start Recording Button (when IDLE or FAILED without file) -->
+          <!-- Start Recording Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || (currentState === 'FAILED' && !recordingService.recordedFile())" (click)="startRecording()">
             <i class="fa-solid fa-microphone"></i>
             <span>Start Recording</span>
           </button>
 
-          <!-- Pause Button (when RECORDING) -->
+          <!-- Pause Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'RECORDING'" (click)="pauseRecording()">
             <i class="fa-solid fa-pause"></i>
             <span>Pause Recording</span>
           </button>
 
-          <!-- Resume Button (when PAUSED) -->
+          <!-- Resume Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'PAUSED'" (click)="resumeRecording()">
             <i class="fa-solid fa-play"></i>
             <span>Resume Recording</span>
           </button>
 
-          <!-- Stop Button (when RECORDING or PAUSED) -->
+          <!-- Stop Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'RECORDING' || currentState === 'PAUSED'" (click)="stopRecording()" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4);">
             <i class="fa-solid fa-square" style="background: #ef4444; color: #fff;"></i>
             <span>Stop Recording</span>
           </button>
 
-          <!-- Preview Playback Button (when audioUrl exists) -->
+          <!-- Preview Playback Button -->
           <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="togglePreviewPlayback()">
             <i class="fa-solid" [class.fa-play]="!isPlayingPreview" [class.fa-pause]="isPlayingPreview"></i>
             <span>{{ isPlayingPreview ? 'Playing preview...' : 'Play Recording Preview' }}</span>
           </button>
 
-          <!-- Download Audio File Button (when audioUrl exists) -->
+          <!-- Download Audio File Button -->
           <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="downloadRecording()" title="Download recorded audio file to local computer">
             <i class="fa-solid fa-download"></i>
             <span>Download Audio</span>
           </button>
 
-
-          <!-- Upload Recording Button (when READY_TO_UPLOAD) -->
+          <!-- Upload Recording Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD'" (click)="uploadRecording()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
             <i class="fa-solid fa-cloud-arrow-up" style="background: #10b981; color: #fff;"></i>
             <span>Upload Recording</span>
           </button>
 
-          <!-- Retry Upload Button (when FAILED with file) -->
+          <!-- Retry Upload Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'FAILED' && recordingService.recordedFile()" (click)="retryUpload()" style="background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4);">
             <i class="fa-solid fa-rotate-right" style="background: #f59e0b; color: #fff;"></i>
             <span>Retry Upload</span>
           </button>
 
-          <!-- Reset / New Session Button (when READY_TO_UPLOAD, UPLOADED, or FAILED) -->
+          <!-- Reset / New Session Button -->
           <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED' || currentState === 'FAILED'" (click)="recordingService.resetState()" style="opacity: 0.8;">
             <i class="fa-solid fa-plus"></i>
             <span>New Session</span>
@@ -141,17 +146,12 @@
               </div>
 
               <div class="item-actions" style="display: flex; align-items: center; gap: 0.5rem;">
-                <!-- Play Preview Button -->
                 <button type="button" class="action-icon-btn" (click)="playSessionPreview(s)" [title]="activePlayingSessionId === s.id && isPlayingPreview ? 'Pause Preview' : 'Play Preview'" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
                   <i class="fa-solid" [class.fa-pause]="activePlayingSessionId === s.id && isPlayingPreview" [class.fa-play]="activePlayingSessionId !== s.id || !isPlayingPreview" style="font-size: 0.75rem;"></i>
                 </button>
-
-                <!-- Download Audio Icon Button -->
                 <button type="button" class="action-icon-btn" (click)="downloadSession(s)" title="Download Audio File" style="background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.3); color: #2dd4bf; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
                   <i class="fa-solid fa-download" style="font-size: 0.75rem;"></i>
                 </button>
-
-                <!-- Upload Audio Icon Button -->
                 <button type="button" class="action-icon-btn" [disabled]="s.status === 'UPLOADING' || s.status === 'UPLOADED'" (click)="uploadSession(s)" [title]="s.status === 'UPLOADED' ? 'Already Uploaded' : 'Upload Audio to Server'" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
                   <i class="fa-solid" [class.fa-check]="s.status === 'UPLOADED'" [class.fa-cloud-arrow-up]="s.status !== 'UPLOADED'" style="font-size: 0.75rem;"></i>
                 </button>
@@ -186,62 +186,247 @@
       </div>
     </div>
 
-    <!-- RIGHT COLUMN -->
+    <!-- RIGHT COLUMN: 5-Tab Clinical Intelligence Dashboard -->
     <div class="workspace-col-right">
-      <!-- 1. AI Suggested Questions Box -->
-      <div class="cliniq-card ai-suggestions-box">
-        <div class="ai-box-header">
-          <div class="ai-title-group">
-            <span class="ai-sparkle-icon">✨</span>
-            <h3 class="box-title">AI Suggested Questions</h3>
-          </div>
-          <span class="ai-meta">Based on conversation context — {{ aiQuestions.length }} remaining</span>
-        </div>
-
-        <div class="suggestions-list">
-          <div 
-            class="suggestion-card" 
-            *ngFor="let item of aiQuestions"
-            [class]="item.priority"
+      <div class="cliniq-card intelligence-panel-card">
+        <!-- Tab Navigation Bar matching Figma -->
+        <div class="intel-tabs-nav">
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'analysis'" 
+            (click)="setActiveTab('analysis')"
           >
-            <div class="card-top">
-              <span class="priority-tag" [class]="item.priority">{{ item.priorityLabel }}</span>
-              <button class="dismiss-btn" (click)="dismissQuestion(item.id)" title="Dismiss question">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-            <p class="question-text">{{ item.question }}</p>
-            <span class="category-eyebrow">{{ item.tag }}</span>
-          </div>
+            Analysis &amp; Summary
+          </button>
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'clinical'" 
+            (click)="setActiveTab('clinical')"
+          >
+            Clinical Decision
+          </button>
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'medicines'" 
+            (click)="setActiveTab('medicines')"
+          >
+            Medicines
+          </button>
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'confidence'" 
+            (click)="setActiveTab('confidence')"
+          >
+            Confidence
+          </button>
+          <button 
+            type="button" 
+            class="intel-tab-btn" 
+            [class.active]="activeTab === 'soap'" 
+            (click)="setActiveTab('soap')"
+          >
+            SOAP Report
+          </button>
         </div>
-      </div>
 
-      <!-- 2. Patient Snapshot Box -->
-      <div class="cliniq-card patient-snapshot-box">
-        <h4 class="snapshot-header">PATIENT SNAPSHOT</h4>
-        <div class="snapshot-list">
-          <div class="snapshot-row">
-            <span class="label">Condition</span>
-            <span class="val font-semibold">{{ patientSnapshot.condition }}</span>
+        <!-- Tab Body Content -->
+        <div class="intel-tab-content-area">
+          <!-- TAB 1: Analysis & Summary -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'analysis'">
+            <!-- Clinical Summary Section -->
+            <div class="intel-section">
+              <span class="eyebrow-tag">CLINICAL SUMMARY</span>
+              <div class="summary-narrative-card">
+                <p class="summary-text">{{ clinicalSummary }}</p>
+              </div>
+            </div>
+
+            <!-- Key Findings Section -->
+            <div class="intel-section">
+              <span class="eyebrow-tag">KEY FINDINGS</span>
+              <div class="key-findings-grid">
+                <div class="finding-card" *ngFor="let item of keyFindings">
+                  <span class="finding-label">{{ item.label }}</span>
+                  <span class="finding-val">{{ item.value }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Identified Issues Section -->
+            <div class="intel-section">
+              <span class="eyebrow-tag">IDENTIFIED ISSUES</span>
+              <div class="identified-issues-list">
+                <div class="issue-item-card" *ngFor="let issue of identifiedIssues" [class]="'issue-' + issue.type">
+                  <span class="issue-bullet" [style.color]="issue.dotColor">●</span>
+                  <span class="issue-text">{{ issue.text }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="snapshot-row">
-            <span class="label">Current Rx</span>
-            <span class="val">{{ patientSnapshot.currentRx }}</span>
+
+          <!-- TAB 2: Clinical Decision -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
+            <!-- Differential Diagnosis Ranking -->
+            <div class="intel-section">
+              <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
+              <div class="differential-ranking-list">
+                <div class="diff-diag-card" *ngFor="let diag of differentialDiagnoses">
+                  <div class="diag-header-row">
+                    <div class="diag-title-group">
+                      <span class="rank-circle">{{ diag.rank }}</span>
+                      <span class="diag-title">{{ diag.title }}</span>
+                      <span class="icd-tag">{{ diag.icdCode }}</span>
+                    </div>
+                    <div class="diag-meta-right">
+                      <span class="risk-pill" [class]="diag.risk">{{ diag.riskLabel }}</span>
+                    </div>
+                  </div>
+
+                  <div class="diag-progress-row">
+                    <div class="progress-track">
+                      <div class="progress-bar-fill" [style.width]="diag.percentage + '%'" [style.background]="diag.color"></div>
+                    </div>
+                    <span class="percentage-readout font-mono">{{ diag.percentage }}%</span>
+                  </div>
+
+                  <p class="diag-desc">{{ diag.description }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Clinical Red Flags Section -->
+            <div class="intel-section">
+              <span class="eyebrow-tag red-eyebrow">CLINICAL RED FLAGS</span>
+              <div class="red-flag-alert-box" *ngFor="let flag of clinicalRedFlags">
+                <div class="flag-top">
+                  <span class="critical-badge">{{ flag.tag }}</span>
+                  <span class="flag-title">{{ flag.title }}</span>
+                </div>
+                <div class="flag-action">&rarr; {{ flag.action }}</div>
+              </div>
+            </div>
           </div>
-          <div class="snapshot-row">
-            <span class="label">Last visit</span>
-            <span class="val">{{ patientSnapshot.lastVisit }}</span>
+
+          <!-- TAB 3: Medicines -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'medicines'">
+            <div class="medicines-rag-sub">
+              <span class="rag-dot">●</span>
+              <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
+            </div>
+
+            <div class="medicines-list">
+              <div class="med-card" *ngFor="let med of guidelineMedicines">
+                <div class="med-top-row">
+                  <div class="med-name-group">
+                    <span class="med-name">{{ med.name }}</span>
+                    <span class="med-class-tag">{{ med.drugClass }}</span>
+                  </div>
+                  <div class="med-grade-group">
+                    <span class="med-grade">{{ med.grade }}</span>
+                    <span class="med-source">{{ med.source }}</span>
+                  </div>
+                </div>
+
+                <div class="med-dosage-line">{{ med.dosage }}</div>
+                <p class="med-recommendation">{{ med.recommendation }}</p>
+
+                <div class="med-warning-box">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span>{{ med.warning }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="snapshot-row">
-            <span class="label">BP at last visit</span>
-            <span class="val font-mono font-semibold">{{ patientSnapshot.bpAtLastVisit }}</span>
+
+          <!-- TAB 4: Confidence -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
+            <div class="confidence-overview-card">
+              <div class="score-circle">
+                <span class="score-val">{{ confidenceMetrics.overallScore }}%</span>
+                <span class="score-lbl">AI Reliability</span>
+              </div>
+              <div class="overview-info">
+                <h4>{{ confidenceMetrics.overallLevel }}</h4>
+                <p>Fully calibrated against peer-reviewed clinical knowledge bases and medical guideline vector embeddings.</p>
+                <div class="confidence-badge-row">
+                  <span class="hallucination-pill">
+                    <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ confidenceMetrics.hallucinationRisk }}
+                  </span>
+                  <span class="verified-pill">
+                    <i class="fa-solid fa-circle-check"></i> {{ confidenceMetrics.guidelinesCited.length }} Guidelines Verified
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="intel-section" style="margin-top: 1.5rem;">
+              <span class="eyebrow-tag">PIPELINE ACCURACY BREAKDOWN</span>
+              <div class="confidence-breakdown-list">
+                <div class="breakdown-item" *ngFor="let p of confidenceMetrics.pipeline">
+                  <div class="breakdown-item-header">
+                    <span class="item-name">{{ p.name }}</span>
+                    <span class="item-score font-mono">{{ p.score }}% <span class="status-tag">({{ p.status }})</span></span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-bar-fill" [style.width]="p.score + '%'"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="intel-section" style="margin-top: 1.5rem;">
+              <span class="eyebrow-tag">EVIDENCE CITATION REPOSITORY</span>
+              <div class="sources-tags-wrap">
+                <span class="source-tag" *ngFor="let g of confidenceMetrics.guidelinesCited">
+                  <i class="fa-solid fa-book-medical"></i> {{ g }}
+                </span>
+              </div>
+            </div>
           </div>
-          <div class="snapshot-row">
-            <span class="label">Next follow-up</span>
-            <span class="val">{{ patientSnapshot.nextFollowUp }}</span>
+
+          <!-- TAB 5: SOAP Report -->
+          <div class="tab-pane animated-pane" *ngIf="activeTab === 'soap'">
+            <div class="soap-preview-container">
+              <div class="soap-box subjective">
+                <div class="letter-badge">S</div>
+                <div class="soap-text-block">
+                  <h4>Subjective</h4>
+                  <p>{{ soapReportData.subjective }}</p>
+                </div>
+              </div>
+
+              <div class="soap-box objective">
+                <div class="letter-badge">O</div>
+                <div class="soap-text-block">
+                  <h4>Objective</h4>
+                  <p>{{ soapReportData.objective }}</p>
+                </div>
+              </div>
+
+              <div class="soap-box assessment">
+                <div class="letter-badge">A</div>
+                <div class="soap-text-block">
+                  <h4>Assessment</h4>
+                  <p style="white-space: pre-line;">{{ soapReportData.assessment }}</p>
+                </div>
+              </div>
+
+              <div class="soap-box plan">
+                <div class="letter-badge">P</div>
+                <div class="soap-text-block">
+                  <h4>Plan</h4>
+                  <p style="white-space: pre-line;">{{ soapReportData.plan }}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
