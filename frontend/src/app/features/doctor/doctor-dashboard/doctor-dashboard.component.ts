@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { RecordingService } from '../../../core/services/recording.service';
@@ -8,7 +9,7 @@ import { RecordedSessionItem } from '../../../core/models/recording.model';
 @Component({
   selector: 'app-doctor-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './doctor-dashboard.component.html',
   styleUrls: ['./doctor-dashboard.component.scss']
 })
@@ -19,9 +20,93 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
 
+  // View state: 'queue' (Patient list before consultation) | 'consultation' (Live Consultation Support)
+  viewMode: 'queue' | 'consultation' = 'queue';
+  searchTerm: string = '';
+  statusFilter: string = 'ALL';
+
   isPlayingPreview = false;
   activePlayingSessionId: string | null = null;
   activePlayingAudioUrl: string | null = null;
+
+  // Patient Queue Data
+  patientsQueue = [
+    {
+      id: 'P-2026-0813',
+      name: 'Marcus Delgado',
+      initials: 'MD',
+      age: 42,
+      gender: 'Male',
+      time: '09:14 AM',
+      visitType: 'Cardiology follow-up',
+      reason: 'Recurrent afternoon headaches & Stage 1 HTN',
+      vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10' },
+      status: 'IN_PROGRESS',
+      statusLabel: 'In Progress',
+      priority: 'high',
+      isPrimary: true
+    },
+    {
+      id: 'P-1245',
+      name: 'Priya Verma',
+      initials: 'PV',
+      age: 32,
+      gender: 'Female',
+      time: '10:00 AM',
+      visitType: 'Hypertension review',
+      reason: 'Dizziness and neck pain follow-up',
+      vitals: { bp: '120/80 mmHg', hr: '68 bpm', pain: '2/10' },
+      status: 'WAITING',
+      statusLabel: 'Waiting (12 min)',
+      priority: 'medium',
+      isPrimary: false
+    },
+    {
+      id: 'P-1246',
+      name: 'Rohan Mehta',
+      initials: 'RM',
+      age: 45,
+      gender: 'Male',
+      time: '10:45 AM',
+      visitType: 'Routine checkup',
+      reason: 'Persistent elevated BP on home log',
+      vitals: { bp: '142/90 mmHg', hr: '80 bpm', pain: '0/10' },
+      status: 'WAITING',
+      statusLabel: 'Waiting (5 min)',
+      priority: 'high',
+      isPrimary: false
+    },
+    {
+      id: 'P-1247',
+      name: 'Ananya Singh',
+      initials: 'AS',
+      age: 28,
+      gender: 'Female',
+      time: '11:30 AM',
+      visitType: 'Migraine Follow-up',
+      reason: 'Screen-time related tension headaches',
+      vitals: { bp: '118/76 mmHg', hr: '70 bpm', pain: '4/10' },
+      status: 'SCHEDULED',
+      statusLabel: 'Scheduled',
+      priority: 'low',
+      isPrimary: false
+    },
+    {
+      id: 'P-1248',
+      name: 'Suresh Kumar',
+      initials: 'SK',
+      age: 55,
+      gender: 'Male',
+      time: '08:30 AM',
+      visitType: 'Post-Rx Review',
+      reason: 'Cholesterol and hypertensive control review',
+      vitals: { bp: '130/84 mmHg', hr: '74 bpm', pain: '0/10' },
+      status: 'COMPLETED',
+      statusLabel: 'Completed',
+      priority: 'low',
+      isPrimary: false
+    }
+  ];
 
   visitDetails = {
     patientName: 'Marcus Delgado',
@@ -430,7 +515,52 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return this.recordingService.recordedSessions();
   }
 
+  openConsultation(patient: any): void {
+    this.visitDetails = {
+      patientName: patient.name,
+      visitId: '#' + patient.id,
+      reason: patient.visitType,
+      date: 'Aug 13, 2026',
+      time: patient.time,
+      duration: '18 min 42 sec'
+    };
+    this.viewMode = 'consultation';
+  }
+
+  backToQueue(): void {
+    this.viewMode = 'queue';
+  }
+
+  get filteredPatients() {
+    return this.patientsQueue.filter(p => {
+      const matchSearch = !this.searchTerm || 
+        p.name.toLowerCase().includes(this.searchTerm.toLowerCase()) || 
+        p.id.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        p.reason.toLowerCase().includes(this.searchTerm.toLowerCase());
+      
+      const matchStatus = this.statusFilter === 'ALL' || p.status === this.statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }
+
+  get totalAppointmentsCount(): number {
+    return this.patientsQueue.length;
+  }
+
+  get waitingCount(): number {
+    return this.patientsQueue.filter(p => p.status === 'WAITING' || p.status === 'SCHEDULED').length;
+  }
+
+  get inProgressCount(): number {
+    return this.patientsQueue.filter(p => p.status === 'IN_PROGRESS').length;
+  }
+
+  get completedCount(): number {
+    return this.patientsQueue.filter(p => p.status === 'COMPLETED').length;
+  }
+
   get hasPendingUploads(): boolean {
     return this.recordedSessions.some(s => s.status !== 'UPLOADED');
   }
 }
+
