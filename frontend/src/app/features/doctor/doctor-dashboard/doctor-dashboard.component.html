@@ -1,4 +1,4 @@
-<!-- VIEW 1: DOCTOR DASHBOARD SCHEDULE (Matching ClinIQ Mockup) -->
+<!-- VIEW 1: DOCTOR DASHBOARD SCHEDULE (Matching Image 1) -->
 <div class="cliniq-doctor-dashboard" *ngIf="viewMode === 'queue'">
   <!-- Top Greeting & Hospital Info Header -->
   <div class="dashboard-header-row">
@@ -59,7 +59,7 @@
       *ngFor="let p of patientsQueue"
       [class.in-progress-card]="p.status === 'IN_PROGRESS'"
       (click)="openConsultation(p)"
-      [title]="'Click to view consultation details for ' + p.name"
+      [title]="'Click to view consultation for ' + p.name"
     >
       <!-- Left Section: Time, Avatar, Patient Details & Tags -->
       <div class="card-left-group">
@@ -109,7 +109,7 @@
   </div>
 </div>
 
-<!-- VIEW 2: DOCTOR CONSULTATION SUPPORT WORKSPACE -->
+<!-- VIEW 2: DOCTOR CONSULTATION SUPPORT WORKSPACE (Matching Images 2, 3 & 4) -->
 <div class="cliniq-consultation-page" *ngIf="viewMode === 'consultation'">
   <!-- Title & Visit Header with Back Navigation and Live Session Indicator -->
   <div class="page-title-header">
@@ -124,7 +124,7 @@
       </div>
       <h1 class="main-title serif-title">Consultation Support</h1>
       <p class="subtitle">
-        Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.reason }}
+        Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.visitType }} · {{ visitDetails.condition }}
       </p>
     </div>
     <div class="live-session-indicator">
@@ -135,13 +135,13 @@
 
   <!-- 2-Column Main Workspace Grid -->
   <div class="workspace-grid">
-    <!-- LEFT COLUMN -->
+    <!-- LEFT COLUMN: Recording Box + Live Transcript -->
     <div class="workspace-col-left">
-      <!-- 1. Session Recording Box (Preserved Intact) -->
+      <!-- 1. Session Recording Box (Preserved Exact Structure) -->
       <div class="session-recording-box">
         <div class="recording-top-row">
           <div class="recording-meta">
-            <h3 class="box-title">{{ recordingService.sessionTitle() }}</h3>
+            <h3 class="box-title">{{ recordingService.sessionTitle() || 'Session 1' }}</h3>
             <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · Max: 20 min</span>
           </div>
           <div class="live-pill" [class.paused]="currentState === 'PAUSED'" [class.stopped]="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED'">
@@ -235,10 +235,10 @@
           <i class="fa-solid fa-circle-exclamation"></i> {{ recordingService.errorMessage() }}
         </div>
         <div class="recording-feedback-msg" *ngIf="currentState === 'UPLOADED'" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; font-size: 0.8rem;">
-          <i class="fa-solid fa-circle-check"></i> Recording successfully uploaded to backend contract. Storage-agnostic payload ready.
+          <i class="fa-solid fa-circle-check"></i> Recording successfully uploaded to backend contract.
         </div>
 
-        <!-- Recorded Sessions History List (Multiple Sessions) -->
+        <!-- Recorded Sessions History List -->
         <div class="recorded-sessions-history" *ngIf="recordedSessions.length > 0" style="margin-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 1rem;">
           <div class="history-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
             <span style="font-size: 0.825rem; font-weight: 700; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.05em;">
@@ -296,7 +296,7 @@
             [class.patient-row]="!ex.isDoctor"
           >
             <div class="avatar-bubble" [class.doctor-avatar]="ex.isDoctor" [class.patient-avatar]="!ex.isDoctor">
-              {{ ex.speaker }}
+              {{ ex.isDoctor ? 'YT' : (visitDetails.initials || 'AK') }}
             </div>
             <div class="bubble-content">
               <p class="bubble-text">{{ ex.text }}</p>
@@ -306,248 +306,328 @@
       </div>
     </div>
 
-    <!-- RIGHT COLUMN: 5-Tab Clinical Intelligence Dashboard -->
+    <!-- RIGHT COLUMN -->
     <div class="workspace-col-right">
-      <div class="cliniq-card intelligence-panel-card">
-        <!-- Tab Navigation Bar matching Figma -->
-        <div class="intel-tabs-nav">
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'analysis'" 
-            (click)="setActiveTab('analysis')"
-          >
-            Analysis &amp; Summary
-          </button>
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'clinical'" 
-            (click)="setActiveTab('clinical')"
-          >
-            Clinical Decision
-          </button>
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'medicines'" 
-            (click)="setActiveTab('medicines')"
-          >
-            Medicines
-          </button>
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'confidence'" 
-            (click)="setActiveTab('confidence')"
-          >
-            Confidence
-          </button>
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'soap'" 
-            (click)="setActiveTab('soap')"
-          >
-            SOAP Report
-          </button>
-        </div>
-
-        <!-- Tab Body Content -->
-        <div class="intel-tab-content-area">
-          <!-- TAB 1: Analysis & Summary -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'analysis'">
-            <!-- Clinical Summary Section -->
-            <div class="intel-section">
-              <span class="eyebrow-tag">CLINICAL SUMMARY</span>
-              <div class="summary-narrative-card">
-                <p class="summary-text">{{ clinicalSummary }}</p>
-              </div>
+      <!-- STATE A: PATIENT CARD + AI SUGGESTIONS + RUN CLINICAL ANALYSIS CTA (100% Matching Image 4) -->
+      <ng-container *ngIf="rightPanelMode === 'suggestions'">
+        <!-- 1. Patient Context Card (Matching Image 4) -->
+        <div class="cliniq-card patient-context-panel-card">
+          <div class="patient-card-header">
+            <div class="patient-circle-avatar">
+              <span>{{ visitDetails.initials || 'AK' }}</span>
             </div>
-
-            <!-- Key Findings Section -->
-            <div class="intel-section">
-              <span class="eyebrow-tag">KEY FINDINGS</span>
-              <div class="key-findings-grid">
-                <div class="finding-card" *ngFor="let item of keyFindings">
-                  <span class="finding-label">{{ item.label }}</span>
-                  <span class="finding-val">{{ item.value }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Identified Issues Section -->
-            <div class="intel-section">
-              <span class="eyebrow-tag">IDENTIFIED ISSUES</span>
-              <div class="identified-issues-list">
-                <div class="issue-item-card" *ngFor="let issue of identifiedIssues" [class]="'issue-' + issue.type">
-                  <span class="issue-bullet" [style.color]="issue.dotColor">●</span>
-                  <span class="issue-text">{{ issue.text }}</span>
-                </div>
+            <div class="patient-header-details">
+              <h4 class="patient-name">{{ visitDetails.patientName }}</h4>
+              <div class="patient-meta-line">
+                <span class="patient-demographics">{{ visitDetails.demographics }}</span>
+                <span class="patient-condition-tag">{{ visitDetails.condition }}</span>
               </div>
             </div>
           </div>
 
-          <!-- TAB 2: Clinical Decision -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
-            <!-- Differential Diagnosis Ranking -->
-            <div class="intel-section">
-              <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
-              <div class="differential-ranking-list">
-                <div class="diff-diag-card" *ngFor="let diag of differentialDiagnoses">
-                  <div class="diag-header-row">
-                    <div class="diag-title-group">
-                      <span class="rank-circle">{{ diag.rank }}</span>
-                      <span class="diag-title">{{ diag.title }}</span>
-                      <span class="icd-tag">{{ diag.icdCode }}</span>
+          <div class="patient-info-table">
+            <div class="info-row">
+              <span class="info-label">Visit type</span>
+              <span class="info-value">{{ visitDetails.visitType }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Reason</span>
+              <span class="info-value">{{ visitDetails.reason }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Last visit</span>
+              <span class="info-value">{{ visitDetails.lastVisit || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Scheduled</span>
+              <span class="info-value">{{ visitDetails.time }} · {{ visitDetails.duration }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. AI Suggestions Card (Matching Image 4) -->
+        <div class="cliniq-card ai-suggestions-panel-card">
+          <div class="suggestions-header">
+            <div class="header-left-title">
+              <span class="sparkle-icon"><i class="fa-solid fa-plus-minus"></i></span>
+              <span class="title-text">AI Suggestions</span>
+            </div>
+            <span class="live-updating-tag">live · updating</span>
+          </div>
+
+          <div class="suggestions-list">
+            <div 
+              class="nudge-card" 
+              *ngFor="let nudge of aiSuggestionsList"
+              [class.nudge-high]="nudge.type === 'high'"
+              [class.nudge-medium]="nudge.type === 'medium'"
+            >
+              <span class="nudge-tag">{{ nudge.tag }}</span>
+              <p class="nudge-text">{{ nudge.text }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Primary Action Button: Run Clinical Analysis (Matching Image 4) -->
+        <button type="button" class="run-clinical-analysis-btn" (click)="runClinicalAnalysis()">
+          <div class="btn-text-group">
+            <span class="btn-main-title">Run Clinical Analysis</span>
+            <span class="btn-sub-title">DDx · medicines · confidence · SOAP report</span>
+          </div>
+          <div class="btn-arrow-box">
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </button>
+      </ng-container>
+
+      <!-- STATE B: 5-TAB CLINICAL INTELLIGENCE PANEL (100% Matching Image 3) -->
+      <ng-container *ngIf="rightPanelMode === 'analysis'">
+        <div class="cliniq-card intelligence-panel-card">
+          <!-- Back to Suggestions link -->
+          <div class="panel-top-nav-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.5rem 0.5rem 1.5rem; border-bottom: 1px solid var(--border-color); background: rgba(13, 148, 136, 0.03);">
+            <button type="button" class="btn-back-suggestions" (click)="backToSuggestions()" style="background: none; border: none; color: var(--accent-green); font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; padding: 0;">
+              <i class="fa-solid fa-arrow-left"></i>
+              <span>Patient Details &amp; AI Suggestions</span>
+            </button>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Clinical Intelligence Engine</span>
+          </div>
+
+          <!-- Tab Navigation Bar (Matching Image 3) -->
+          <div class="intel-tabs-nav">
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'analysis'" 
+              (click)="setActiveTab('analysis')"
+            >
+              Analysis &amp; Summary
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'clinical'" 
+              (click)="setActiveTab('clinical')"
+            >
+              Clinical Decision
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'medicines'" 
+              (click)="setActiveTab('medicines')"
+            >
+              Medicines
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'confidence'" 
+              (click)="setActiveTab('confidence')"
+            >
+              Confidence
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'soap'" 
+              (click)="setActiveTab('soap')"
+            >
+              SOAP Report
+            </button>
+          </div>
+
+          <!-- Tab Body Content -->
+          <div class="intel-tab-content-area">
+            <!-- TAB 1: Analysis & Summary (Matching Image 3) -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'analysis'">
+              <!-- Clinical Summary Section -->
+              <div class="intel-section">
+                <span class="eyebrow-tag">CLINICAL SUMMARY</span>
+                <div class="summary-narrative-card">
+                  <p class="summary-text">{{ clinicalSummary }}</p>
+                </div>
+              </div>
+
+              <!-- Key Findings Section -->
+              <div class="intel-section">
+                <span class="eyebrow-tag">KEY FINDINGS</span>
+                <div class="key-findings-grid">
+                  <div class="finding-card" *ngFor="let item of keyFindings">
+                    <span class="finding-label">{{ item.label }}</span>
+                    <span class="finding-val">{{ item.value }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Identified Issues Section -->
+              <div class="intel-section">
+                <span class="eyebrow-tag">IDENTIFIED ISSUES</span>
+                <div class="identified-issues-list">
+                  <div class="issue-item-card" *ngFor="let issue of identifiedIssues" [class]="'issue-' + issue.type">
+                    <span class="issue-bullet" [style.color]="issue.dotColor">●</span>
+                    <span class="issue-text">{{ issue.text }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: Clinical Decision -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
+              <div class="intel-section">
+                <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
+                <div class="differential-ranking-list">
+                  <div class="diff-diag-card" *ngFor="let diag of differentialDiagnoses">
+                    <div class="diag-header-row">
+                      <div class="diag-title-group">
+                        <span class="rank-circle">{{ diag.rank }}</span>
+                        <span class="diag-title">{{ diag.title }}</span>
+                        <span class="icd-tag">{{ diag.icdCode }}</span>
+                      </div>
+                      <div class="diag-meta-right">
+                        <span class="risk-pill" [class]="diag.risk">{{ diag.riskLabel }}</span>
+                      </div>
                     </div>
-                    <div class="diag-meta-right">
-                      <span class="risk-pill" [class]="diag.risk">{{ diag.riskLabel }}</span>
+
+                    <div class="diag-progress-row">
+                      <div class="progress-track">
+                        <div class="progress-bar-fill" [style.width]="diag.percentage + '%'" [style.background]="diag.color"></div>
+                      </div>
+                      <span class="percentage-readout font-mono">{{ diag.percentage }}%</span>
+                    </div>
+
+                    <p class="diag-desc">{{ diag.description }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="intel-section">
+                <span class="eyebrow-tag red-eyebrow">CLINICAL RED FLAGS</span>
+                <div class="red-flag-alert-box" *ngFor="let flag of clinicalRedFlags">
+                  <div class="flag-top">
+                    <span class="critical-badge">{{ flag.tag }}</span>
+                    <span class="flag-title">{{ flag.title }}</span>
+                  </div>
+                  <div class="flag-action">&rarr; {{ flag.action }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: Medicines -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'medicines'">
+              <div class="medicines-rag-sub">
+                <span class="rag-dot">●</span>
+                <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
+              </div>
+
+              <div class="medicines-list">
+                <div class="med-card" *ngFor="let med of guidelineMedicines">
+                  <div class="med-top-row">
+                    <div class="med-name-group">
+                      <span class="med-name">{{ med.name }}</span>
+                      <span class="med-class-tag">{{ med.drugClass }}</span>
+                    </div>
+                    <div class="med-grade-group">
+                      <span class="med-grade">{{ med.grade }}</span>
+                      <span class="med-source">{{ med.source }}</span>
                     </div>
                   </div>
 
-                  <div class="diag-progress-row">
+                  <div class="med-dosage-line">{{ med.dosage }}</div>
+                  <p class="med-recommendation">{{ med.recommendation }}</p>
+
+                  <div class="med-warning-box">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>{{ med.warning }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Confidence -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
+              <div class="confidence-overview-card">
+                <div class="score-circle">
+                  <span class="score-val">{{ confidenceMetrics.overallScore }}%</span>
+                  <span class="score-lbl">AI Reliability</span>
+                </div>
+                <div class="overview-info">
+                  <h4>{{ confidenceMetrics.overallLevel }}</h4>
+                  <p>Fully calibrated against peer-reviewed clinical knowledge bases and medical guideline vector embeddings.</p>
+                  <div class="confidence-badge-row">
+                    <span class="hallucination-pill">
+                      <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ confidenceMetrics.hallucinationRisk }}
+                    </span>
+                    <span class="verified-pill">
+                      <i class="fa-solid fa-circle-check"></i> {{ confidenceMetrics.guidelinesCited.length }} Guidelines Verified
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="intel-section" style="margin-top: 1.5rem;">
+                <span class="eyebrow-tag">PIPELINE ACCURACY BREAKDOWN</span>
+                <div class="confidence-breakdown-list">
+                  <div class="breakdown-item" *ngFor="let p of confidenceMetrics.pipeline">
+                    <div class="breakdown-item-header">
+                      <span class="item-name">{{ p.name }}</span>
+                      <span class="item-score font-mono">{{ p.score }}% <span class="status-tag">({{ p.status }})</span></span>
+                    </div>
                     <div class="progress-track">
-                      <div class="progress-bar-fill" [style.width]="diag.percentage + '%'" [style.background]="diag.color"></div>
+                      <div class="progress-bar-fill" [style.width]="p.score + '%'"></div>
                     </div>
-                    <span class="percentage-readout font-mono">{{ diag.percentage }}%</span>
-                  </div>
-
-                  <p class="diag-desc">{{ diag.description }}</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Clinical Red Flags Section -->
-            <div class="intel-section">
-              <span class="eyebrow-tag red-eyebrow">CLINICAL RED FLAGS</span>
-              <div class="red-flag-alert-box" *ngFor="let flag of clinicalRedFlags">
-                <div class="flag-top">
-                  <span class="critical-badge">{{ flag.tag }}</span>
-                  <span class="flag-title">{{ flag.title }}</span>
-                </div>
-                <div class="flag-action">&rarr; {{ flag.action }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 3: Medicines -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'medicines'">
-            <div class="medicines-rag-sub">
-              <span class="rag-dot">●</span>
-              <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
-            </div>
-
-            <div class="medicines-list">
-              <div class="med-card" *ngFor="let med of guidelineMedicines">
-                <div class="med-top-row">
-                  <div class="med-name-group">
-                    <span class="med-name">{{ med.name }}</span>
-                    <span class="med-class-tag">{{ med.drugClass }}</span>
-                  </div>
-                  <div class="med-grade-group">
-                    <span class="med-grade">{{ med.grade }}</span>
-                    <span class="med-source">{{ med.source }}</span>
                   </div>
                 </div>
-
-                <div class="med-dosage-line">{{ med.dosage }}</div>
-                <p class="med-recommendation">{{ med.recommendation }}</p>
-
-                <div class="med-warning-box">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                  <span>{{ med.warning }}</span>
-                </div>
               </div>
-            </div>
-          </div>
 
-          <!-- TAB 4: Confidence -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
-            <div class="confidence-overview-card">
-              <div class="score-circle">
-                <span class="score-val">{{ confidenceMetrics.overallScore }}%</span>
-                <span class="score-lbl">AI Reliability</span>
-              </div>
-              <div class="overview-info">
-                <h4>{{ confidenceMetrics.overallLevel }}</h4>
-                <p>Fully calibrated against peer-reviewed clinical knowledge bases and medical guideline vector embeddings.</p>
-                <div class="confidence-badge-row">
-                  <span class="hallucination-pill">
-                    <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ confidenceMetrics.hallucinationRisk }}
-                  </span>
-                  <span class="verified-pill">
-                    <i class="fa-solid fa-circle-check"></i> {{ confidenceMetrics.guidelinesCited.length }} Guidelines Verified
+              <div class="intel-section" style="margin-top: 1.5rem;">
+                <span class="eyebrow-tag">EVIDENCE CITATION REPOSITORY</span>
+                <div class="sources-tags-wrap">
+                  <span class="source-tag" *ngFor="let g of confidenceMetrics.guidelinesCited">
+                    <i class="fa-solid fa-book-medical"></i> {{ g }}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div class="intel-section" style="margin-top: 1.5rem;">
-              <span class="eyebrow-tag">PIPELINE ACCURACY BREAKDOWN</span>
-              <div class="confidence-breakdown-list">
-                <div class="breakdown-item" *ngFor="let p of confidenceMetrics.pipeline">
-                  <div class="breakdown-item-header">
-                    <span class="item-name">{{ p.name }}</span>
-                    <span class="item-score font-mono">{{ p.score }}% <span class="status-tag">({{ p.status }})</span></span>
-                  </div>
-                  <div class="progress-track">
-                    <div class="progress-bar-fill" [style.width]="p.score + '%'"></div>
+            <!-- TAB 5: SOAP Report -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'soap'">
+              <div class="soap-preview-container">
+                <div class="soap-box subjective">
+                  <div class="letter-badge">S</div>
+                  <div class="soap-text-block">
+                    <h4>Subjective</h4>
+                    <p>{{ soapReportData.subjective }}</p>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div class="intel-section" style="margin-top: 1.5rem;">
-              <span class="eyebrow-tag">EVIDENCE CITATION REPOSITORY</span>
-              <div class="sources-tags-wrap">
-                <span class="source-tag" *ngFor="let g of confidenceMetrics.guidelinesCited">
-                  <i class="fa-solid fa-book-medical"></i> {{ g }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 5: SOAP Report -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'soap'">
-            <div class="soap-preview-container">
-              <div class="soap-box subjective">
-                <div class="letter-badge">S</div>
-                <div class="soap-text-block">
-                  <h4>Subjective</h4>
-                  <p>{{ soapReportData.subjective }}</p>
+                <div class="soap-box objective">
+                  <div class="letter-badge">O</div>
+                  <div class="soap-text-block">
+                    <h4>Objective</h4>
+                    <p>{{ soapReportData.objective }}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div class="soap-box objective">
-                <div class="letter-badge">O</div>
-                <div class="soap-text-block">
-                  <h4>Objective</h4>
-                  <p>{{ soapReportData.objective }}</p>
+                <div class="soap-box assessment">
+                  <div class="letter-badge">A</div>
+                  <div class="soap-text-block">
+                    <h4>Assessment</h4>
+                    <p style="white-space: pre-line;">{{ soapReportData.assessment }}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div class="soap-box assessment">
-                <div class="letter-badge">A</div>
-                <div class="soap-text-block">
-                  <h4>Assessment</h4>
-                  <p style="white-space: pre-line;">{{ soapReportData.assessment }}</p>
-                </div>
-              </div>
-
-              <div class="soap-box plan">
-                <div class="letter-badge">P</div>
-                <div class="soap-text-block">
-                  <h4>Plan</h4>
-                  <p style="white-space: pre-line;">{{ soapReportData.plan }}</p>
+                <div class="soap-box plan">
+                  <div class="letter-badge">P</div>
+                  <div class="soap-text-block">
+                    <h4>Plan</h4>
+                    <p style="white-space: pre-line;">{{ soapReportData.plan }}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </ng-container>
     </div>
   </div>
 </div>
-
-

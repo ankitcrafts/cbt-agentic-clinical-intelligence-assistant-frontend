@@ -1918,7 +1918,225 @@ body {
     .workspace-col-right {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1.25rem;
+
+      /* 1. Patient Context Card (Image 4) */
+      .patient-context-panel-card {
+        padding: 1.25rem 1.4rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(11, 60, 53, 0.02);
+
+        .patient-card-header {
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+          margin-bottom: 1.15rem;
+          padding-bottom: 0.85rem;
+          border-bottom: 1px solid var(--border-color);
+
+          .patient-circle-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #ccfbf1;
+            color: #0d9488;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+          }
+
+          .patient-header-details {
+            .patient-name {
+              font-size: 1.05rem;
+              font-weight: 700;
+              color: var(--text-main);
+              margin: 0 0 0.15rem 0;
+            }
+
+            .patient-meta-line {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+
+              .patient-demographics {
+                font-size: 0.775rem;
+                color: var(--text-muted);
+              }
+
+              .patient-condition-tag {
+                font-size: 0.775rem;
+                color: #0d9488;
+                font-weight: 500;
+              }
+            }
+          }
+        }
+
+        .patient-info-table {
+          display: flex;
+          flex-direction: column;
+          gap: 0.65rem;
+
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.825rem;
+
+            .info-label {
+              color: var(--text-muted);
+            }
+
+            .info-value {
+              font-weight: 600;
+              color: var(--text-main);
+              text-align: right;
+              max-width: 65%;
+            }
+          }
+        }
+      }
+
+      /* 2. AI Suggestions Card (Image 4) */
+      .ai-suggestions-panel-card {
+        padding: 1.25rem 1.4rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(11, 60, 53, 0.02);
+
+        .suggestions-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1rem;
+
+          .header-left-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .sparkle-icon {
+              width: 20px;
+              height: 20px;
+              border-radius: 5px;
+              background: #0d9488;
+              color: #ffffff;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.65rem;
+            }
+
+            .title-text {
+              font-size: 0.95rem;
+              font-weight: 700;
+              color: var(--text-main);
+            }
+          }
+
+          .live-updating-tag {
+            font-size: 0.725rem;
+            color: var(--text-muted);
+          }
+        }
+
+        .suggestions-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+
+          .nudge-card {
+            padding: 0.85rem 1rem;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+
+            .nudge-tag {
+              font-size: 0.68rem;
+              font-weight: 800;
+              letter-spacing: 0.05em;
+              text-transform: uppercase;
+            }
+
+            .nudge-text {
+              font-size: 0.825rem;
+              line-height: 1.45;
+              margin: 0;
+            }
+
+            &.nudge-high {
+              background: #fef2f2;
+              border: 1px solid #fecaca;
+              .nudge-tag { color: #dc2626; }
+              .nudge-text { color: #7f1d1d; }
+            }
+
+            &.nudge-medium {
+              background: #fffbeb;
+              border: 1px solid #fef3c7;
+              .nudge-tag { color: #d97706; }
+              .nudge-text { color: #78350f; }
+            }
+          }
+        }
+      }
+
+      /* 3. Run Clinical Analysis Primary Action Button (Image 4) */
+      .run-clinical-analysis-btn {
+        width: 100%;
+        background: #0d9488;
+        border: none;
+        border-radius: 12px;
+        padding: 1.1rem 1.4rem;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 14px rgba(13, 148, 136, 0.25);
+
+        &:hover {
+          background: #0b7a6e;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(13, 148, 136, 0.35);
+
+          .btn-arrow-box {
+            transform: translateX(4px);
+          }
+        }
+
+        .btn-text-group {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.2rem;
+
+          .btn-main-title {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+          }
+
+          .btn-sub-title {
+            font-size: 0.725rem;
+            color: #a7f3d0;
+            font-weight: 400;
+          }
+        }
+
+        .btn-arrow-box {
+          font-size: 1.1rem;
+          transition: transform 0.2s ease;
+        }
+      }
 
       .intelligence-panel-card {
         padding: 0;

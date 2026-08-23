@@ -20,8 +20,14 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
 
-  // View state: 'queue' (Patient list before consultation) | 'consultation' (Live Consultation Support)
+  // View state: 'queue' (Schedule & Patient List) | 'consultation' (Active Consultation View)
   viewMode: 'queue' | 'consultation' = 'queue';
+
+  // Right column state in Consultation view:
+  // 'suggestions' -> Image 4 (Patient Card + AI Suggestions + Run Clinical Analysis button)
+  // 'analysis'    -> Image 3 (5-Tab Clinical Intelligence Support: Analysis & Summary, Clinical Decision, Medicines, Confidence, SOAP Report)
+  rightPanelMode: 'suggestions' | 'analysis' = 'suggestions';
+
   searchTerm: string = '';
   statusFilter: string = 'ALL';
 
@@ -36,7 +42,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   dutyStatus = 'On duty';
   doctorInitials = 'YT';
 
-  // Patient Queue / Schedule Data (100% Mockup Parity)
+  // Patient Queue / Schedule Data
   patientsQueue = [
     {
       id: '#00847261',
@@ -52,9 +58,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       condition: 'Hypertension Stage 1',
       status: 'IN_PROGRESS',
       statusLabel: 'In Progress',
-      statusType: 'in-progress',
-      vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10' },
-      isPrimary: true
+      lastVisit: 'July 14, 2026',
+      vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10' }
     },
     {
       id: '#00391847',
@@ -70,9 +75,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       condition: 'Hypothyroidism',
       status: 'WAITING',
       statusLabel: 'Waiting',
-      statusType: 'waiting',
-      vitals: { bp: '118/76 mmHg', hr: '68 bpm', pain: '0/10' },
-      isPrimary: false
+      lastVisit: 'May 02, 2026',
+      vitals: { bp: '118/76 mmHg', hr: '68 bpm', pain: '0/10' }
     },
     {
       id: '#00512938',
@@ -88,9 +92,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       condition: 'Type 2 Diabetes',
       status: 'WAITING',
       statusLabel: 'Waiting',
-      statusType: 'waiting',
-      vitals: { bp: '132/84 mmHg', hr: '74 bpm', pain: '0/10' },
-      isPrimary: false
+      lastVisit: 'Feb 11, 2026',
+      vitals: { bp: '132/84 mmHg', hr: '74 bpm', pain: '0/10' }
     },
     {
       id: '#00673920',
@@ -106,9 +109,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       condition: 'New presentation',
       status: 'SCHEDULED',
       statusLabel: 'Scheduled',
-      statusType: 'scheduled',
-      vitals: { bp: '122/80 mmHg', hr: '82 bpm', pain: '3/10' },
-      isPrimary: false
+      lastVisit: '—',
+      vitals: { bp: '122/80 mmHg', hr: '82 bpm', pain: '3/10' }
     },
     {
       id: '#00182736',
@@ -124,9 +126,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       condition: 'Stable Angina',
       status: 'SCHEDULED',
       statusLabel: 'Scheduled',
-      statusType: 'scheduled',
-      vitals: { bp: '128/82 mmHg', hr: '64 bpm', pain: '1/10' },
-      isPrimary: false
+      lastVisit: 'June 20, 2026',
+      vitals: { bp: '128/82 mmHg', hr: '64 bpm', pain: '1/10' }
     },
     {
       id: '#00847193',
@@ -142,23 +143,52 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       condition: 'Atrial Fibrillation',
       status: 'SCHEDULED',
       statusLabel: 'Scheduled',
-      statusType: 'scheduled',
-      vitals: { bp: '126/80 mmHg', hr: '76 bpm', pain: '0/10' },
-      isPrimary: false
+      lastVisit: 'March 18, 2026',
+      vitals: { bp: '126/80 mmHg', hr: '76 bpm', pain: '0/10' }
     }
   ];
 
-  visitDetails = {
-    patientName: 'Marcus Delgado',
-    visitId: '#00847261',
-    reason: 'Follow-up · Hypertension review',
+  // Active Consultation Details
+  visitDetails: any = {
+    patientName: 'Anya Kowalski',
+    visitId: '#00673920',
+    initials: 'AK',
+    demographics: '29F · #00673920',
+    visitType: 'New Patient',
+    reason: 'Chest tightness, shortness of breath on exertion',
+    condition: 'New presentation',
+    lastVisit: '—',
     date: 'Aug 13, 2026',
-    time: '09:00',
-    duration: '30 min'
+    time: '11:00',
+    duration: '45 min'
   };
 
+  // Image 4: AI Suggestions List
+  aiSuggestionsList = [
+    {
+      id: 1,
+      type: 'high',
+      tag: 'HIGH · SYMPTOM DETAIL',
+      text: 'Ask about location and quality of headache — tension vs. vascular patterns differ in management.'
+    },
+    {
+      id: 2,
+      type: 'high',
+      tag: 'HIGH · DIFFERENTIAL',
+      text: 'Has the patient noticed any visual disturbances or aura before onset? Important to rule out migraine.'
+    },
+    {
+      id: 3,
+      type: 'medium',
+      tag: 'MEDIUM · LIFESTYLE',
+      text: 'Screen for caffeine intake — afternoon timing correlates with caffeine withdrawal in regular coffee drinkers.'
+    }
+  ];
+
+  // Image 3: 5-Tab CDS Active Tab
   activeTab: 'analysis' | 'clinical' | 'medicines' | 'confidence' | 'soap' = 'analysis';
 
+  // Image 3: Tab 1 (Analysis & Summary)
   clinicalSummary = '42-year-old male with known Stage 1 hypertension presents with recurrent afternoon headaches over 4–5 weeks. Reports moderate severity (5–6/10), lasting ~1 hour. Adherent to Lisinopril; Atorvastatin compliance unconfirmed. Home BP monitoring infrequent. No acute cardiac symptoms.';
 
   keyFindings = [
@@ -166,7 +196,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     { label: 'FREQUENCY', value: '4–5×/week, ~1 hr duration' },
     { label: 'PAIN SCORE', value: '5–6/10 (moderate)' },
     { label: 'BP (LAST VISIT)', value: '138/88 mmHg' },
-    { label: 'MEDICATION ADHERENCE', value: 'Lisinopril: ✓  Statin: ?' },
+    { label: 'MEDICATION ADHERENCE', value: 'Lisinopril ✓ · Statin ?' },
     { label: 'HOME MONITORING', value: '~1x/week (suboptimal)' }
   ];
 
@@ -177,6 +207,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     { text: 'Lipid panel overdue — no recent cholesterol check', type: 'info', dotColor: '#3b82f6' }
   ];
 
+  // Image 3: Tab 2 (Clinical Decision)
   differentialDiagnoses = [
     {
       rank: 1,
@@ -238,6 +269,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }
   ];
 
+  // Image 3: Tab 3 (Medicines)
   guidelineMedicines = [
     {
       name: 'Amlodipine',
@@ -268,6 +300,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }
   ];
 
+  // Image 3: Tab 4 (Confidence)
   confidenceMetrics = {
     overallScore: 94.2,
     overallLevel: 'High Confidence',
@@ -282,6 +315,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     unverifiedFacts: 1
   };
 
+  // Image 3: Tab 5 (SOAP Report)
   soapReportData = {
     subjective: '42yo male with Stage 1 HTN presenting with recurrent afternoon headaches (4-5x/wk, 5-6/10 pain) for 4-5 weeks. Lisinopril 10mg taken regularly; statin adherence unverified. Infrequent home BP monitoring.',
     objective: 'BP at last visit: 138/88 mmHg. Pulse: 72 bpm regular. Physical exam: Alert, oriented x3. No focal neurological deficits.',
@@ -289,6 +323,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     plan: '1. Continue Lisinopril 10mg PO QD; initiate home BP log (morning/evening).\n2. Consider Amlodipine 5mg daily adjunct if systolic remains >140 after 8 weeks.\n3. Advise headache trigger diary & assess afternoon caffeine intake.\n4. Repeat lipid panel and comprehensive follow-up in 2 weeks.'
   };
 
+  // Live Transcript Exchanges
   transcriptExchanges = [
     {
       id: 1,
@@ -362,56 +397,6 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }
   ];
 
-  aiQuestions = [
-    {
-      id: 1,
-      priority: 'high',
-      priorityLabel: 'high',
-      tag: 'SYMPTOM DETAIL',
-      question: 'Ask about location and quality of headache — tension vs. vascular patterns differ in management.'
-    },
-    {
-      id: 2,
-      priority: 'high',
-      priorityLabel: 'high',
-      tag: 'DIFFERENTIAL',
-      question: 'Has the patient noticed any visual disturbances or aura before onset? Important to rule out migraine.'
-    },
-    {
-      id: 3,
-      priority: 'medium',
-      priorityLabel: 'medium',
-      tag: 'LIFESTYLE',
-      question: 'Screen for caffeine intake — afternoon timing correlates with caffeine withdrawal in regular coffee drinkers.'
-    },
-    {
-      id: 4,
-      priority: 'medium',
-      priorityLabel: 'medium',
-      tag: 'LIFESTYLE',
-      question: 'Assess sleep quality and duration — headaches at consistent times can indicate disrupted sleep cycles.'
-    },
-    {
-      id: 5,
-      priority: 'low',
-      priorityLabel: 'low',
-      tag: 'ENVIRONMENT',
-      question: 'Consider asking about workplace ergonomics — screen time and posture are common triggers.'
-    }
-  ];
-
-  patientSnapshot = {
-    condition: 'Hypertension Stage 1',
-    currentRx: 'Lisinopril 10mg, Atorvastatin 20mg',
-    lastVisit: 'July 14, 2026',
-    bpAtLastVisit: '138/88 mmHg',
-    nextFollowUp: 'Aug 25, 2026'
-  };
-
-  setActiveTab(tab: 'analysis' | 'clinical' | 'medicines' | 'confidence' | 'soap') {
-    this.activeTab = tab;
-  }
-
   ngOnInit(): void {}
 
   ngOnDestroy(): void {
@@ -422,6 +407,58 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Open consultation for selected patient -> ALWAYS opens Image 4 (Suggestions & Patient Card)
+  openConsultation(patient: any): void {
+    this.visitDetails = {
+      patientName: patient.name,
+      visitId: patient.id.startsWith('#') ? patient.id : '#' + patient.id,
+      initials: patient.initials || 'AK',
+      demographics: patient.demographics || `${patient.age}${patient.gender} · ${patient.id}`,
+      visitType: patient.visitType,
+      reason: patient.reason,
+      condition: patient.condition || 'New presentation',
+      lastVisit: patient.lastVisit || '—',
+      date: 'Aug 13, 2026',
+      time: patient.time,
+      duration: patient.duration || '30 min'
+    };
+
+    // Synchronize mock data state
+    this.mockData.activeConsultation.update(prev => ({
+      ...prev,
+      patientName: patient.name,
+      patientAge: patient.age,
+      patientGender: patient.gender === 'M' ? 'Male' : 'Female',
+      patientPid: patient.id,
+      reasonForVisit: patient.reason
+    }));
+
+    // Start with Image 4 (Patient Card + AI Suggestions + Run Clinical Analysis button)
+    this.rightPanelMode = 'suggestions';
+    this.viewMode = 'consultation';
+  }
+
+  // On clicking "Run Clinical Analysis" -> switches right column to Image 3 (5-Tab CDS Panel)
+  runClinicalAnalysis(): void {
+    this.rightPanelMode = 'analysis';
+    this.activeTab = 'analysis';
+  }
+
+  // Switch back to Image 4 (Suggestions)
+  backToSuggestions(): void {
+    this.rightPanelMode = 'suggestions';
+  }
+
+  // Return to Today's Schedule
+  backToQueue(): void {
+    this.viewMode = 'queue';
+  }
+
+  setActiveTab(tab: 'analysis' | 'clinical' | 'medicines' | 'confidence' | 'soap') {
+    this.activeTab = tab;
+  }
+
+  // Recording methods
   async startRecording(): Promise<void> {
     try {
       const activeCons = this.mockData.activeConsultation();
@@ -459,12 +496,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       doctorId: 'DOC-001',
       patientId: activeCons.patientPid || 'P1245'
     }).subscribe({
-      next: (res) => {
-        console.log('Upload successful:', res);
-      },
-      error: (err) => {
-        console.error('Upload failed:', err);
-      }
+      next: (res) => console.log('Upload successful:', res),
+      error: (err) => console.error('Upload failed:', err)
     });
   }
 
@@ -476,7 +509,6 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.recordingService.downloadRecording();
   }
 
-
   togglePreviewPlayback(): void {
     const audioEl = this.audioPlayerRef?.nativeElement;
     if (!audioEl) return;
@@ -487,9 +519,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     } else {
       audioEl.play().then(() => {
         this.isPlayingPreview = true;
-      }).catch(err => {
-        console.error('Playback error:', err);
-      });
+      }).catch(err => console.error('Playback error:', err));
     }
   }
 
@@ -533,10 +563,6 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.activePlayingSessionId = null;
   }
 
-  dismissQuestion(id: number) {
-    this.aiQuestions = this.aiQuestions.filter(q => q.id !== id);
-  }
-
   get currentState() {
     return this.recordingService.state();
   }
@@ -555,52 +581,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return this.recordingService.recordedSessions();
   }
 
-  openConsultation(patient: any): void {
-    this.visitDetails = {
-      patientName: patient.name,
-      visitId: patient.id.startsWith('#') ? patient.id : '#' + patient.id,
-      reason: patient.visitType + ' · ' + (patient.condition || patient.reason),
-      date: 'Aug 13, 2026',
-      time: patient.time,
-      duration: patient.duration || '30 min'
-    };
-
-    // Update active consultation in mock data for cross-component state synchronization
-    this.mockData.activeConsultation.update(prev => ({
-      ...prev,
-      patientName: patient.name,
-      patientAge: patient.age,
-      patientGender: patient.gender === 'M' ? 'Male' : 'Female',
-      patientPid: patient.id,
-      reasonForVisit: patient.reason
-    }));
-
-    this.viewMode = 'consultation';
-  }
-
-  startConsultationFlow(patient: any, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    this.openConsultation(patient);
-    this.authService.setStep(2); // Progress to consultation recording
-  }
-
-  backToQueue(): void {
-    this.viewMode = 'queue';
-  }
-
-  get filteredPatients() {
-    return this.patientsQueue.filter(p => {
-      const matchSearch = !this.searchTerm || 
-        p.name.toLowerCase().includes(this.searchTerm.toLowerCase()) || 
-        p.id.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        p.reason.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        p.condition.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      const matchStatus = this.statusFilter === 'ALL' || p.status === this.statusFilter;
-      return matchSearch && matchStatus;
-    });
+  get hasPendingUploads(): boolean {
+    return this.recordedSessions.some(s => s.status !== 'UPLOADED');
   }
 
   get totalAppointmentsCount(): number {
@@ -618,13 +600,4 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   get remainingCount(): number {
     return this.patientsQueue.filter(p => p.status === 'SCHEDULED').length;
   }
-
-  get completedCount(): number {
-    return this.patientsQueue.filter(p => p.status === 'COMPLETED').length;
-  }
-
-  get hasPendingUploads(): boolean {
-    return this.recordedSessions.some(s => s.status !== 'UPLOADED');
-  }
 }
-
