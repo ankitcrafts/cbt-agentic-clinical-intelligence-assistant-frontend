@@ -29,92 +29,132 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   activePlayingSessionId: string | null = null;
   activePlayingAudioUrl: string | null = null;
 
-  // Patient Queue Data
+  // Doctor Header Details
+  doctorGreeting = 'Good morning, Dr. Tanaka';
+  todayDateFormatted = 'Wednesday, August 13';
+  hospitalInfo = 'Cardiology · St. Mercy Hospital';
+  dutyStatus = 'On duty';
+  doctorInitials = 'YT';
+
+  // Patient Queue / Schedule Data (100% Mockup Parity)
   patientsQueue = [
     {
-      id: 'P-2026-0813',
+      id: '#00847261',
       name: 'Marcus Delgado',
       initials: 'MD',
       age: 42,
-      gender: 'Male',
-      time: '09:14 AM',
-      visitType: 'Cardiology follow-up',
-      reason: 'Recurrent afternoon headaches & Stage 1 HTN',
-      vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10' },
+      gender: 'M',
+      demographics: '42M · #00847261',
+      time: '09:00',
+      duration: '30 min',
+      visitType: 'Follow-up',
+      reason: 'Hypertension review + new headache complaint',
+      condition: 'Hypertension Stage 1',
       status: 'IN_PROGRESS',
       statusLabel: 'In Progress',
-      priority: 'high',
+      statusType: 'in-progress',
+      vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10' },
       isPrimary: true
     },
     {
-      id: 'P-1245',
-      name: 'Priya Verma',
-      initials: 'PV',
-      age: 32,
-      gender: 'Female',
-      time: '10:00 AM',
-      visitType: 'Hypertension review',
-      reason: 'Dizziness and neck pain follow-up',
-      vitals: { bp: '120/80 mmHg', hr: '68 bpm', pain: '2/10' },
+      id: '#00391847',
+      name: 'Priya Sharma',
+      initials: 'PS',
+      age: 34,
+      gender: 'F',
+      demographics: '34F · #00391847',
+      time: '09:45',
+      duration: '20 min',
+      visitType: 'Consultation',
+      reason: 'Persistent fatigue, thyroid history',
+      condition: 'Hypothyroidism',
       status: 'WAITING',
-      statusLabel: 'Waiting (12 min)',
-      priority: 'medium',
+      statusLabel: 'Waiting',
+      statusType: 'waiting',
+      vitals: { bp: '118/76 mmHg', hr: '68 bpm', pain: '0/10' },
       isPrimary: false
     },
     {
-      id: 'P-1246',
-      name: 'Rohan Mehta',
-      initials: 'RM',
-      age: 45,
-      gender: 'Male',
-      time: '10:45 AM',
-      visitType: 'Routine checkup',
-      reason: 'Persistent elevated BP on home log',
-      vitals: { bp: '142/90 mmHg', hr: '80 bpm', pain: '0/10' },
+      id: '#00512938',
+      name: 'Elias Voss',
+      initials: 'EV',
+      age: 58,
+      gender: 'M',
+      demographics: '58M · #00512938',
+      time: '10:15',
+      duration: '30 min',
+      visitType: 'Annual Check',
+      reason: 'Routine annual review, diabetes management',
+      condition: 'Type 2 Diabetes',
       status: 'WAITING',
-      statusLabel: 'Waiting (5 min)',
-      priority: 'high',
+      statusLabel: 'Waiting',
+      statusType: 'waiting',
+      vitals: { bp: '132/84 mmHg', hr: '74 bpm', pain: '0/10' },
       isPrimary: false
     },
     {
-      id: 'P-1247',
-      name: 'Ananya Singh',
-      initials: 'AS',
-      age: 28,
-      gender: 'Female',
-      time: '11:30 AM',
-      visitType: 'Migraine Follow-up',
-      reason: 'Screen-time related tension headaches',
-      vitals: { bp: '118/76 mmHg', hr: '70 bpm', pain: '4/10' },
+      id: '#00673920',
+      name: 'Anya Kowalski',
+      initials: 'AK',
+      age: 29,
+      gender: 'F',
+      demographics: '29F · #00673920',
+      time: '11:00',
+      duration: '45 min',
+      visitType: 'New Patient',
+      reason: 'Chest tightness, shortness of breath on exertion',
+      condition: 'New presentation',
       status: 'SCHEDULED',
       statusLabel: 'Scheduled',
-      priority: 'low',
+      statusType: 'scheduled',
+      vitals: { bp: '122/80 mmHg', hr: '82 bpm', pain: '3/10' },
       isPrimary: false
     },
     {
-      id: 'P-1248',
-      name: 'Suresh Kumar',
-      initials: 'SK',
-      age: 55,
-      gender: 'Male',
-      time: '08:30 AM',
-      visitType: 'Post-Rx Review',
-      reason: 'Cholesterol and hypertensive control review',
-      vitals: { bp: '130/84 mmHg', hr: '74 bpm', pain: '0/10' },
-      status: 'COMPLETED',
-      statusLabel: 'Completed',
-      priority: 'low',
+      id: '#00182736',
+      name: 'Samuel Obi',
+      initials: 'SO',
+      age: 67,
+      gender: 'M',
+      demographics: '67M · #00182736',
+      time: '11:55',
+      duration: '20 min',
+      visitType: 'Follow-up',
+      reason: 'Post-catheterisation review, stable angina',
+      condition: 'Stable Angina',
+      status: 'SCHEDULED',
+      statusLabel: 'Scheduled',
+      statusType: 'scheduled',
+      vitals: { bp: '128/82 mmHg', hr: '64 bpm', pain: '1/10' },
+      isPrimary: false
+    },
+    {
+      id: '#00847193',
+      name: 'Lin Wei',
+      initials: 'LW',
+      age: 45,
+      gender: 'F',
+      demographics: '45F · #00847193',
+      time: '14:00',
+      duration: '30 min',
+      visitType: 'Follow-up',
+      reason: 'AF management, medication titration',
+      condition: 'Atrial Fibrillation',
+      status: 'SCHEDULED',
+      statusLabel: 'Scheduled',
+      statusType: 'scheduled',
+      vitals: { bp: '126/80 mmHg', hr: '76 bpm', pain: '0/10' },
       isPrimary: false
     }
   ];
 
   visitDetails = {
     patientName: 'Marcus Delgado',
-    visitId: '#2026-08-13',
-    reason: 'Cardiology follow-up',
+    visitId: '#00847261',
+    reason: 'Follow-up · Hypertension review',
     date: 'Aug 13, 2026',
-    time: '09:14 AM',
-    duration: '18 min 42 sec'
+    time: '09:00',
+    duration: '30 min'
   };
 
   activeTab: 'analysis' | 'clinical' | 'medicines' | 'confidence' | 'soap' = 'analysis';
@@ -518,13 +558,32 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   openConsultation(patient: any): void {
     this.visitDetails = {
       patientName: patient.name,
-      visitId: '#' + patient.id,
-      reason: patient.visitType,
+      visitId: patient.id.startsWith('#') ? patient.id : '#' + patient.id,
+      reason: patient.visitType + ' · ' + (patient.condition || patient.reason),
       date: 'Aug 13, 2026',
       time: patient.time,
-      duration: '18 min 42 sec'
+      duration: patient.duration || '30 min'
     };
+
+    // Update active consultation in mock data for cross-component state synchronization
+    this.mockData.activeConsultation.update(prev => ({
+      ...prev,
+      patientName: patient.name,
+      patientAge: patient.age,
+      patientGender: patient.gender === 'M' ? 'Male' : 'Female',
+      patientPid: patient.id,
+      reasonForVisit: patient.reason
+    }));
+
     this.viewMode = 'consultation';
+  }
+
+  startConsultationFlow(patient: any, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.openConsultation(patient);
+    this.authService.setStep(2); // Progress to consultation recording
   }
 
   backToQueue(): void {
@@ -536,7 +595,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       const matchSearch = !this.searchTerm || 
         p.name.toLowerCase().includes(this.searchTerm.toLowerCase()) || 
         p.id.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        p.reason.toLowerCase().includes(this.searchTerm.toLowerCase());
+        p.reason.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        p.condition.toLowerCase().includes(this.searchTerm.toLowerCase());
       
       const matchStatus = this.statusFilter === 'ALL' || p.status === this.statusFilter;
       return matchSearch && matchStatus;
@@ -547,12 +607,16 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return this.patientsQueue.length;
   }
 
-  get waitingCount(): number {
-    return this.patientsQueue.filter(p => p.status === 'WAITING' || p.status === 'SCHEDULED').length;
-  }
-
   get inProgressCount(): number {
     return this.patientsQueue.filter(p => p.status === 'IN_PROGRESS').length;
+  }
+
+  get waitingCount(): number {
+    return this.patientsQueue.filter(p => p.status === 'WAITING').length;
+  }
+
+  get remainingCount(): number {
+    return this.patientsQueue.filter(p => p.status === 'SCHEDULED').length;
   }
 
   get completedCount(): number {

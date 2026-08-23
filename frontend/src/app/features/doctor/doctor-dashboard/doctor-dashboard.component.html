@@ -1,190 +1,110 @@
-<!-- VIEW 1: PATIENTS QUEUE LIST (Before Consultation Support) -->
-<div class="cliniq-patient-queue-page" *ngIf="viewMode === 'queue'">
-  <!-- Queue Header -->
-  <div class="queue-page-header">
+<!-- VIEW 1: DOCTOR DASHBOARD SCHEDULE (Matching ClinIQ Mockup) -->
+<div class="cliniq-doctor-dashboard" *ngIf="viewMode === 'queue'">
+  <!-- Top Greeting & Hospital Info Header -->
+  <div class="dashboard-header-row">
     <div class="header-left">
-      <h1 class="main-title serif-title">Patient Consultations Queue</h1>
-      <p class="subtitle">
-        Welcome, Dr. Yuki Tanaka · Today: Aug 13, 2026 · {{ totalAppointmentsCount }} Consultations Scheduled
+      <h1 class="doctor-greeting serif-title">{{ doctorGreeting }}</h1>
+      <p class="doctor-subtitle">
+        {{ todayDateFormatted }} · {{ totalAppointmentsCount }} appointments today
       </p>
     </div>
+
     <div class="header-right">
-      <span class="live-clock-badge">
-        <i class="fa-regular fa-clock"></i> Live Queue Updated
-      </span>
-    </div>
-  </div>
-
-  <!-- KPI Summary Stats Cards -->
-  <div class="queue-stats-grid">
-    <div class="stat-kpi-card">
-      <div class="kpi-icon-wrap" style="background: rgba(13, 148, 136, 0.12); color: #0d9488;">
-        <i class="fa-solid fa-users"></i>
+      <div class="doctor-meta-col">
+        <span class="hospital-name">{{ hospitalInfo }}</span>
+        <span class="duty-badge">{{ dutyStatus }}</span>
       </div>
-      <div class="kpi-info">
-        <span class="kpi-val font-mono">{{ totalAppointmentsCount }}</span>
-        <span class="kpi-label">Today's Total</span>
-      </div>
-    </div>
-
-    <div class="stat-kpi-card">
-      <div class="kpi-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
-        <i class="fa-solid fa-hourglass-half"></i>
-      </div>
-      <div class="kpi-info">
-        <span class="kpi-val font-mono">{{ waitingCount }}</span>
-        <span class="kpi-label">Waiting in Queue</span>
-      </div>
-    </div>
-
-    <div class="stat-kpi-card">
-      <div class="kpi-icon-wrap" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
-        <i class="fa-solid fa-stethoscope"></i>
-      </div>
-      <div class="kpi-info">
-        <span class="kpi-val font-mono">{{ inProgressCount }}</span>
-        <span class="kpi-label">Active / In Progress</span>
-      </div>
-    </div>
-
-    <div class="stat-kpi-card">
-      <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
-        <i class="fa-solid fa-circle-check"></i>
-      </div>
-      <div class="kpi-info">
-        <span class="kpi-val font-mono">{{ completedCount }}</span>
-        <span class="kpi-label">Completed</span>
+      <div class="doctor-avatar-circle" title="Dr. Yuki Tanaka">
+        <span>{{ doctorInitials }}</span>
       </div>
     </div>
   </div>
 
-  <!-- Search & Filter Bar -->
-  <div class="queue-filter-bar">
-    <div class="search-input-wrap">
-      <i class="fa-solid fa-magnifying-glass search-icon"></i>
-      <input 
-        type="text" 
-        class="search-input" 
-        placeholder="Search patient by name, PID, or medical reason..." 
-        [(ngModel)]="searchTerm"
-      />
-      <button class="clear-search-btn" *ngIf="searchTerm" (click)="searchTerm = ''">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+  <!-- Summary KPI Stat Cards Grid (4 Cards) -->
+  <div class="stat-cards-grid">
+    <div class="stat-card">
+      <span class="stat-label">TOTAL TODAY</span>
+      <div class="stat-value font-mono">{{ totalAppointmentsCount }}</div>
+      <span class="stat-subtext">Appointments</span>
     </div>
 
-    <div class="status-filter-pills">
-      <button 
-        type="button" 
-        class="filter-pill-btn" 
-        [class.active]="statusFilter === 'ALL'" 
-        (click)="statusFilter = 'ALL'"
-      >
-        All ({{ totalAppointmentsCount }})
-      </button>
-      <button 
-        type="button" 
-        class="filter-pill-btn" 
-        [class.active]="statusFilter === 'IN_PROGRESS'" 
-        (click)="statusFilter = 'IN_PROGRESS'"
-      >
-        In Progress ({{ inProgressCount }})
-      </button>
-      <button 
-        type="button" 
-        class="filter-pill-btn" 
-        [class.active]="statusFilter === 'WAITING'" 
-        (click)="statusFilter = 'WAITING'"
-      >
-        Waiting ({{ waitingCount }})
-      </button>
-      <button 
-        type="button" 
-        class="filter-pill-btn" 
-        [class.active]="statusFilter === 'COMPLETED'" 
-        (click)="statusFilter = 'COMPLETED'"
-      >
-        Completed ({{ completedCount }})
-      </button>
+    <div class="stat-card">
+      <span class="stat-label">IN PROGRESS</span>
+      <div class="stat-value font-mono">{{ inProgressCount }}</div>
+      <span class="stat-subtext">Active session</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">WAITING</span>
+      <div class="stat-value font-mono">{{ waitingCount }}</div>
+      <span class="stat-subtext">In waiting room</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">REMAINING</span>
+      <div class="stat-value font-mono">{{ remainingCount }}</div>
+      <span class="stat-subtext">Scheduled</span>
     </div>
   </div>
 
-  <!-- Patient Queue Cards List -->
-  <div class="queue-cards-list">
+  <!-- Section Title -->
+  <div class="schedule-section-header">
+    TODAY'S SCHEDULE
+  </div>
+
+  <!-- Today's Schedule Patient Cards List -->
+  <div class="schedule-cards-list">
     <div 
-      class="patient-queue-card" 
-      *ngFor="let p of filteredPatients"
-      [class.active-highlight]="p.status === 'IN_PROGRESS'"
-      [class.completed-card]="p.status === 'COMPLETED'"
+      class="schedule-card" 
+      *ngFor="let p of patientsQueue"
+      [class.in-progress-card]="p.status === 'IN_PROGRESS'"
+      (click)="openConsultation(p)"
+      [title]="'Click to view consultation details for ' + p.name"
     >
-      <div class="card-left-section">
-        <div class="patient-avatar-box" [class.active-avatar]="p.status === 'IN_PROGRESS'">
+      <!-- Left Section: Time, Avatar, Patient Details & Tags -->
+      <div class="card-left-group">
+        <div class="time-block">
+          <span class="time-text font-mono">{{ p.time }}</span>
+          <span class="duration-text">{{ p.duration }}</span>
+        </div>
+
+        <div class="patient-avatar-box">
           <span>{{ p.initials }}</span>
         </div>
 
-        <div class="patient-primary-meta">
-          <div class="name-row">
-            <h3 class="patient-name">{{ p.name }}</h3>
-            <span class="demographics-tag">{{ p.age }}y &bull; {{ p.gender }}</span>
-            <span class="pid-badge">PID: {{ p.id }}</span>
+        <div class="patient-info-block">
+          <div class="patient-headline">
+            <span class="patient-name">{{ p.name }}</span>
+            <span class="patient-demographics">{{ p.demographics }}</span>
           </div>
 
-          <div class="visit-details-row">
-            <span class="time-slot"><i class="fa-regular fa-clock"></i> {{ p.time }}</span>
-            <span class="dot-divider">&bull;</span>
-            <span class="visit-type">{{ p.visitType }}</span>
-            <span class="dot-divider">&bull;</span>
+          <div class="patient-subline">
+            <span class="visit-type-pill">{{ p.visitType }}</span>
             <span class="reason-text">{{ p.reason }}</span>
           </div>
         </div>
       </div>
 
-      <div class="card-mid-vitals">
-        <div class="vital-pill">
-          <span class="vital-lbl">BP</span>
-          <span class="vital-val font-mono">{{ p.vitals.bp }}</span>
+      <!-- Right Section: Status Badge & Clinical Condition + Hover Arrow -->
+      <div class="card-right-group">
+        <div class="status-condition-stack">
+          <div 
+            class="status-pill"
+            [class.status-in-progress]="p.status === 'IN_PROGRESS'"
+            [class.status-waiting]="p.status === 'WAITING'"
+            [class.status-scheduled]="p.status === 'SCHEDULED'"
+          >
+            <span class="status-dot"></span>
+            <span>{{ p.statusLabel }}</span>
+          </div>
+
+          <span class="condition-text">{{ p.condition }}</span>
         </div>
-        <div class="vital-pill">
-          <span class="vital-lbl">HR</span>
-          <span class="vital-val font-mono">{{ p.vitals.hr }}</span>
-        </div>
-        <div class="vital-pill" *ngIf="p.vitals.pain !== '0/10'">
-          <span class="vital-lbl">Pain</span>
-          <span class="vital-val font-mono">{{ p.vitals.pain }}</span>
+
+        <div class="card-hover-arrow" aria-hidden="true">
+          <i class="fa-solid fa-chevron-right"></i>
         </div>
       </div>
-
-      <div class="card-right-actions">
-        <span 
-          class="queue-status-badge"
-          [class.status-in-progress]="p.status === 'IN_PROGRESS'"
-          [class.status-waiting]="p.status === 'WAITING'"
-          [class.status-scheduled]="p.status === 'SCHEDULED'"
-          [class.status-completed]="p.status === 'COMPLETED'"
-        >
-          <span class="status-dot"></span>
-          {{ p.statusLabel }}
-        </span>
-
-        <button 
-          type="button" 
-          class="btn-start-consult" 
-          [class.primary-btn]="p.status !== 'COMPLETED'"
-          (click)="openConsultation(p)"
-        >
-          <i class="fa-solid" [class.fa-stethoscope]="p.status !== 'COMPLETED'" [class.fa-eye]="p.status === 'COMPLETED'"></i>
-          <span>{{ p.status === 'IN_PROGRESS' ? 'Open Active Support' : (p.status === 'COMPLETED' ? 'View SOAP Note' : 'Start Consultation') }}</span>
-          <i class="fa-solid fa-arrow-right"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Empty search state -->
-    <div class="empty-search-state" *ngIf="filteredPatients.length === 0">
-      <i class="fa-solid fa-user-slash empty-icon"></i>
-      <h4>No patients match the search or filter</h4>
-      <p>Try resetting the search keyword or switching filters.</p>
-      <button class="filter-pill-btn" (click)="searchTerm = ''; statusFilter = 'ALL'">Reset Filters</button>
     </div>
   </div>
 </div>
