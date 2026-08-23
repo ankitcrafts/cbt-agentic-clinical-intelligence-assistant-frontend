@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'http://localhost:8000/api/v1',
+  apiBaseUrl: 'http://localhost:8000',
   authApiUrl: 'http://localhost:8000/api/auth',
-  recordingEndpoint: '/recordings',
-  useMockUpload: true
+  recordingEndpoint: '/api/v1/recordings',
+  useMockUpload: false
 };
