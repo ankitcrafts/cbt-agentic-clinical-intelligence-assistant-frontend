@@ -583,7 +583,87 @@ export class RecordingService implements OnDestroy {
   }
 
   /**
-   * Resets recording state and cleans up resources.
+   * Deletes an individual session from history by ID.
+   */
+  deleteSession(sessionId: string): void {
+    const target = this.recordedSessions().find(s => s.id === sessionId);
+    if (target?.audioUrl) {
+      try {
+        URL.revokeObjectURL(target.audioUrl);
+      } catch (e) {}
+    }
+    this.recordedSessions.update(list => list.filter(s => s.id !== sessionId));
+
+    const remaining = this.recordedSessions();
+    if (remaining.length === 0) {
+      this.resetToInitialState();
+    } else {
+      const latest = remaining[remaining.length - 1];
+      this.durationSeconds.set(latest.durationSeconds);
+      this.audioUrl.set(latest.audioUrl);
+      this.recordedBlob.set(latest.recordedBlob);
+      this.recordedFile.set(latest.recordedFile);
+      this.sessionMetadata.set(latest.metadata);
+      this.sessionTitle.set(latest.sessionTitle);
+      this.state.set('READY_TO_UPLOAD');
+    }
+  }
+
+  /**
+   * Clears all recorded sessions from history.
+   */
+  clearAllSessions(): void {
+    this.recordedSessions().forEach(s => {
+      if (s.audioUrl) {
+        try {
+          URL.revokeObjectURL(s.audioUrl);
+        } catch (e) {}
+      }
+    });
+    this.recordedSessions.set([]);
+    this.resetToInitialState();
+  }
+
+  /**
+   * Deletes the active in-progress or unsaved recording session.
+   */
+  deleteCurrentRecording(): void {
+    const url = this.audioUrl();
+    if (url) {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (e) {}
+    }
+    this.recordedBlob.set(null);
+    this.recordedFile.set(null);
+    this.audioUrl.set(null);
+    this.sessionMetadata.set(null);
+    this.durationSeconds.set(0);
+    this.state.set('IDLE');
+
+    if (this.recordedSessions().length === 0) {
+      this.resetToInitialState();
+    }
+  }
+
+  /**
+   * Completely resets to pristine initial state (Session 1, IDLE, 0s).
+   */
+  resetToInitialState(): void {
+    this.cleanupRecording();
+    this.state.set('IDLE');
+    this.durationSeconds.set(0);
+    this.errorMessage.set(null);
+    this.recordedBlob.set(null);
+    this.recordedFile.set(null);
+    this.audioUrl.set(null);
+    this.sessionMetadata.set(null);
+    this.sessionNumber.set(1);
+    this.sessionTitle.set('Session 1');
+  }
+
+  /**
+   * Resets recording state and cleans up resources for the next new session.
    */
   resetState(): void {
     this.cleanupRecording();

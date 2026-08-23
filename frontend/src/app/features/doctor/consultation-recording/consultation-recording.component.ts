@@ -114,6 +114,15 @@ export class ConsultationRecordingComponent implements OnInit, OnDestroy {
     this.recordingService.downloadRecording();
   }
 
+  deleteRecording(): void {
+    const audioEl = this.audioPlayerRef?.nativeElement;
+    if (audioEl) {
+      audioEl.pause();
+    }
+    this.isPlayingPreview = false;
+    this.recordingService.deleteCurrentRecording();
+  }
+
   setAudioFormat(format: 'wav' | 'mp3' | 'webm'): void {
     this.recordingService.setTargetFormat(format);
   }

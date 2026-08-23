@@ -78,16 +78,15 @@
           <span>Stop</span>
         </button>
 
-        <button class="control-btn preview-btn" *ngIf="recordingService.audioUrl()" (click)="togglePreviewPlayback()">
-          <i class="fa-solid" [ngClass]="isPlayingPreview ? 'fa-pause' : 'fa-play'"></i>
-          <span>{{ isPlayingPreview ? 'Pause Preview' : 'Play Preview' }}</span>
-        </button>
-
-        <button class="control-btn download-btn" *ngIf="recordingService.audioUrl()" (click)="downloadRecording()" title="Download audio file to computer">
+        <button class="control-btn download-btn" *ngIf="currentState !== 'RECORDING' && currentState !== 'PAUSED' && recordingService.audioUrl()" (click)="downloadRecording()" title="Download audio file to computer">
           <i class="fa-solid fa-download"></i>
           <span>Download</span>
         </button>
 
+        <button class="control-btn delete-btn" *ngIf="currentState !== 'RECORDING' && currentState !== 'PAUSED' && recordingService.audioUrl()" (click)="deleteRecording()" title="Discard and delete recording" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #ef4444;">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Delete</span>
+        </button>
 
         <button class="btn btn-primary finish-btn" (click)="finishRecording()">
           {{ currentState === 'READY_TO_UPLOAD' ? 'Upload & Proceed' : 'Finish Recording' }}

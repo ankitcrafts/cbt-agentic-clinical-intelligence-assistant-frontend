@@ -505,21 +505,56 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.uploadRecording();
   }
 
+  get latestSession(): RecordedSessionItem | null {
+    const sessions = this.recordingService.recordedSessions();
+    return sessions.length > 0 ? sessions[sessions.length - 1] : null;
+  }
+
+  get latestRecordingUrl(): string | null {
+    const latest = this.latestSession;
+    if (latest?.audioUrl) {
+      return latest.audioUrl;
+    }
+    return this.recordingService.audioUrl();
+  }
+
+  get hasRecordings(): boolean {
+    return this.recordingService.recordedSessions().length > 0 || (!!this.recordingService.audioUrl() && this.recordingService.state() !== 'IDLE');
+  }
+
   downloadRecording(): void {
-    this.recordingService.downloadRecording();
+    const latest = this.latestSession;
+    if (latest) {
+      this.recordingService.downloadSessionItem(latest);
+    } else {
+      this.recordingService.downloadRecording();
+    }
   }
 
   togglePreviewPlayback(): void {
     const audioEl = this.audioPlayerRef?.nativeElement;
-    if (!audioEl) return;
+    const latestUrl = this.latestRecordingUrl;
+    if (!audioEl || !latestUrl) return;
 
-    if (this.isPlayingPreview) {
+    const latest = this.latestSession;
+    const isLatestActive = !this.activePlayingSessionId || (latest && this.activePlayingSessionId === latest.id);
+
+    if (this.isPlayingPreview && isLatestActive) {
       audioEl.pause();
       this.isPlayingPreview = false;
+      this.activePlayingSessionId = null;
     } else {
-      audioEl.play().then(() => {
-        this.isPlayingPreview = true;
-      }).catch(err => console.error('Playback error:', err));
+      this.activePlayingSessionId = latest ? latest.id : 'latest';
+      this.activePlayingAudioUrl = latestUrl;
+      setTimeout(() => {
+        audioEl.load();
+        audioEl.play().then(() => {
+          this.isPlayingPreview = true;
+        }).catch(err => {
+          console.error('Playback error:', err);
+          this.isPlayingPreview = false;
+        });
+      }, 50);
     }
   }
 
@@ -556,6 +591,37 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   uploadAllSessions(): void {
     const pending = this.recordingService.recordedSessions().filter(s => s.status !== 'UPLOADED');
     pending.forEach(s => this.uploadSession(s));
+  }
+
+  deleteSession(sessionId: string): void {
+    if (this.activePlayingSessionId === sessionId) {
+      const audioEl = this.audioPlayerRef?.nativeElement;
+      if (audioEl) {
+        audioEl.pause();
+      }
+      this.isPlayingPreview = false;
+      this.activePlayingSessionId = null;
+    }
+    this.recordingService.deleteSession(sessionId);
+  }
+
+  clearAllSessions(): void {
+    const audioEl = this.audioPlayerRef?.nativeElement;
+    if (audioEl) {
+      audioEl.pause();
+    }
+    this.isPlayingPreview = false;
+    this.activePlayingSessionId = null;
+    this.recordingService.clearAllSessions();
+  }
+
+  deleteCurrentRecording(): void {
+    const audioEl = this.audioPlayerRef?.nativeElement;
+    if (audioEl) {
+      audioEl.pause();
+    }
+    this.isPlayingPreview = false;
+    this.recordingService.deleteCurrentRecording();
   }
 
   onAudioEnded(): void {

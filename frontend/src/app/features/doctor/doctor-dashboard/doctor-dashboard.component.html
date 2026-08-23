@@ -172,8 +172,8 @@
 
         <!-- Controls Row -->
         <div class="recording-controls-row" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <!-- Start Recording Button -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || (currentState === 'FAILED' && !recordingService.recordedFile())" (click)="startRecording()">
+          <!-- Start Recording Button (Shown when IDLE or no saved sessions exist) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || (!hasRecordings && currentState !== 'RECORDING' && currentState !== 'PAUSED')" (click)="startRecording()">
             <i class="fa-solid fa-microphone"></i>
             <span>Start Recording</span>
           </button>
@@ -196,39 +196,21 @@
             <span>Stop Recording</span>
           </button>
 
-          <!-- Preview Playback Button -->
-          <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="togglePreviewPlayback()">
-            <i class="fa-solid" [class.fa-play]="!isPlayingPreview" [class.fa-pause]="isPlayingPreview"></i>
-            <span>{{ isPlayingPreview ? 'Playing preview...' : 'Play Recording Preview' }}</span>
-          </button>
-
-          <!-- Download Audio File Button -->
-          <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="downloadRecording()" title="Download recorded audio file to local computer">
+          <!-- Download Audio File Button (Only when not recording/paused AND has recordings) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState !== 'RECORDING' && currentState !== 'PAUSED' && hasRecordings" (click)="downloadRecording()" title="Download latest recorded audio file to local computer">
             <i class="fa-solid fa-download"></i>
             <span>Download Audio</span>
           </button>
 
-          <!-- Upload Recording Button -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD'" (click)="uploadRecording()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
-            <i class="fa-solid fa-cloud-arrow-up" style="background: #10b981; color: #fff;"></i>
-            <span>Upload Recording</span>
-          </button>
-
-          <!-- Retry Upload Button -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'FAILED' && recordingService.recordedFile()" (click)="retryUpload()" style="background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4);">
-            <i class="fa-solid fa-rotate-right" style="background: #f59e0b; color: #fff;"></i>
-            <span>Retry Upload</span>
-          </button>
-
-          <!-- Reset / New Session Button -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED' || currentState === 'FAILED'" (click)="recordingService.resetState()" style="opacity: 0.8;">
+          <!-- Reset / New Session Button (Only when not recording/paused AND has recordings) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState !== 'RECORDING' && currentState !== 'PAUSED' && hasRecordings" (click)="recordingService.resetState()" style="opacity: 0.9;">
             <i class="fa-solid fa-plus"></i>
             <span>New Session</span>
           </button>
         </div>
 
         <!-- Hidden Audio Player element for playback -->
-        <audio #audioPlayer [src]="activePlayingAudioUrl || recordingService.audioUrl()" (ended)="onAudioEnded()" style="display: none;"></audio>
+        <audio #audioPlayer [src]="activePlayingAudioUrl || latestRecordingUrl" (ended)="onAudioEnded()" style="display: none;"></audio>
 
         <!-- Status & Error Feedback Banner -->
         <div class="recording-feedback-msg" *ngIf="recordingService.errorMessage()" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.8rem;">
@@ -240,13 +222,18 @@
 
         <!-- Recorded Sessions History List -->
         <div class="recorded-sessions-history" *ngIf="recordedSessions.length > 0" style="margin-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 1rem;">
-          <div class="history-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+          <div class="history-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
             <span style="font-size: 0.825rem; font-weight: 700; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.05em;">
               <i class="fa-solid fa-list-check"></i> Recorded Sessions List ({{ recordedSessions.length }})
             </span>
-            <button type="button" class="btn-play-pause" *ngIf="hasPendingUploads" (click)="uploadAllSessions()" style="font-size: 0.75rem; padding: 0.3rem 0.75rem; background: rgba(45, 212, 191, 0.2); border-color: rgba(45, 212, 191, 0.4);">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Upload All Sessions
-            </button>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <button type="button" class="btn-play-pause" *ngIf="hasPendingUploads" (click)="uploadAllSessions()" style="font-size: 0.75rem; padding: 0.3rem 0.75rem; background: rgba(45, 212, 191, 0.2); border-color: rgba(45, 212, 191, 0.4);">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload All Sessions
+              </button>
+              <button type="button" class="btn-play-pause" (click)="clearAllSessions()" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5;" title="Clear all recorded sessions from history">
+                <i class="fa-solid fa-trash-can" style="background: #ef4444; color: #fff;"></i> Clear All
+              </button>
+            </div>
           </div>
 
           <div class="sessions-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto;">
@@ -274,6 +261,9 @@
                 </button>
                 <button type="button" class="action-icon-btn" [disabled]="s.status === 'UPLOADING' || s.status === 'UPLOADED'" (click)="uploadSession(s)" [title]="s.status === 'UPLOADED' ? 'Already Uploaded' : 'Upload Audio to Server'" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
                   <i class="fa-solid" [class.fa-check]="s.status === 'UPLOADED'" [class.fa-cloud-arrow-up]="s.status !== 'UPLOADED'" style="font-size: 0.75rem;"></i>
+                </button>
+                <button type="button" class="action-icon-btn" (click)="deleteSession(s.id)" title="Delete session from list" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
                 </button>
               </div>
             </div>
