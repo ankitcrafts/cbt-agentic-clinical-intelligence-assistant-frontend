@@ -55,8 +55,9 @@
   <div class="login-right-panel">
     <div class="auth-form-card">
       <h2 class="auth-title serif-title">Sign in</h2>
-      <p class="auth-subtitle">Demo environment — pick a role to explore the matching workspace.</p>
+      <p class="auth-subtitle">Secure medical portal with PostgreSQL & Gmail OTP verification.</p>
 
+      <!-- Role Selector -->
       <div class="role-selector-group">
         <label class="section-label">SIGN IN AS</label>
         <div class="role-tabs-grid">
@@ -102,23 +103,97 @@
         </p>
       </div>
 
-      <form (ngSubmit)="onLogin()" class="login-fields-form">
+      <!-- Alerts -->
+      <div class="auth-alert-error" *ngIf="authService.errorMessage()">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span>{{ authService.errorMessage() }}</span>
+      </div>
+
+      <div class="auth-alert-success" *ngIf="authService.successMessage()">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>{{ authService.successMessage() }}</span>
+      </div>
+
+      <!-- Step 1: Request OTP Form -->
+      <form *ngIf="!authService.otpSent()" (ngSubmit)="onSendOtp()" class="login-fields-form">
         <div class="form-group">
-          <label>Work email</label>
-          <input type="email" [(ngModel)]="email" name="email" required placeholder="patient@cliniq.health">
+          <label>Patient email / Gmail</label>
+          <input 
+            type="email" 
+            [(ngModel)]="email" 
+            name="email" 
+            required 
+            placeholder="e.g. patient@cliniq.health"
+          >
         </div>
 
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" [(ngModel)]="password" name="password" required>
+        <button type="submit" class="submit-btn" [disabled]="authService.isLoading() || !email">
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="authService.isLoading()"></i>
+          <i class="fa-solid fa-paper-plane" *ngIf="!authService.isLoading()"></i>
+          <span>Send 6-Digit OTP Code</span>
+        </button>
+
+        <div class="quick-demo-divider">
+          <span>or fast preview</span>
         </div>
 
-        <button type="submit" class="submit-btn">
-          Continue as {{ authService.currentRole() === 'ADMIN' ? 'Administrator' : (authService.currentRole() === 'DOCTOR' ? 'Doctor' : 'Patient') }}
+        <button type="button" class="quick-demo-btn" (click)="onQuickDemoLogin()">
+          <i class="fa-solid fa-bolt"></i>
+          <span>1-Click Demo Login as {{ authService.currentRole() === 'ADMIN' ? 'Administrator' : (authService.currentRole() === 'DOCTOR' ? 'Doctor' : 'Patient') }}</span>
         </button>
       </form>
 
-      <p class="disclaimer-text">Sample data only. No real patient information is stored.</p>
+      <!-- Step 2: Verify OTP Form -->
+      <form *ngIf="authService.otpSent()" (ngSubmit)="onVerifyOtp()" class="login-fields-form">
+        <!-- Dev OTP Helper Pill -->
+        <div class="otp-dev-hint" *ngIf="authService.devOtp()" (click)="autofillDevOtp()">
+          <span><i class="fa-solid fa-key"></i> Code: <strong>{{ authService.devOtp() }}</strong></span>
+          <button type="button" class="autofill-btn">Autofill</button>
+        </div>
+
+        <div class="form-group">
+          <label>Enter 6-digit OTP Code sent to <strong>{{ email }}</strong></label>
+          <input 
+            type="text" 
+            class="otp-input-box"
+            [(ngModel)]="otpCode" 
+            name="otpCode" 
+            required 
+            maxlength="6"
+            placeholder="••••••"
+            autocomplete="one-time-code"
+            autofocus
+          >
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="authService.isLoading() || !otpCode || otpCode.length < 4">
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="authService.isLoading()"></i>
+          <i class="fa-solid fa-arrow-right-to-bracket" *ngIf="!authService.isLoading()"></i>
+          <span>Verify & Enter {{ authService.currentRole() === 'ADMIN' ? 'Admin Portal' : (authService.currentRole() === 'DOCTOR' ? 'Clinician Suite' : 'Patient Portal') }}</span>
+        </button>
+
+        <div class="auth-actions-row">
+          <button type="button" class="text-action-btn" (click)="onChangeEmail()">
+            <i class="fa-solid fa-arrow-left"></i> Change email
+          </button>
+
+          <button type="button" class="text-action-btn" (click)="onResendOtp()" [disabled]="countdown > 0">
+            <span *ngIf="countdown === 0">Resend code</span>
+            <span *ngIf="countdown > 0">Resend in {{ countdown }}s</span>
+          </button>
+        </div>
+
+        <div class="quick-demo-divider">
+          <span>or fast preview</span>
+        </div>
+
+        <button type="button" class="quick-demo-btn" (click)="onQuickDemoLogin()">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Bypass OTP (Demo Login)</span>
+        </button>
+      </form>
+
+      <p class="disclaimer-text">Secure PostgreSQL authentication with encrypted OTP delivery.</p>
     </div>
   </div>
 </div>
