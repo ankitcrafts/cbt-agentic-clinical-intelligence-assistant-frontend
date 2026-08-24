@@ -7,6 +7,9 @@
       </div>
 
       <div class="action-buttons">
+        <a *ngIf="gdriveLink" [href]="gdriveLink" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="color: #2dd4bf; border-color: rgba(45, 212, 191, 0.4); text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <i class="fa-brands fa-google-drive"></i> View in Google Drive
+        </a>
         <button class="btn btn-outline btn-sm">
           <i class="fa-solid fa-download"></i> Download
         </button>

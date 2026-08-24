@@ -213,11 +213,22 @@
         <audio #audioPlayer [src]="activePlayingAudioUrl || latestRecordingUrl" (ended)="onAudioEnded()" style="display: none;"></audio>
 
         <!-- Status & Error Feedback Banner -->
+        <div class="recording-feedback-msg" *ngIf="isProcessingAudio" style="margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: 6px; background: rgba(13, 148, 136, 0.2); border: 1px solid rgba(45, 212, 191, 0.4); color: #2dd4bf; font-size: 0.825rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <span>Uploading audio to Google Drive &amp; generating real-time transcript with Deepgram Nova-3...</span>
+        </div>
+
         <div class="recording-feedback-msg" *ngIf="recordingService.errorMessage()" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.8rem;">
           <i class="fa-solid fa-circle-exclamation"></i> {{ recordingService.errorMessage() }}
         </div>
-        <div class="recording-feedback-msg" *ngIf="currentState === 'UPLOADED'" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; font-size: 0.8rem;">
-          <i class="fa-solid fa-circle-check"></i> Recording successfully uploaded to backend contract.
+
+        <div class="recording-feedback-msg" *ngIf="currentState === 'UPLOADED' && !isProcessingAudio" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; font-size: 0.8rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <i class="fa-solid fa-circle-check"></i> Audio recording uploaded to Google Drive &amp; transcribed in real time.
+          </div>
+          <a *ngIf="gdriveLink" [href]="gdriveLink" target="_blank" rel="noopener noreferrer" style="color: #2dd4bf; text-decoration: underline; font-weight: 600; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+            <i class="fa-brands fa-google-drive"></i> Open in Google Drive <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem;"></i>
+          </a>
         </div>
 
         <!-- Recorded Sessions History List -->
@@ -275,13 +286,13 @@
       <div class="cliniq-card transcript-box">
         <div class="transcript-header">
           <h3 class="box-title">Transcript</h3>
-          <span class="transcript-meta">10 exchanges · AI-generated</span>
+          <span class="transcript-meta">{{ currentTranscriptExchanges.length }} exchanges · AI-generated</span>
         </div>
 
         <div class="transcript-messages-list">
           <div 
             class="chat-bubble-row" 
-            *ngFor="let ex of transcriptExchanges"
+            *ngFor="let ex of currentTranscriptExchanges"
             [class.doctor-row]="ex.isDoctor"
             [class.patient-row]="!ex.isDoctor"
           >
@@ -348,7 +359,7 @@
           <div class="suggestions-list">
             <div 
               class="nudge-card" 
-              *ngFor="let nudge of aiSuggestionsList"
+              *ngFor="let nudge of currentAISuggestions"
               [class.nudge-high]="nudge.type === 'high'"
               [class.nudge-medium]="nudge.type === 'medium'"
             >

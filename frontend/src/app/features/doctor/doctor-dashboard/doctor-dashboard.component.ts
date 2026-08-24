@@ -487,6 +487,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       doctorId: 'DOC-001',
       patientId: activeCons.patientPid || 'P1245'
     });
+    // Automatically trigger Google Drive upload & Deepgram transcription
+    this.uploadRecording();
   }
 
   uploadRecording(): void {
@@ -494,15 +496,55 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.recordingService.uploadRecording({
       encounterId: activeCons.id || 'CONS-41233',
       doctorId: 'DOC-001',
-      patientId: activeCons.patientPid || 'P1245'
+      patientId: activeCons.patientPid || 'P1245',
+      doctorName: 'Dr. Yuki Tanaka',
+      patientName: this.visitDetails.patientName || 'Marcus Delgado',
+      doctorInitials: 'YT',
+      patientInitials: this.visitDetails.initials || 'MD'
     }).subscribe({
-      next: (res) => console.log('Upload successful:', res),
-      error: (err) => console.error('Upload failed:', err)
+      next: (res) => {
+        console.log('Google Drive upload & Deepgram transcription success:', res);
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.transcriptExchanges = res.exchanges;
+        }
+      },
+      error: (err) => console.error('Upload & transcription failed:', err)
     });
   }
 
   retryUpload(): void {
     this.uploadRecording();
+  }
+
+  get currentTranscriptExchanges(): any[] {
+    const live = this.recordingService.latestExchanges();
+    return live && live.length > 0 ? live : this.transcriptExchanges;
+  }
+
+  get currentAISuggestions(): any[] {
+    const live = this.recordingService.latestSuggestions();
+    if (live && live.length > 0) {
+      return live.map((s, idx) => ({
+        id: idx + 1,
+        type: (s.priority || 'high').toLowerCase(),
+        tag: `${s.priority || 'HIGH'} · ${s.category || 'CLINICAL'}`,
+        text: s.description ? `${s.title} — ${s.description}` : s.title
+      }));
+    }
+    return this.aiSuggestionsList;
+  }
+
+  get currentSoapReport(): any {
+    const live = this.recordingService.latestClinicalAnalysis()?.soap_report;
+    return live || this.soapReportData;
+  }
+
+  get gdriveLink(): string | null {
+    return this.recordingService.gdriveWebViewLink();
+  }
+
+  get isProcessingAudio(): boolean {
+    return this.recordingService.isTranscribing() || this.recordingService.state() === 'UPLOADING' || this.recordingService.state() === 'TRANSCRIBING';
   }
 
   get latestSession(): RecordedSessionItem | null {

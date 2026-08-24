@@ -9,7 +9,10 @@ import {
   RecordingState,
   RecordingSessionMetadata,
   RecordingUploadResponse,
-  RecordedSessionItem
+  RecordedSessionItem,
+  TranscriptExchange,
+  AISuggestion,
+  ClinicalAnalysisData
 } from '../models/recording.model';
 
 @Injectable({
@@ -19,6 +22,9 @@ export class RecordingService implements OnDestroy {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private mockData = inject(MockDataService);
+
+  // Maximum consultation recording time (20 minutes)
+  readonly MAX_DURATION_SECONDS = 1200;
 
   // Reactive State Signals
   readonly state = signal<RecordingState>('IDLE');
@@ -30,6 +36,15 @@ export class RecordingService implements OnDestroy {
   readonly sessionMetadata = signal<RecordingSessionMetadata | null>(null);
   readonly mimeType = signal<string>('audio/wav');
   readonly selectedFormat = signal<'wav' | 'mp3' | 'webm'>('wav');
+
+  // Real-Time Google Drive & Deepgram Transcription Results
+  readonly isTranscribing = signal<boolean>(false);
+  readonly latestTranscript = signal<string>('');
+  readonly latestExchanges = signal<TranscriptExchange[]>([]);
+  readonly latestSuggestions = signal<AISuggestion[]>([]);
+  readonly latestClinicalAnalysis = signal<ClinicalAnalysisData | null>(null);
+  readonly gdriveWebViewLink = signal<string | null>(null);
+  readonly gdriveFileId = signal<string | null>(null);
 
   // Recorded Sessions History List
   readonly recordedSessions = signal<RecordedSessionItem[]>([]);
@@ -400,10 +415,18 @@ export class RecordingService implements OnDestroy {
 
   /**
    * Prepares multipart/form-data payload and uploads recording to backend.
-   * DO NOT set Content-Type header manually; browser/HttpClient automatically handles boundary.
+   * Uploads to Google Drive, triggers real-time Deepgram transcription & AI analysis.
    */
-  uploadRecording(overrideContext?: { encounterId?: string; doctorId?: string; patientId?: string }): Observable<RecordingUploadResponse> {
-    if (this.state() === 'UPLOADING') {
+  uploadRecording(overrideContext?: {
+    encounterId?: string;
+    doctorId?: string;
+    patientId?: string;
+    doctorName?: string;
+    patientName?: string;
+    doctorInitials?: string;
+    patientInitials?: string;
+  }): Observable<RecordingUploadResponse> {
+    if (this.state() === 'UPLOADING' || this.state() === 'TRANSCRIBING') {
       return throwError(() => new Error('Upload is already in progress.'));
     }
 
@@ -418,43 +441,31 @@ export class RecordingService implements OnDestroy {
     }
 
     this.state.set('UPLOADING');
+    this.isTranscribing.set(true);
     this.errorMessage.set(null);
 
-    const encounterId = overrideContext?.encounterId || metadata.encounterId;
-    const doctorId = overrideContext?.doctorId || metadata.doctorId;
-    const patientId = overrideContext?.patientId || metadata.patientId;
+    const activeCons = this.mockData.activeConsultation();
+    const encounterId = overrideContext?.encounterId || metadata.encounterId || activeCons.id || 'CONS-41233';
+    const doctorId = overrideContext?.doctorId || metadata.doctorId || 'DOC-001';
+    const patientId = overrideContext?.patientId || metadata.patientId || activeCons.patientPid || 'P1245';
+    const doctorName = overrideContext?.doctorName || 'Dr. Yuki Tanaka';
+    const patientName = overrideContext?.patientName || activeCons.patientName || 'Marcus Delgado';
+    const doctorInitials = overrideContext?.doctorInitials || 'YT';
+    const patientInitials = overrideContext?.patientInitials || 'MD';
 
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('encounter_id', encounterId);
     formData.append('doctor_id', doctorId);
     formData.append('patient_id', patientId);
+    formData.append('doctor_name', doctorName);
+    formData.append('patient_name', patientName);
+    formData.append('doctor_initials', doctorInitials);
+    formData.append('patient_initials', patientInitials);
     formData.append('recording_started_at', metadata.recordingStartedAt);
     formData.append('recording_ended_at', metadata.recordingEndedAt);
     formData.append('duration_seconds', metadata.durationSeconds.toString());
-
-    // Mock upload mode support for development when FastAPI backend is not yet running
-    if (environment.useMockUpload) {
-      const mockResponse: RecordingUploadResponse = {
-        id: `REC-${Date.now()}`,
-        status: 'Uploaded',
-        encounterId,
-        audioUrl: this.audioUrl() || undefined,
-        message: 'Audio recording saved to Google Drive folder'
-      };
-
-      return of(mockResponse).pipe(
-        delay(600),
-        tap((res) => {
-          this.state.set('UPLOADED');
-        }),
-        catchError((err) => {
-          this.errorMessage.set('Upload error occurred.');
-          this.state.set('FAILED');
-          return throwError(() => err);
-        })
-      );
-    }
+    formData.append('auto_transcribe', 'true');
 
     // Real API POST call to configured FastAPI backend endpoint
     const url = `${environment.apiBaseUrl}${environment.recordingEndpoint}`;
@@ -462,8 +473,50 @@ export class RecordingService implements OnDestroy {
     return this.http.post<RecordingUploadResponse>(url, formData).pipe(
       tap((res) => {
         this.state.set('UPLOADED');
+        this.isTranscribing.set(false);
+
+        // Store Google Drive & Transcription results in reactive signals
+        if (res.gdriveWebViewLink) {
+          this.gdriveWebViewLink.set(res.gdriveWebViewLink);
+        }
+        if (res.gdriveFileId) {
+          this.gdriveFileId.set(res.gdriveFileId);
+        }
+        if (res.transcript) {
+          this.latestTranscript.set(res.transcript);
+        }
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.latestExchanges.set(res.exchanges);
+        }
+        const suggestions = res.ai_suggestions || res.aiSuggestions;
+        if (suggestions && suggestions.length > 0) {
+          this.latestSuggestions.set(suggestions);
+        }
+        const analysis = res.clinical_analysis || res.clinicalAnalysis;
+        if (analysis) {
+          this.latestClinicalAnalysis.set(analysis);
+        }
+
+        // Sync with active consultation details
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.mockData.activeConsultation.update(prev => ({
+            ...prev,
+            transcript: res.exchanges!.map(e => ({
+              speaker: e.isDoctor ? 'Doctor' : 'Patient',
+              text: e.text,
+              timestamp: e.timestamp || '00:00'
+            })),
+            soapNote: res.soap_report ? {
+              subjective: res.soap_report.subjective || prev.soapNote.subjective,
+              objective: res.soap_report.objective || prev.soapNote.objective,
+              assessment: res.soap_report.assessment || prev.soapNote.assessment,
+              plan: res.soap_report.plan || prev.soapNote.plan,
+            } : prev.soapNote
+          }));
+        }
       }),
       catchError((error) => {
+        this.isTranscribing.set(false);
         const errorMsg = error.error?.detail || error.message || 'Upload failed due to network error. Local recording retained.';
         this.errorMessage.set(errorMsg);
         this.state.set('FAILED');
@@ -492,7 +545,6 @@ export class RecordingService implements OnDestroy {
     document.body.removeChild(a);
   }
 
-
   /**
    * Retries uploading retained local recording.
    */
@@ -520,39 +572,39 @@ export class RecordingService implements OnDestroy {
   uploadSessionItem(session: RecordedSessionItem): Observable<RecordingUploadResponse> {
     this.updateSessionStatus(session.id, 'UPLOADING');
 
+    const activeCons = this.mockData.activeConsultation();
     const formData = new FormData();
     formData.append('file', session.recordedFile, session.recordedFile.name);
     formData.append('encounter_id', session.metadata.encounterId);
     formData.append('doctor_id', session.metadata.doctorId);
     formData.append('patient_id', session.metadata.patientId);
+    formData.append('doctor_name', 'Dr. Yuki Tanaka');
+    formData.append('patient_name', activeCons.patientName || 'Marcus Delgado');
+    formData.append('doctor_initials', 'YT');
+    formData.append('patient_initials', 'MD');
     formData.append('recording_started_at', session.metadata.recordingStartedAt);
     formData.append('recording_ended_at', session.metadata.recordingEndedAt);
     formData.append('duration_seconds', session.metadata.durationSeconds.toString());
-
-    if (environment.useMockUpload) {
-      const mockResponse: RecordingUploadResponse = {
-        id: `REC-${Date.now()}`,
-        status: 'Uploaded',
-        encounterId: session.metadata.encounterId,
-        audioUrl: session.audioUrl,
-        message: `${session.sessionTitle} saved to Google Drive folder`
-      };
-      return of(mockResponse).pipe(
-        delay(600),
-        tap(() => {
-          this.updateSessionStatus(session.id, 'UPLOADED');
-        }),
-        catchError((err) => {
-          this.updateSessionStatus(session.id, 'FAILED', 'Upload error.');
-          return throwError(() => err);
-        })
-      );
-    }
+    formData.append('auto_transcribe', 'true');
 
     const url = `${environment.apiBaseUrl}${environment.recordingEndpoint}`;
     return this.http.post<RecordingUploadResponse>(url, formData).pipe(
-      tap(() => {
+      tap((res) => {
         this.updateSessionStatus(session.id, 'UPLOADED');
+        if (res.gdriveWebViewLink) {
+          this.gdriveWebViewLink.set(res.gdriveWebViewLink);
+        }
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.latestExchanges.set(res.exchanges);
+        }
+        const suggestions = res.ai_suggestions || res.aiSuggestions;
+        if (suggestions && suggestions.length > 0) {
+          this.latestSuggestions.set(suggestions);
+        }
+        const analysis = res.clinical_analysis || res.clinicalAnalysis;
+        if (analysis) {
+          this.latestClinicalAnalysis.set(analysis);
+        }
       }),
       catchError((error) => {
         const errorMsg = error.error?.detail || error.message || 'Upload failed.';
@@ -677,9 +729,6 @@ export class RecordingService implements OnDestroy {
     this.sessionTitle.set(`Session ${this.sessionNumber()}`);
   }
 
-  // Maximum duration per recording: 20 minutes (1200 seconds)
-  readonly MAX_DURATION_SECONDS = 1200;
-  
   // Session tracking signal (e.g. Session 1, Session 2, etc.)
   readonly sessionNumber = signal<number>(1);
   readonly sessionTitle = signal<string>('Session 1');
