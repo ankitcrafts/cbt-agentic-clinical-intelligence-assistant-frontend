@@ -9,6 +9,10 @@
     </div>
 
     <div class="transcript-body" *ngIf="activeTab === 'Transcript'">
+      <div *ngIf="!consultation.transcript || consultation.transcript.length === 0" style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8;">
+        <i class="fa-solid fa-file-lines" style="font-size: 1.5rem; color: #2dd4bf; margin-bottom: 0.5rem; display: block;"></i>
+        No consultation transcript recorded yet.
+      </div>
       <div class="dialogue-turn" *ngFor="let turn of consultation.transcript">
         <span class="speaker" [class.doctor-speaker]="turn.speaker === 'Doctor'" [class.patient-speaker]="turn.speaker === 'Patient'">
           {{ turn.speaker }}:

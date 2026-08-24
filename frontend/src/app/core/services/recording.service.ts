@@ -49,6 +49,10 @@ export class RecordingService implements OnDestroy {
   // Recorded Sessions History List
   readonly recordedSessions = signal<RecordedSessionItem[]>([]);
 
+  // Patient-Isolated Session Storage Map (keyed by patient ID)
+  private patientSessionsMap = new Map<string, any>();
+  currentPatientId: string | null = null;
+
   // Internal Web API References
   private mediaRecorder: MediaRecorder | null = null;
   private mediaStream: MediaStream | null = null;
@@ -514,6 +518,13 @@ export class RecordingService implements OnDestroy {
             } : prev.soapNote
           }));
         }
+
+        // Save session data to patient-specific cache
+        const normPid = patientId ? (patientId.startsWith('#') ? patientId : '#' + patientId) : (this.currentPatientId || 'P1245');
+        this.saveCurrentPatientSession(normPid);
+        if (this.currentPatientId) {
+          this.saveCurrentPatientSession(this.currentPatientId);
+        }
       }),
       catchError((error) => {
         this.isTranscribing.set(false);
@@ -573,15 +584,20 @@ export class RecordingService implements OnDestroy {
     this.updateSessionStatus(session.id, 'UPLOADING');
 
     const activeCons = this.mockData.activeConsultation();
+    const rawPid = session.metadata.patientId || this.currentPatientId || activeCons.patientPid || 'P1245';
+    const normPid = rawPid.startsWith('#') ? rawPid : '#' + rawPid;
+    const pName = activeCons.patientName || 'Patient';
+    const pInitials = pName ? pName.split(' ').map(n => n[0]).join('') : 'PT';
+
     const formData = new FormData();
     formData.append('file', session.recordedFile, session.recordedFile.name);
     formData.append('encounter_id', session.metadata.encounterId);
     formData.append('doctor_id', session.metadata.doctorId);
-    formData.append('patient_id', session.metadata.patientId);
+    formData.append('patient_id', normPid);
     formData.append('doctor_name', 'Dr. Yuki Tanaka');
-    formData.append('patient_name', activeCons.patientName || 'Marcus Delgado');
+    formData.append('patient_name', pName);
     formData.append('doctor_initials', 'YT');
-    formData.append('patient_initials', 'MD');
+    formData.append('patient_initials', pInitials);
     formData.append('recording_started_at', session.metadata.recordingStartedAt);
     formData.append('recording_ended_at', session.metadata.recordingEndedAt);
     formData.append('duration_seconds', session.metadata.durationSeconds.toString());
@@ -594,6 +610,12 @@ export class RecordingService implements OnDestroy {
         if (res.gdriveWebViewLink) {
           this.gdriveWebViewLink.set(res.gdriveWebViewLink);
         }
+        if (res.gdriveFileId) {
+          this.gdriveFileId.set(res.gdriveFileId);
+        }
+        if (res.transcript) {
+          this.latestTranscript.set(res.transcript);
+        }
         if (res.exchanges && res.exchanges.length > 0) {
           this.latestExchanges.set(res.exchanges);
         }
@@ -604,6 +626,30 @@ export class RecordingService implements OnDestroy {
         const analysis = res.clinical_analysis || res.clinicalAnalysis;
         if (analysis) {
           this.latestClinicalAnalysis.set(analysis);
+        }
+
+        // Sync with active consultation details
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.mockData.activeConsultation.update(prev => ({
+            ...prev,
+            transcript: res.exchanges!.map(e => ({
+              speaker: e.isDoctor ? 'Doctor' : 'Patient',
+              text: e.text,
+              timestamp: e.timestamp || '00:00'
+            })),
+            wordCount: res.transcript ? res.transcript.split(/\s+/).length : prev.wordCount,
+            soapNote: res.soap_report ? {
+              subjective: res.soap_report.subjective || prev.soapNote.subjective,
+              objective: res.soap_report.objective || prev.soapNote.objective,
+              assessment: res.soap_report.assessment || prev.soapNote.assessment,
+              plan: res.soap_report.plan || prev.soapNote.plan,
+            } : prev.soapNote
+          }));
+        }
+
+        this.saveCurrentPatientSession(normPid);
+        if (this.currentPatientId) {
+          this.saveCurrentPatientSession(this.currentPatientId);
         }
       }),
       catchError((error) => {
@@ -712,6 +758,138 @@ export class RecordingService implements OnDestroy {
     this.sessionMetadata.set(null);
     this.sessionNumber.set(1);
     this.sessionTitle.set('Session 1');
+    if (this.currentPatientId) {
+      this.saveCurrentPatientSession(this.currentPatientId);
+    }
+  }
+
+  /**
+   * Switches active patient session context.
+   * Isolates recordings, transcripts, AI suggestions, and analysis per patient ID.
+   */
+  switchPatient(patientId: string): void {
+    const normPid = patientId.startsWith('#') ? patientId : '#' + patientId;
+    const rawPid = patientId.replace('#', '');
+
+    if (this.currentPatientId === normPid || this.currentPatientId === rawPid) {
+      return;
+    }
+
+    // Stop ongoing recording if any
+    if (this.state() === 'RECORDING' || this.state() === 'PAUSED') {
+      try {
+        this.stopTimer();
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+          this.mediaRecorder.stop();
+        }
+        this.stopMicrophoneTracks();
+      } catch (e) {}
+    }
+
+    // Save previous patient session
+    if (this.currentPatientId) {
+      this.saveCurrentPatientSession(this.currentPatientId);
+    }
+
+    this.currentPatientId = normPid;
+
+    const saved = this.patientSessionsMap.get(normPid) || this.patientSessionsMap.get(rawPid) || this.patientSessionsMap.get(patientId);
+
+    if (saved) {
+      // Restore this specific patient's saved recording session data
+      this.state.set(saved.state || 'IDLE');
+      this.durationSeconds.set(saved.durationSeconds || 0);
+      this.recordedBlob.set(saved.recordedBlob || null);
+      this.recordedFile.set(saved.recordedFile || null);
+      this.audioUrl.set(saved.audioUrl || null);
+      this.sessionMetadata.set(saved.sessionMetadata || null);
+      this.latestTranscript.set(saved.latestTranscript || '');
+      this.latestExchanges.set(saved.latestExchanges || []);
+      this.latestSuggestions.set(saved.latestSuggestions || []);
+      this.latestClinicalAnalysis.set(saved.latestClinicalAnalysis || null);
+      this.gdriveWebViewLink.set(saved.gdriveWebViewLink || null);
+      this.gdriveFileId.set(saved.gdriveFileId || null);
+      this.recordedSessions.set(saved.recordedSessions || []);
+      this.sessionNumber.set(saved.sessionNumber || 1);
+      this.sessionTitle.set(saved.sessionTitle || 'Session 1');
+      this.errorMessage.set(null);
+    } else {
+      // Clean slate for new / unrecorded patient
+      this.state.set('IDLE');
+      this.durationSeconds.set(0);
+      this.errorMessage.set(null);
+      this.recordedBlob.set(null);
+      this.recordedFile.set(null);
+      this.audioUrl.set(null);
+      this.sessionMetadata.set(null);
+      this.latestTranscript.set('');
+      this.latestExchanges.set([]);
+      this.latestSuggestions.set([]);
+      this.latestClinicalAnalysis.set(null);
+      this.gdriveWebViewLink.set(null);
+      this.gdriveFileId.set(null);
+      this.recordedSessions.set([]);
+      this.sessionNumber.set(1);
+      this.sessionTitle.set('Session 1');
+    }
+  }
+
+  /**
+   * Persists active signals into patient-isolated storage map.
+   */
+  saveCurrentPatientSession(patientIdOverride?: string): void {
+    const pid = patientIdOverride || this.currentPatientId;
+    if (!pid) return;
+
+    this.patientSessionsMap.set(pid, {
+      patientId: pid,
+      state: this.state(),
+      durationSeconds: this.durationSeconds(),
+      recordedBlob: this.recordedBlob(),
+      recordedFile: this.recordedFile(),
+      audioUrl: this.audioUrl(),
+      sessionMetadata: this.sessionMetadata(),
+      latestTranscript: this.latestTranscript(),
+      latestExchanges: this.latestExchanges(),
+      latestSuggestions: this.latestSuggestions(),
+      latestClinicalAnalysis: this.latestClinicalAnalysis(),
+      gdriveWebViewLink: this.gdriveWebViewLink(),
+      gdriveFileId: this.gdriveFileId(),
+      recordedSessions: this.recordedSessions(),
+      sessionNumber: this.sessionNumber(),
+      sessionTitle: this.sessionTitle()
+    });
+  }
+
+  /**
+   * Analyzes conversation turns directly via backend endpoint.
+   */
+  analyzeConversation(conversationTurns: any[], transcriptText: string = ''): Observable<any> {
+    const url = `${environment.apiBaseUrl}/analyze-conversation`;
+    return this.http.post<any>(url, {
+      conversation: conversationTurns,
+      transcript: transcriptText
+    }).pipe(
+      tap((res) => {
+        if (res.ai_suggestions || res.aiSuggestions) {
+          this.latestSuggestions.set(res.ai_suggestions || res.aiSuggestions);
+        }
+        if (res.clinical_analysis || res.clinicalAnalysis) {
+          this.latestClinicalAnalysis.set(res.clinical_analysis || res.clinicalAnalysis);
+        } else {
+          this.latestClinicalAnalysis.set({
+            summary: res.summary,
+            entities: res.entities,
+            differential_diagnosis: res.differential_diagnosis,
+            soap_report: res.soap_report,
+            ai_suggestions: res.ai_suggestions
+          });
+        }
+        if (this.currentPatientId) {
+          this.saveCurrentPatientSession(this.currentPatientId);
+        }
+      })
+    );
   }
 
   /**

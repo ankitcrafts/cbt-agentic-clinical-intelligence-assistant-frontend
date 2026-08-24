@@ -286,10 +286,27 @@
       <div class="cliniq-card transcript-box">
         <div class="transcript-header">
           <h3 class="box-title">Transcript</h3>
-          <span class="transcript-meta">{{ currentTranscriptExchanges.length }} exchanges · AI-generated</span>
+          <span class="transcript-meta">{{ currentTranscriptExchanges.length }} exchanges · {{ currentTranscriptExchanges.length > 0 ? 'AI-generated' : 'Awaiting audio' }}</span>
         </div>
 
-        <div class="transcript-messages-list">
+        <!-- Empty state when no transcript available yet -->
+        <div class="empty-transcript-state animated-fade-in" *ngIf="currentTranscriptExchanges.length === 0">
+          <div class="empty-glow-ring">
+            <div class="empty-icon-circle">
+              <i class="fa-solid fa-microphone-lines"></i>
+            </div>
+          </div>
+          <div class="empty-title">No Transcript Available</div>
+          <div class="empty-sub">
+            Start recording or upload consultation audio for <strong>{{ visitDetails.patientName }}</strong> to generate dynamic speech-to-text dialogue turns.
+          </div>
+          <div class="empty-audio-hint">
+            <span class="live-ping-dot"></span>
+            <span>Real-time diarized transcription via Deepgram Nova-3</span>
+          </div>
+        </div>
+
+        <div class="transcript-messages-list" *ngIf="currentTranscriptExchanges.length > 0">
           <div 
             class="chat-bubble-row" 
             *ngFor="let ex of currentTranscriptExchanges"
@@ -350,13 +367,30 @@
         <div class="cliniq-card ai-suggestions-panel-card">
           <div class="suggestions-header">
             <div class="header-left-title">
-              <span class="sparkle-icon"><i class="fa-solid fa-plus-minus"></i></span>
+              <span class="sparkle-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
               <span class="title-text">AI Suggestions</span>
             </div>
-            <span class="live-updating-tag">live · updating</span>
+            <span class="live-updating-tag">{{ currentAISuggestions.length > 0 ? 'live · updating' : 'awaiting audio' }}</span>
           </div>
 
-          <div class="suggestions-list">
+          <!-- Empty state when no AI suggestions yet -->
+          <div class="empty-suggestions-state animated-fade-in" *ngIf="currentAISuggestions.length === 0">
+            <div class="empty-glow-ring">
+              <div class="empty-icon-circle">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+              </div>
+            </div>
+            <div class="empty-title">Awaiting Audio Recording</div>
+            <div class="empty-sub">
+              Clinical decision support recommendations will appear here in real-time once <strong>{{ visitDetails.patientName }}</strong>'s consultation is recorded and transcribed.
+            </div>
+            <div class="empty-audio-hint">
+              <span class="live-ping-dot"></span>
+              <span>Autonomous clinical prompts &amp; red-flag alerts</span>
+            </div>
+          </div>
+
+          <div class="suggestions-list" *ngIf="currentAISuggestions.length > 0">
             <div 
               class="nudge-card" 
               *ngFor="let nudge of currentAISuggestions"
@@ -370,13 +404,26 @@
         </div>
 
         <!-- 3. Primary Action Button: Run Clinical Analysis (Matching Image 4) -->
-        <button type="button" class="run-clinical-analysis-btn" (click)="runClinicalAnalysis()">
+        <button 
+          type="button" 
+          class="run-clinical-analysis-btn" 
+          [disabled]="!canRunClinicalAnalysis || isProcessingAudio" 
+          [class.disabled-btn]="!canRunClinicalAnalysis || isProcessingAudio"
+          (click)="runClinicalAnalysis()"
+          [title]="canRunClinicalAnalysis ? 'Run Clinical Decision Support & SOAP report generation' : 'Locked: Record consultation audio to generate transcript and unlock clinical analysis'"
+        >
           <div class="btn-text-group">
-            <span class="btn-main-title">Run Clinical Analysis</span>
-            <span class="btn-sub-title">DDx · medicines · confidence · SOAP report</span>
+            <span class="btn-main-title">
+              <i class="fa-solid fa-lock" *ngIf="!canRunClinicalAnalysis" style="font-size: 0.85rem; margin-right: 0.35rem; opacity: 0.8;"></i>
+              <i class="fa-solid fa-spinner fa-spin" *ngIf="isProcessingAudio" style="font-size: 0.85rem; margin-right: 0.35rem;"></i>
+              Run Clinical Analysis
+            </span>
+            <span class="btn-sub-title">
+              {{ canRunClinicalAnalysis ? 'DDx · medicines · confidence · SOAP report' : 'Awaiting audio recording & transcript processing' }}
+            </span>
           </div>
           <div class="btn-arrow-box">
-            <i class="fa-solid fa-arrow-right"></i>
+            <i class="fa-solid" [class.fa-lock]="!canRunClinicalAnalysis" [class.fa-spinner]="isProcessingAudio" [class.fa-spin]="isProcessingAudio" [class.fa-arrow-right]="canRunClinicalAnalysis && !isProcessingAudio"></i>
           </div>
         </button>
       </ng-container>
@@ -445,7 +492,7 @@
               <div class="intel-section">
                 <span class="eyebrow-tag">CLINICAL SUMMARY</span>
                 <div class="summary-narrative-card">
-                  <p class="summary-text">{{ clinicalSummary }}</p>
+                  <p class="summary-text">{{ currentClinicalSummary }}</p>
                 </div>
               </div>
 
@@ -453,7 +500,7 @@
               <div class="intel-section">
                 <span class="eyebrow-tag">KEY FINDINGS</span>
                 <div class="key-findings-grid">
-                  <div class="finding-card" *ngFor="let item of keyFindings">
+                  <div class="finding-card" *ngFor="let item of currentKeyFindings">
                     <span class="finding-label">{{ item.label }}</span>
                     <span class="finding-val">{{ item.value }}</span>
                   </div>
@@ -464,7 +511,7 @@
               <div class="intel-section">
                 <span class="eyebrow-tag">IDENTIFIED ISSUES</span>
                 <div class="identified-issues-list">
-                  <div class="issue-item-card" *ngFor="let issue of identifiedIssues" [class]="'issue-' + issue.type">
+                  <div class="issue-item-card" *ngFor="let issue of currentIdentifiedIssues" [class]="'issue-' + issue.type">
                     <span class="issue-bullet" [style.color]="issue.dotColor">●</span>
                     <span class="issue-text">{{ issue.text }}</span>
                   </div>
@@ -476,8 +523,18 @@
             <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
               <div class="intel-section">
                 <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
-                <div class="differential-ranking-list">
-                  <div class="diff-diag-card" *ngFor="let diag of differentialDiagnoses">
+                <div class="empty-diff-state animated-fade-in" *ngIf="currentDifferentialDiagnoses.length === 0">
+                  <div class="empty-glow-ring">
+                    <div class="empty-icon-circle">
+                      <i class="fa-solid fa-stethoscope"></i>
+                    </div>
+                  </div>
+                  <div class="empty-title">No Differential Diagnoses Generated</div>
+                  <div class="empty-sub">Record consultation audio for <strong>{{ visitDetails.patientName }}</strong> to generate AI-ranked differential diagnosis list.</div>
+                </div>
+
+                <div class="differential-ranking-list" *ngIf="currentDifferentialDiagnoses.length > 0">
+                  <div class="diff-diag-card" *ngFor="let diag of currentDifferentialDiagnoses">
                     <div class="diag-header-row">
                       <div class="diag-title-group">
                         <span class="rank-circle">{{ diag.rank }}</span>
@@ -500,17 +557,6 @@
                   </div>
                 </div>
               </div>
-
-              <div class="intel-section">
-                <span class="eyebrow-tag red-eyebrow">CLINICAL RED FLAGS</span>
-                <div class="red-flag-alert-box" *ngFor="let flag of clinicalRedFlags">
-                  <div class="flag-top">
-                    <span class="critical-badge">{{ flag.tag }}</span>
-                    <span class="flag-title">{{ flag.title }}</span>
-                  </div>
-                  <div class="flag-action">&rarr; {{ flag.action }}</div>
-                </div>
-              </div>
             </div>
 
             <!-- TAB 3: Medicines -->
@@ -520,8 +566,18 @@
                 <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
               </div>
 
-              <div class="medicines-list">
-                <div class="med-card" *ngFor="let med of guidelineMedicines">
+              <div class="empty-meds-state animated-fade-in" *ngIf="currentGuidelineMedicines.length === 0">
+                <div class="empty-glow-ring">
+                  <div class="empty-icon-circle">
+                    <i class="fa-solid fa-pills"></i>
+                  </div>
+                </div>
+                <div class="empty-title">No Guideline Medicines Extracted</div>
+                <div class="empty-sub">Relevant medications and guideline RAG recommendations will appear after consultation recording.</div>
+              </div>
+
+              <div class="medicines-list" *ngIf="currentGuidelineMedicines.length > 0">
+                <div class="med-card" *ngFor="let med of currentGuidelineMedicines">
                   <div class="med-top-row">
                     <div class="med-name-group">
                       <span class="med-name">{{ med.name }}</span>
@@ -548,18 +604,18 @@
             <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
               <div class="confidence-overview-card">
                 <div class="score-circle">
-                  <span class="score-val">{{ confidenceMetrics.overallScore }}%</span>
+                  <span class="score-val">{{ currentConfidenceMetrics.overallScore }}%</span>
                   <span class="score-lbl">AI Reliability</span>
                 </div>
                 <div class="overview-info">
-                  <h4>{{ confidenceMetrics.overallLevel }}</h4>
+                  <h4>{{ currentConfidenceMetrics.overallLevel }}</h4>
                   <p>Fully calibrated against peer-reviewed clinical knowledge bases and medical guideline vector embeddings.</p>
                   <div class="confidence-badge-row">
                     <span class="hallucination-pill">
-                      <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ confidenceMetrics.hallucinationRisk }}
+                      <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ currentConfidenceMetrics.hallucinationRisk }}
                     </span>
                     <span class="verified-pill">
-                      <i class="fa-solid fa-circle-check"></i> {{ confidenceMetrics.guidelinesCited.length }} Guidelines Verified
+                      <i class="fa-solid fa-circle-check"></i> {{ currentConfidenceMetrics.guidelinesCited.length }} Guidelines Verified
                     </span>
                   </div>
                 </div>
@@ -568,7 +624,7 @@
               <div class="intel-section" style="margin-top: 1.5rem;">
                 <span class="eyebrow-tag">PIPELINE ACCURACY BREAKDOWN</span>
                 <div class="confidence-breakdown-list">
-                  <div class="breakdown-item" *ngFor="let p of confidenceMetrics.pipeline">
+                  <div class="breakdown-item" *ngFor="let p of currentConfidenceMetrics.pipeline">
                     <div class="breakdown-item-header">
                       <span class="item-name">{{ p.name }}</span>
                       <span class="item-score font-mono">{{ p.score }}% <span class="status-tag">({{ p.status }})</span></span>
@@ -583,7 +639,7 @@
               <div class="intel-section" style="margin-top: 1.5rem;">
                 <span class="eyebrow-tag">EVIDENCE CITATION REPOSITORY</span>
                 <div class="sources-tags-wrap">
-                  <span class="source-tag" *ngFor="let g of confidenceMetrics.guidelinesCited">
+                  <span class="source-tag" *ngFor="let g of currentConfidenceMetrics.guidelinesCited">
                     <i class="fa-solid fa-book-medical"></i> {{ g }}
                   </span>
                 </div>
@@ -597,7 +653,7 @@
                   <div class="letter-badge">S</div>
                   <div class="soap-text-block">
                     <h4>Subjective</h4>
-                    <p>{{ soapReportData.subjective }}</p>
+                    <p>{{ currentSoapReport.subjective }}</p>
                   </div>
                 </div>
 
@@ -605,7 +661,7 @@
                   <div class="letter-badge">O</div>
                   <div class="soap-text-block">
                     <h4>Objective</h4>
-                    <p>{{ soapReportData.objective }}</p>
+                    <p>{{ currentSoapReport.objective }}</p>
                   </div>
                 </div>
 
@@ -613,7 +669,7 @@
                   <div class="letter-badge">A</div>
                   <div class="soap-text-block">
                     <h4>Assessment</h4>
-                    <p style="white-space: pre-line;">{{ soapReportData.assessment }}</p>
+                    <p style="white-space: pre-line;">{{ currentSoapReport.assessment }}</p>
                   </div>
                 </div>
 
@@ -621,7 +677,7 @@
                   <div class="letter-badge">P</div>
                   <div class="soap-text-block">
                     <h4>Plan</h4>
-                    <p style="white-space: pre-line;">{{ soapReportData.plan }}</p>
+                    <p style="white-space: pre-line;">{{ currentSoapReport.plan }}</p>
                   </div>
                 </div>
               </div>

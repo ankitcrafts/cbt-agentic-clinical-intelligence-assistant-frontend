@@ -39,43 +39,27 @@ export class MockDataService {
 
   activeConsultation = signal<ConsultationDetails>({
     id: 'CONS-41233',
-    patientName: 'Priya Verma',
-    patientAge: 32,
-    patientGender: 'Female',
-    patientPid: 'P1245',
-    doctorName: 'Dr. Rahul Sharma',
+    patientName: 'Marcus Delgado',
+    patientAge: 42,
+    patientGender: 'Male',
+    patientPid: '#00847261',
+    doctorName: 'Dr. Yuki Tanaka',
     doctorSpecialization: 'Cardiologist',
-    date: '09 May 2026',
-    duration: '12:45',
-    status: 'Completed',
-    reasonForVisit: 'Headache, dizziness and neck pain',
-    wordCount: 2245,
-    transcript: [
-      { speaker: 'Doctor', text: 'Good morning Priya, how are you feeling today?', timestamp: '00:05' },
-      { speaker: 'Patient', text: 'Good morning doctor. I have been having headache and dizziness since last 3 days.', timestamp: '00:18' },
-      { speaker: 'Doctor', text: 'Do you have any fever or cold?', timestamp: '00:35' },
-      { speaker: 'Patient', text: 'No fever, but I feel tired and have some neck pain.', timestamp: '00:48' },
-      { speaker: 'Doctor', text: 'Any past medical history?', timestamp: '01:10' },
-      { speaker: 'Patient', text: 'No major issues.', timestamp: '01:22' },
-      { speaker: 'Doctor', text: 'Okay, let me check your BP.', timestamp: '01:35' }
-    ],
+    date: 'Aug 13, 2026',
+    duration: '00:00',
+    status: 'Pending',
+    reasonForVisit: 'Hypertension review + new headache complaint',
+    wordCount: 0,
+    transcript: [],
     soapNote: {
-      subjective: 'Patient has headache, dizziness and neck pain since last 3 days.',
-      objective: 'BP: 120/80 mmHg, Temp: Normal',
-      assessment: 'Tension headache',
-      plan: 'Rest, hydration, regular sleep, medication. Follow-up after 5 days.'
+      subjective: '',
+      objective: '',
+      assessment: '',
+      plan: ''
     },
     prescription: {
-      medications: [
-        { name: 'Paracetamol 500mg', dosage: '1 tablet after food', frequency: 'Twice a day', duration: '5 Days' },
-        { name: 'Cinnerizine 25mg', dosage: '1 tablet at night', frequency: 'Once a day', duration: '5 Days' },
-        { name: 'Diclofenac Gel', dosage: 'Apply on neck', frequency: 'If pain', duration: 'As needed' }
-      ],
-      advice: [
-        'Take sufficient rest',
-        'Drink plenty of water',
-        'Avoid stress and screen time'
-      ]
+      medications: [],
+      advice: []
     }
   });
 
