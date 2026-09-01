@@ -893,6 +893,59 @@ export class RecordingService implements OnDestroy {
   }
 
   /**
+   * Reframes a specific section of the SOAP report using AI based on doctor instructions.
+   */
+  reframeSOAPSection(section: string, originalContent: string, editReason: string, fullSoap?: any): Observable<any> {
+    const payload = {
+      section,
+      original_content: originalContent,
+      edit_reason: editReason,
+      full_soap: fullSoap
+    };
+    const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
+    return this.http.post<any>(`${baseUrl}/api/v1/soap/reframe`, payload).pipe(
+      catchError(err => {
+        // Fallback endpoint if version path is different
+        return this.http.post<any>(`${baseUrl}/soap/reframe`, payload);
+      })
+    );
+  }
+
+  /**
+   * Saves finalized SOAP note edits, reason, and patient summary feedback to database for fine-tuning.
+   */
+  saveSOAPFeedback(payload: {
+    encounter_id: string;
+    doctor_id?: string;
+    patient_id?: string;
+    original_soap: any;
+    edited_soap: any;
+    edit_reason?: string;
+    edited_section?: string;
+    patient_summary?: string;
+    is_finalized?: boolean;
+  }): Observable<any> {
+    const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
+    return this.http.post<any>(`${baseUrl}/api/v1/soap/feedback`, payload).pipe(
+      catchError(err => {
+        return this.http.post<any>(`${baseUrl}/soap/feedback`, payload);
+      })
+    );
+  }
+
+  /**
+   * Retrieves saved SOAP feedback history for an encounter.
+   */
+  fetchSOAPFeedback(encounterId: string): Observable<any> {
+    const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
+    return this.http.get<any>(`${baseUrl}/api/v1/soap/feedback/${encounterId}`).pipe(
+      catchError(err => {
+        return this.http.get<any>(`${baseUrl}/soap/feedback/${encounterId}`);
+      })
+    );
+  }
+
+  /**
    * Resets recording state and cleans up resources for the next new session.
    */
   resetState(): void {

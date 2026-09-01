@@ -646,38 +646,177 @@
               </div>
             </div>
 
-            <!-- TAB 5: SOAP Report -->
+            <!-- TAB 5: Interactive SOAP Report -->
             <div class="tab-pane animated-pane" *ngIf="activeTab === 'soap'">
+              <div class="soap-action-toolbar">
+                <div class="toolbar-info">
+                  <span class="badge-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Reframing & DB Persistence</span>
+                  <span class="status-msg" *ngIf="saveStatusMessage">{{ saveStatusMessage }}</span>
+                </div>
+                <div class="toolbar-buttons">
+                  <button class="btn-secondary" (click)="openPatientSummaryModal()">
+                    <i class="fa-solid fa-user-doctor"></i> Preview Patient Summary
+                  </button>
+                  <button class="btn-primary" (click)="saveFinalSOAPToDatabase()" [disabled]="isSavingFeedback">
+                    <i class="fa-solid fa-floppy-disk"></i> {{ isSavingFeedback ? 'Saving to DB...' : 'Finalize & Save to DB' }}
+                  </button>
+                </div>
+              </div>
+
               <div class="soap-preview-container">
-                <div class="soap-box subjective">
-                  <div class="letter-badge">S</div>
-                  <div class="soap-text-block">
-                    <h4>Subjective</h4>
-                    <p>{{ currentSoapReport.subjective }}</p>
+                <!-- SUBJECTIVE SECTION -->
+                <div class="soap-box subjective" [class.editing-active]="activeEditSection === 'subjective'">
+                  <div class="soap-box-header">
+                    <div class="header-left">
+                      <div class="letter-badge">S</div>
+                      <h4>Subjective</h4>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection !== 'subjective'">
+                      <button class="btn-icon" (click)="startEditSection('subjective')" title="Edit / AI Reframe Subjective Section">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Read-only View -->
+                  <div class="soap-text-block" *ngIf="activeEditSection !== 'subjective'">
+                    <p style="white-space: pre-line;">{{ effectiveSoapReport.subjective }}</p>
+                  </div>
+
+                  <!-- Edit / AI Reframe Mode -->
+                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'subjective'">
+                    <label class="edit-label">Manual Text Edit:</label>
+                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
+
+                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
+                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Reframe in formal clinical tone with hypertension staging...">
+
+                    <div class="edit-actions">
+                      <button class="btn-ai-reframe" (click)="triggerAIReframe('subjective')" [disabled]="isReframing">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
+                      </button>
+                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
+                        <i class="fa-solid fa-check"></i> Save Edit
+                      </button>
+                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                    </div>
                   </div>
                 </div>
 
-                <div class="soap-box objective">
-                  <div class="letter-badge">O</div>
-                  <div class="soap-text-block">
-                    <h4>Objective</h4>
-                    <p>{{ currentSoapReport.objective }}</p>
+                <!-- OBJECTIVE SECTION -->
+                <div class="soap-box objective" [class.editing-active]="activeEditSection === 'objective'">
+                  <div class="soap-box-header">
+                    <div class="header-left">
+                      <div class="letter-badge">O</div>
+                      <h4>Objective</h4>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection !== 'objective'">
+                      <button class="btn-icon" (click)="startEditSection('objective')" title="Edit / AI Reframe Objective Section">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Read-only View -->
+                  <div class="soap-text-block" *ngIf="activeEditSection !== 'objective'">
+                    <p style="white-space: pre-line;">{{ effectiveSoapReport.objective }}</p>
+                  </div>
+
+                  <!-- Edit / AI Reframe Mode -->
+                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'objective'">
+                    <label class="edit-label">Manual Text Edit:</label>
+                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
+
+                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
+                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Include specific BP readings and heart rate metrics...">
+
+                    <div class="edit-actions">
+                      <button class="btn-ai-reframe" (click)="triggerAIReframe('objective')" [disabled]="isReframing">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
+                      </button>
+                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
+                        <i class="fa-solid fa-check"></i> Save Edit
+                      </button>
+                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                    </div>
                   </div>
                 </div>
 
-                <div class="soap-box assessment">
-                  <div class="letter-badge">A</div>
-                  <div class="soap-text-block">
-                    <h4>Assessment</h4>
-                    <p style="white-space: pre-line;">{{ currentSoapReport.assessment }}</p>
+                <!-- ASSESSMENT SECTION -->
+                <div class="soap-box assessment" [class.editing-active]="activeEditSection === 'assessment'">
+                  <div class="soap-box-header">
+                    <div class="header-left">
+                      <div class="letter-badge">A</div>
+                      <h4>Assessment</h4>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection !== 'assessment'">
+                      <button class="btn-icon" (click)="startEditSection('assessment')" title="Edit / AI Reframe Assessment Section">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Read-only View -->
+                  <div class="soap-text-block" *ngIf="activeEditSection !== 'assessment'">
+                    <p style="white-space: pre-line;">{{ effectiveSoapReport.assessment }}</p>
+                  </div>
+
+                  <!-- Edit / AI Reframe Mode -->
+                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'assessment'">
+                    <label class="edit-label">Manual Text Edit:</label>
+                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
+
+                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
+                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Add ICD-10 diagnosis code I10 for Essential Hypertension...">
+
+                    <div class="edit-actions">
+                      <button class="btn-ai-reframe" (click)="triggerAIReframe('assessment')" [disabled]="isReframing">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
+                      </button>
+                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
+                        <i class="fa-solid fa-check"></i> Save Edit
+                      </button>
+                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                    </div>
                   </div>
                 </div>
 
-                <div class="soap-box plan">
-                  <div class="letter-badge">P</div>
-                  <div class="soap-text-block">
-                    <h4>Plan</h4>
-                    <p style="white-space: pre-line;">{{ currentSoapReport.plan }}</p>
+                <!-- PLAN SECTION -->
+                <div class="soap-box plan" [class.editing-active]="activeEditSection === 'plan'">
+                  <div class="soap-box-header">
+                    <div class="header-left">
+                      <div class="letter-badge">P</div>
+                      <h4>Plan</h4>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection !== 'plan'">
+                      <button class="btn-icon" (click)="startEditSection('plan')" title="Edit / AI Reframe Plan Section">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Read-only View -->
+                  <div class="soap-text-block" *ngIf="activeEditSection !== 'plan'">
+                    <p style="white-space: pre-line;">{{ effectiveSoapReport.plan }}</p>
+                  </div>
+
+                  <!-- Edit / AI Reframe Mode -->
+                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'plan'">
+                    <label class="edit-label">Manual Text Edit:</label>
+                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
+
+                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
+                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Titrate Amlodipine to 10mg daily and schedule follow-up in 2 weeks...">
+
+                    <div class="edit-actions">
+                      <button class="btn-ai-reframe" (click)="triggerAIReframe('plan')" [disabled]="isReframing">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
+                      </button>
+                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
+                        <i class="fa-solid fa-check"></i> Save Edit
+                      </button>
+                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -685,6 +824,37 @@
           </div>
         </div>
       </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- PATIENT SUMMARY PREVIEW MODAL -->
+<div class="modal-overlay animated-fade-in" *ngIf="showPatientPreviewModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="fa-solid fa-notes-medical icon-teal"></i>
+        <h3>Patient-Friendly Summary Preview</h3>
+      </div>
+      <button class="btn-close" (click)="closePatientSummaryModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="patient-card-banner">
+        <div class="avatar">{{ visitDetails.initials || 'AK' }}</div>
+        <div>
+          <h4>{{ visitDetails.patientName }}</h4>
+          <p>{{ visitDetails.demographics }} · {{ visitDetails.visitType }}</p>
+        </div>
+      </div>
+
+      <div class="summary-box">
+        <h4><i class="fa-solid fa-heart-pulse icon-teal"></i> Consultation Summary & Action Plan for Patient:</h4>
+        <div class="summary-text" style="white-space: pre-line;">{{ patientSummaryText }}</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closePatientSummaryModal()">Close</button>
+      <button class="btn-primary" (click)="closePatientSummaryModal()"><i class="fa-solid fa-print"></i> Print / Share with Patient</button>
     </div>
   </div>
 </div>

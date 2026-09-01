@@ -172,6 +172,18 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   // Live Transcript Exchanges (Dynamic per patient)
   transcriptExchanges: any[] = [];
 
+  // Interactive SOAP Editing & Reframing State
+  editedSoapReport: { subjective: string; objective: string; assessment: string; plan: string } | null = null;
+  activeEditSection: 'subjective' | 'objective' | 'assessment' | 'plan' | null = null;
+  sectionEditText: string = '';
+  editReasonText: string = '';
+  isReframing: boolean = false;
+  isSavingFeedback: boolean = false;
+  showPatientPreviewModal: boolean = false;
+  patientSummaryText: string = '';
+  saveStatusMessage: string | null = null;
+  savedFeedbackId: string | null = null;
+
   ngOnInit(): void {}
 
   ngOnDestroy(): void {
@@ -458,6 +470,127 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       assessment: `Clinical presentation of ${this.visitDetails.condition} under consultation review.`,
       plan: `1. Conduct consultation and assess patient presentation.\n2. Review diagnostic suggestions upon recording.\n3. Finalize prescription and treatment plan.`
     };
+  }
+
+  get effectiveSoapReport(): { subjective: string; objective: string; assessment: string; plan: string } {
+    if (!this.editedSoapReport) {
+      const base = this.currentSoapReport;
+      this.editedSoapReport = {
+        subjective: base.subjective || '',
+        objective: base.objective || '',
+        assessment: base.assessment || '',
+        plan: base.plan || ''
+      };
+    }
+    return this.editedSoapReport;
+  }
+
+  startEditSection(section: 'subjective' | 'objective' | 'assessment' | 'plan'): void {
+    this.activeEditSection = section;
+    this.sectionEditText = this.effectiveSoapReport[section];
+    this.editReasonText = '';
+  }
+
+  cancelEditSection(): void {
+    this.activeEditSection = null;
+    this.sectionEditText = '';
+    this.editReasonText = '';
+  }
+
+  saveManualSectionEdit(): void {
+    if (this.activeEditSection) {
+      this.effectiveSoapReport[this.activeEditSection] = this.sectionEditText;
+      this.saveStatusMessage = `Updated ${this.activeEditSection.toUpperCase()} section locally. Click "Finalize & Save to DB" to persist changes.`;
+      this.activeEditSection = null;
+    }
+  }
+
+  triggerAIReframe(section: 'subjective' | 'objective' | 'assessment' | 'plan'): void {
+    if (!this.editReasonText.trim()) {
+      alert('Please enter a clinical edit instruction or reason for AI reframing.');
+      return;
+    }
+    this.isReframing = true;
+    const original = this.effectiveSoapReport[section];
+    const fullSoap = { ...this.effectiveSoapReport };
+
+    this.recordingService.reframeSOAPSection(section, original, this.editReasonText, fullSoap).subscribe({
+      next: (res) => {
+        this.isReframing = false;
+        if (res.reframed_text) {
+          this.effectiveSoapReport[section] = res.reframed_text;
+        }
+        if (res.patient_summary) {
+          this.patientSummaryText = res.patient_summary;
+        }
+        this.saveStatusMessage = `Reframed ${section.toUpperCase()} section with AI based on doctor instructions.`;
+        this.activeEditSection = null;
+      },
+      error: (err) => {
+        this.isReframing = false;
+        console.error('SOAP reframing error:', err);
+        alert('Failed to reframe section with AI. Please check server connection.');
+      }
+    });
+  }
+
+  openPatientSummaryModal(): void {
+    if (!this.patientSummaryText) {
+      // Trigger AI patient summary generation
+      this.recordingService.reframeSOAPSection('all', 'SOAP Note Summary', 'Generate patient friendly summary', this.effectiveSoapReport).subscribe({
+        next: (res) => {
+          if (res.patient_summary) {
+            this.patientSummaryText = res.patient_summary;
+          } else {
+            this.patientSummaryText = `• Discussed symptoms regarding ${this.visitDetails.reason}.\n• Evaluated current vital signs and medical history.\n• Continuing recommended treatment plan and follow-up as advised.`;
+          }
+          this.showPatientPreviewModal = true;
+        },
+        error: () => {
+          this.patientSummaryText = `• Discussed symptoms regarding ${this.visitDetails.reason}.\n• Evaluated current vital signs and medical history.\n• Continuing recommended treatment plan and follow-up as advised.`;
+          this.showPatientPreviewModal = true;
+        }
+      });
+    } else {
+      this.showPatientPreviewModal = true;
+    }
+  }
+
+  closePatientSummaryModal(): void {
+    this.showPatientPreviewModal = false;
+  }
+
+  saveFinalSOAPToDatabase(): void {
+    this.isSavingFeedback = true;
+    this.saveStatusMessage = null;
+
+    const payload = {
+      encounter_id: this.visitDetails.visitId || `ENC-${Date.now()}`,
+      doctor_id: 'DOC-001',
+      patient_id: this.visitDetails.visitId,
+      original_soap: this.currentSoapReport,
+      edited_soap: this.effectiveSoapReport,
+      edit_reason: this.editReasonText || 'Doctor finalized SOAP note review',
+      edited_section: this.activeEditSection || 'all',
+      patient_summary: this.patientSummaryText,
+      is_finalized: true
+    };
+
+    this.recordingService.saveSOAPFeedback(payload).subscribe({
+      next: (res) => {
+        this.isSavingFeedback = false;
+        this.savedFeedbackId = res.id;
+        this.saveStatusMessage = `✓ SOAP Report & Doctor Feedback persisted to database successfully (ID: ${res.id}).`;
+        if (res.patientSummary) {
+          this.patientSummaryText = res.patientSummary;
+        }
+      },
+      error: (err) => {
+        this.isSavingFeedback = false;
+        console.error('Save SOAP feedback error:', err);
+        this.saveStatusMessage = 'Error saving SOAP feedback to database.';
+      }
+    });
   }
 
   get gdriveLink(): string | null {
