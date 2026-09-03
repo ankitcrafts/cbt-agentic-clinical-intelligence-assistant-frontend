@@ -19,6 +19,12 @@ export class DoctorLoginComponent implements OnInit, OnDestroy {
   countdown = 0;
   private timerInterval: any = null;
 
+  // Step 3: New User Onboarding Profile Form State
+  signupFullName = '';
+  signupDepartment = '';
+  signupSpecialization = '';
+  signupPhone = '';
+
   ngOnInit() {
     this.syncRoleEmail(this.authService.currentRole());
   }
@@ -53,7 +59,30 @@ export class DoctorLoginComponent implements OnInit, OnDestroy {
 
   async onVerifyOtp() {
     if (!this.otpCode || this.otpCode.length < 4) return;
-    await this.authService.verifyOtp(this.email, this.otpCode, this.authService.currentRole());
+    const result = await this.authService.verifyOtp(this.email, this.otpCode, this.authService.currentRole());
+    if (result.success && (result.isNewUser || !result.isProfileCompleted)) {
+      this.signupFullName = '';
+      this.signupDepartment = this.authService.currentRole() === 'DOCTOR' ? 'Cardiology' : '';
+      this.signupSpecialization = this.authService.currentRole() === 'DOCTOR' ? 'Senior Cardiologist' : '';
+    }
+  }
+
+  async onCompleteSignupProfile() {
+    if (!this.signupFullName.trim()) {
+      this.authService.errorMessage.set('Please enter your full name to complete profile setup.');
+      return;
+    }
+    this.authService.errorMessage.set(null);
+    await this.authService.updateProfile({
+      full_name: this.signupFullName.trim(),
+      department: this.signupDepartment.trim(),
+      specialization: this.signupSpecialization.trim(),
+      phone_number: this.signupPhone.trim()
+    });
+  }
+
+  onSkipSignupProfile() {
+    this.authService.isNewUserPendingProfile.set(false);
   }
 
   onResendOtp() {

@@ -35,12 +35,28 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   activePlayingSessionId: string | null = null;
   activePlayingAudioUrl: string | null = null;
 
-  // Doctor Header Details
-  doctorGreeting = 'Good morning, Dr. Tanaka';
+  // Doctor Header Details (Dynamic based on authenticated user)
+  get doctorGreeting(): string {
+    const user = this.authService.currentUser();
+    const name = user?.name || 'Doctor';
+    return `Good morning, ${name.startsWith('Dr.') || name.startsWith('Doctor') ? name : 'Dr. ' + name}`;
+  }
+
   todayDateFormatted = 'Wednesday, August 13';
-  hospitalInfo = 'Cardiology · St. Mercy Hospital';
+
+  get hospitalInfo(): string {
+    const user = this.authService.currentUser();
+    const dept = user?.department || 'Cardiology';
+    const id = user?.id ? `ID: ${user.id} · ` : '';
+    return `${id}${dept} · St. Mercy Hospital`;
+  }
+
   dutyStatus = 'On duty';
-  doctorInitials = 'YT';
+
+  get doctorInitials(): string {
+    const user = this.authService.currentUser();
+    return user?.avatar_initials || 'DOC';
+  }
 
   // Patient Queue / Schedule Data
   patientsQueue = [

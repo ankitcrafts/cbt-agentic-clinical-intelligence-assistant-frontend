@@ -4,9 +4,28 @@
       <span class="cliniq-logo-icon">CI</span>
     </div>
     <span class="brand-name">ClinIQ</span>
-    <span class="role-pill" [class]="authService.currentRole().toLowerCase()">
-      {{ roleBadgeText }}
-    </span>
+
+    <!-- Interactive 2-Line User Profile Header Badge (Line 1: Name, Line 2: ID & Department) -->
+    <div 
+      class="user-profile-header-card" 
+      *ngIf="authService.isLoggedIn()" 
+      (click)="openProfileEdit()" 
+      title="Click to view &amp; edit profile details"
+    >
+      <div class="user-avatar-circle">
+        <span>{{ authService.currentUser().avatar_initials || 'CI' }}</span>
+      </div>
+      <div class="user-identity-col">
+        <div class="user-primary-name">
+          {{ authService.currentUser().name }}
+          <i class="fa-solid fa-pen-to-square edit-hint-icon"></i>
+        </div>
+        <div class="user-secondary-id">
+          <span class="id-badge">ID: {{ authService.currentUser().id || 'DOC-8492' }}</span>
+          <span *ngIf="authService.currentUser().department" class="dept-badge"> · {{ authService.currentUser().department }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="header-right-controls">
@@ -20,10 +39,110 @@
       <span class="theme-label">{{ authService.isDarkMode() ? 'Light' : 'Dark' }}</span>
     </button>
 
-    <!-- Sign Out Button matching Figma -->
+    <!-- Sign Out Button -->
     <button class="sign-out-btn" *ngIf="authService.isLoggedIn()" (click)="authService.logout()">
       <i class="fa-solid fa-arrow-right-from-bracket"></i>
       <span>Sign out</span>
     </button>
   </div>
 </header>
+
+<!-- GLOBAL USER PROFILE EDIT MODAL -->
+<div class="modal-overlay animated-fade-in" *ngIf="authService.showProfileModal()" (click)="closeProfileModal()">
+  <div class="modal-card profile-modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="fa-solid fa-id-card-clip icon-teal"></i>
+        <h3>ClinIQ User Profile</h3>
+      </div>
+      <button class="btn-close" (click)="closeProfileModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Unique ID Banner (Immutable) -->
+      <div class="unique-id-banner">
+        <div class="id-left">
+          <span class="id-label">Official Clinical ID:</span>
+          <span class="id-value">{{ authService.currentUser().id || 'DOC-8492' }}</span>
+        </div>
+        <span class="role-tag" [class]="authService.currentRole().toLowerCase()">
+          {{ authService.currentRole() }}
+        </span>
+      </div>
+
+      <p class="profile-intro-text">
+        Maintain your professional profile. Your full name and department will be displayed on the dashboard, live consultation transcripts, and finalized SOAP records.
+      </p>
+
+      <div class="profile-form-grid">
+        <div class="form-group">
+          <label>Full Name (e.g. Dr. Sarah Jenkins) <span class="required">*</span></label>
+          <input 
+            type="text" 
+            [(ngModel)]="editFullName" 
+            placeholder="Enter your full name" 
+            class="profile-input"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Department</label>
+          <input 
+            type="text" 
+            [(ngModel)]="editDepartment" 
+            placeholder="e.g. Cardiology, Neurology, Pediatrics" 
+            class="profile-input"
+          >
+        </div>
+
+        <div class="form-group" *ngIf="authService.currentRole() === 'DOCTOR'">
+          <label>Specialization / Title</label>
+          <input 
+            type="text" 
+            [(ngModel)]="editSpecialization" 
+            placeholder="e.g. Senior Cardiologist" 
+            class="profile-input"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Registered Email</label>
+          <input 
+            type="email" 
+            [value]="authService.currentUser().email" 
+            disabled 
+            class="profile-input disabled-input"
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Phone Number (Optional)</label>
+          <input 
+            type="tel" 
+            [(ngModel)]="editPhoneNumber" 
+            placeholder="e.g. +1 (555) 234-5678" 
+            class="profile-input"
+          >
+        </div>
+      </div>
+
+      <!-- Feedback Messages -->
+      <div class="profile-msg-success" *ngIf="saveSuccessMessage">
+        <i class="fa-solid fa-circle-check"></i> {{ saveSuccessMessage }}
+      </div>
+      <div class="profile-msg-error" *ngIf="saveErrorMessage">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ saveErrorMessage }}
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeProfileModal()">Cancel</button>
+      <button class="btn-save-profile" (click)="onSaveProfile()" [disabled]="authService.isLoading()">
+        <i class="fa-solid fa-spinner fa-spin" *ngIf="authService.isLoading()"></i>
+        <i class="fa-solid fa-check" *ngIf="!authService.isLoading()"></i>
+        <span>Save Profile</span>
+      </button>
+    </div>
+  </div>
+</div>

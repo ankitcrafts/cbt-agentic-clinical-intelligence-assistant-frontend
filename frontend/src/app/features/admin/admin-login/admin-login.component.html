@@ -115,7 +115,7 @@
       </div>
 
       <!-- Step 1: Request OTP Form -->
-      <form *ngIf="!authService.otpSent()" (ngSubmit)="onSendOtp()" class="login-fields-form">
+      <form *ngIf="!authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onSendOtp()" class="login-fields-form">
         <div class="form-group">
           <label>Work email / Gmail</label>
           <input 
@@ -144,7 +144,7 @@
       </form>
 
       <!-- Step 2: Verify OTP Form -->
-      <form *ngIf="authService.otpSent()" (ngSubmit)="onVerifyOtp()" class="login-fields-form">
+      <form *ngIf="authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onVerifyOtp()" class="login-fields-form">
         <!-- Dev OTP Helper Pill -->
         <div class="otp-dev-hint" *ngIf="authService.devOtp()" (click)="autofillDevOtp()">
           <span><i class="fa-solid fa-key"></i> Code: <strong>{{ authService.devOtp() }}</strong></span>
@@ -191,6 +191,52 @@
           <i class="fa-solid fa-bolt"></i>
           <span>Bypass OTP (Demo Login)</span>
         </button>
+      </form>
+
+      <!-- Step 3: New Real User Profile Onboarding Form -->
+      <form *ngIf="authService.isNewUserPendingProfile()" (ngSubmit)="onCompleteSignupProfile()" class="login-fields-form">
+        <div style="background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.35); border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 0.8rem; color: #94a3b8;">
+            Assigned Administrator ID:
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #2dd4bf; font-size: 0.95rem;">
+            {{ authService.currentUser().id || 'ADM-0102' }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Full Name <span style="color: #f87171;">*</span></label>
+          <input 
+            type="text" 
+            [(ngModel)]="signupFullName" 
+            name="signupFullName" 
+            required 
+            placeholder="e.g. Hospital Administrator"
+            autofocus
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Department</label>
+          <input 
+            type="text" 
+            [(ngModel)]="signupDepartment" 
+            name="signupDepartment" 
+            placeholder="e.g. Hospital Operations, IT Admin"
+          >
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="authService.isLoading() || !signupFullName">
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="authService.isLoading()"></i>
+          <i class="fa-solid fa-check" *ngIf="!authService.isLoading()"></i>
+          <span>Save Profile & Enter Admin Suite</span>
+        </button>
+
+        <div class="auth-actions-row" style="justify-content: center; margin-top: 0.75rem;">
+          <button type="button" class="text-action-btn" (click)="onSkipSignupProfile()" style="color: #94a3b8; font-size: 0.785rem;">
+            Skip for now &amp; use ID {{ authService.currentUser().id }} <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
       </form>
 
       <p class="disclaimer-text">Secure PostgreSQL authentication with encrypted OTP delivery.</p>
