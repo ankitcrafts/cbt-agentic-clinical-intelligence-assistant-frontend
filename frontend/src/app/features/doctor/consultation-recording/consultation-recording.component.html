@@ -13,6 +13,98 @@
       <div class="session-badge" style="margin-bottom: 0.5rem; font-weight: 700; color: #2dd4bf; letter-spacing: 0.5px; font-size: 0.95rem;">
         {{ recordingService.sessionTitle() }} &bull; Max 20 min
       </div>
+
+      <!-- Consultation Mode Selector -->
+      <div class="mode-selector-bar" style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; background: rgba(0,0,0,0.2); padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+        <button 
+          type="button" 
+          class="mode-pill" 
+          [class.active]="recordingService.consultationMode() === 'IN_PERSON'"
+          (click)="setConsultationMode('IN_PERSON')"
+          [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+          style="padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
+          [style.background]="recordingService.consultationMode() === 'IN_PERSON' ? 'rgba(13, 148, 136, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
+          [style.border-color]="recordingService.consultationMode() === 'IN_PERSON' ? '#2dd4bf' : 'rgba(255, 255, 255, 0.1)'"
+          [style.color]="recordingService.consultationMode() === 'IN_PERSON' ? '#2dd4bf' : '#cbd5e1'"
+        >
+          <i class="fa-solid fa-user-doctor"></i> In-Person Clinic
+        </button>
+        <button 
+          type="button" 
+          class="mode-pill" 
+          [class.active]="recordingService.consultationMode() === 'TELECONSULTATION'"
+          (click)="setConsultationMode('TELECONSULTATION')"
+          [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+          style="padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
+          [style.background]="recordingService.consultationMode() === 'TELECONSULTATION' ? 'rgba(59, 130, 246, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
+          [style.border-color]="recordingService.consultationMode() === 'TELECONSULTATION' ? '#60a5fa' : 'rgba(255, 255, 255, 0.1)'"
+          [style.color]="recordingService.consultationMode() === 'TELECONSULTATION' ? '#93c5fd' : '#cbd5e1'"
+        >
+          <i class="fa-solid fa-headset"></i> Remote Call (Teams/Meet/WhatsApp)
+        </button>
+        <button 
+          type="button" 
+          class="mode-pill" 
+          [class.active]="recordingService.consultationMode() === 'FILE_UPLOAD'"
+          (click)="setConsultationMode('FILE_UPLOAD')"
+          [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+          style="padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
+          [style.background]="recordingService.consultationMode() === 'FILE_UPLOAD' ? 'rgba(168, 85, 247, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
+          [style.border-color]="recordingService.consultationMode() === 'FILE_UPLOAD' ? '#c084fc' : 'rgba(255, 255, 255, 0.1)'"
+          [style.color]="recordingService.consultationMode() === 'FILE_UPLOAD' ? '#d8b4fe' : '#cbd5e1'"
+        >
+          <i class="fa-solid fa-file-arrow-up"></i> Upload Call File
+        </button>
+      </div>
+
+      <!-- Teleconsultation Helper Guidance Card -->
+      <div *ngIf="recordingService.consultationMode() === 'TELECONSULTATION' && currentState !== 'RECORDING'" style="margin-bottom: 1rem; width: 100%; padding: 0.65rem 0.85rem; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 8px; font-size: 0.8rem; color: #bfdbfe; display: flex; align-items: flex-start; gap: 0.5rem; text-align: left;">
+        <i class="fa-solid fa-circle-info" style="color: #60a5fa; margin-top: 0.15rem; font-size: 0.95rem;"></i>
+        <div>
+          <strong>Remote Teleconsultation Dual-Audio:</strong> Click <em>Start</em>. Select the Teams/Google Meet/WhatsApp tab or window, and ensure the <strong>"Share audio"</strong> checkbox is ticked in the browser popup. Your microphone and patient call audio will be mixed synchronously.
+        </div>
+      </div>
+
+      <!-- Dual Live Audio Indicators -->
+      <div *ngIf="currentState === 'RECORDING' && recordingService.consultationMode() === 'TELECONSULTATION'" style="margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.6rem; flex-wrap: wrap;">
+        <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <i class="fa-solid fa-microphone"></i> Doctor Mic: Live
+        </span>
+        <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <i class="fa-solid fa-volume-high"></i> Remote Call Audio: Live
+        </span>
+      </div>
+
+      <!-- Drag & Drop Audio File Upload Zone (Shown in FILE_UPLOAD mode) -->
+      <div 
+        *ngIf="recordingService.consultationMode() === 'FILE_UPLOAD' && currentState !== 'RECORDING'"
+        class="teleconsultation-dropzone"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onFileDropped($event)"
+        style="margin-bottom: 1.25rem; width: 100%; border: 2px dashed rgba(168, 85, 247, 0.45); border-radius: 10px; padding: 1.5rem 1rem; text-align: center; background: rgba(168, 85, 247, 0.06); transition: all 0.2s;"
+        [style.background]="isDragOver ? 'rgba(168, 85, 247, 0.2)' : 'rgba(168, 85, 247, 0.06)'"
+      >
+        <input type="file" #fileInput (change)="onFileSelected($event)" accept="audio/*,.wav,.mp3,.m4a,.webm,.ogg" style="display: none;" />
+        <div style="font-size: 2rem; color: #c084fc; margin-bottom: 0.35rem;">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <div style="font-weight: 600; font-size: 0.9rem; color: #e2e8f0; margin-bottom: 0.25rem;">
+          Drop Teams / Meet / WhatsApp call recording here
+        </div>
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.75rem;">
+          Supports WAV, MP3, M4A, WebM, OGG files
+        </div>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="fileInput.click()" 
+          style="font-size: 0.8rem; padding: 0.35rem 1rem; background: rgba(168, 85, 247, 0.3); border-color: rgba(168, 85, 247, 0.5); color: #d8b4fe;"
+        >
+          <i class="fa-solid fa-folder-open"></i> Browse Call Audio File
+        </button>
+      </div>
+
       <span class="status-label">
         {{ currentState === 'RECORDING' ? 'Recording Live' : (currentState === 'PAUSED' ? 'Recording Paused' : (currentState === 'UPLOADING' ? 'Uploading Recording...' : (currentState === 'UPLOADED' ? 'Uploaded' : (currentState === 'FAILED' ? 'Recording Failed' : 'Ready to Record')))) }}
       </span>
@@ -64,8 +156,8 @@
       <!-- Recording Controls -->
       <div class="controls-row">
         <button class="control-btn play-start-btn" *ngIf="currentState === 'IDLE'" (click)="startRecording()">
-          <i class="fa-solid fa-microphone"></i>
-          <span>Start</span>
+          <i class="fa-solid" [class.fa-microphone]="recordingService.consultationMode() === 'IN_PERSON'" [class.fa-headset]="recordingService.consultationMode() === 'TELECONSULTATION'" [class.fa-play]="recordingService.consultationMode() === 'FILE_UPLOAD'"></i>
+          <span>{{ recordingService.consultationMode() === 'TELECONSULTATION' ? 'Start Remote Call' : (recordingService.consultationMode() === 'FILE_UPLOAD' ? 'Record / Select' : 'Start') }}</span>
         </button>
 
         <button class="control-btn pause-btn" *ngIf="currentState === 'RECORDING' || currentState === 'PAUSED'" (click)="togglePause()">

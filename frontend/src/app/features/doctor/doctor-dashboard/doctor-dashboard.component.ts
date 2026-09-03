@@ -184,6 +184,10 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   saveStatusMessage: string | null = null;
   savedFeedbackId: string | null = null;
 
+  // Patient Consultation Session History (from PostgreSQL DB)
+  patientSessions: any[] = [];
+  selectedSessionId: string = 'live';
+
   ngOnInit(): void {}
 
   ngOnDestroy(): void {
@@ -201,6 +205,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     // Switch patient context in recording service (loads that patient's session or initializes clean)
     this.recordingService.switchPatient(patientId);
     this.transcriptExchanges = [];
+    this.patientSessions = [];
+    this.selectedSessionId = 'live';
+    this.editedSoapReport = null;
 
     this.visitDetails = {
       patientName: patient.name,
@@ -234,14 +241,45 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       wordCount: this.recordingService.latestTranscript() ? this.recordingService.latestTranscript().split(/\s+/).length : 0
     }));
 
+    // Fetch previous consultation sessions from backend database
+    this.recordingService.getPatientConsultationSessions(patientId).subscribe({
+      next: (sessions) => {
+        this.patientSessions = sessions || [];
+        // If there are recorded past sessions and doctor hasn't started recording, load the most recent session
+        if (this.patientSessions.length > 0 && this.recordingService.state() === 'IDLE' && (!currentEx || currentEx.length === 0)) {
+          const latest = this.patientSessions[this.patientSessions.length - 1];
+          this.selectSession(latest);
+        }
+      },
+      error: (err) => console.warn('Failed to load consultation sessions for patient:', err)
+    });
+
     // Start with Patient Card + AI Suggestions + Run Clinical Analysis button
     this.rightPanelMode = 'suggestions';
     this.viewMode = 'consultation';
   }
 
+  selectSession(session: any): void {
+    this.selectedSessionId = session.id;
+    this.recordingService.loadConsultationSession(session);
+    this.transcriptExchanges = session.conversation || [];
+    this.editedSoapReport = session.soapReport || session.soap_report || null;
+    this.patientSummaryText = '';
+  }
+
+  selectLiveSession(): void {
+    this.selectedSessionId = 'live';
+    const patientId = this.visitDetails.visitId;
+    this.recordingService.switchPatient(patientId);
+    this.transcriptExchanges = [];
+    this.editedSoapReport = null;
+    this.patientSummaryText = '';
+  }
+
   get canRunClinicalAnalysis(): boolean {
     return this.currentTranscriptExchanges.length > 0 || (!!this.recordingService.latestTranscript() && this.recordingService.latestTranscript().trim().length > 0) || this.currentAISuggestions.length > 0;
   }
+
 
   // On clicking "Run Clinical Analysis" -> switches right column to Image 3 (5-Tab CDS Panel)
   runClinicalAnalysis(): void {
@@ -277,9 +315,76 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.activeTab = tab;
   }
 
+  isDragOver = false;
+  activeUploadError: string | null = null;
+
+  // Consultation mode helpers
+  showTeleconsultationGuideModal: boolean = false;
+
+  setConsultationMode(mode: 'IN_PERSON' | 'REMOTE_TEAMS' | 'REMOTE_MEET' | 'REMOTE_WHATSAPP' | 'FILE_UPLOAD'): void {
+    this.recordingService.setConsultationMode(mode as any);
+    this.activeUploadError = null;
+  }
+
+  openTeleconsultGuide(): void {
+    this.showTeleconsultationGuideModal = true;
+  }
+
+  closeTeleconsultGuide(): void {
+    this.showTeleconsultationGuideModal = false;
+  }
+
+  // Drag & drop file upload handlers for pre-recorded teleconsultations
+  onDragOver(e: DragEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+    this.isDragOver = true;
+  }
+
+  onDragLeave(e: DragEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+    this.isDragOver = false;
+  }
+
+  onFileDropped(e: DragEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+    this.isDragOver = false;
+    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+      this.processCallFile(e.dataTransfer.files[0]);
+    }
+  }
+
+  onFileSelected(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.processCallFile(input.files[0]);
+    }
+  }
+
+  async processCallFile(file: File): Promise<void> {
+    try {
+      this.activeUploadError = null;
+      const pid = this.visitDetails.visitId || this.mockData.activeConsultation().patientPid || 'P1245';
+      const encId = 'CONS-' + pid.replace('#', '');
+      await this.recordingService.handleUploadedAudioFile(file, {
+        encounterId: encId,
+        doctorId: 'DOC-001',
+        patientId: pid
+      });
+      // Automatically trigger upload & Deepgram pipeline
+      this.uploadRecording();
+    } catch (err: any) {
+      console.error('File process error:', err);
+      this.activeUploadError = err.message || 'Failed to process audio file.';
+    }
+  }
+
   // Recording methods
   async startRecording(): Promise<void> {
     try {
+      this.activeUploadError = null;
       const pid = this.visitDetails.visitId || this.mockData.activeConsultation().patientPid || 'P1245';
       const encId = 'CONS-' + pid.replace('#', '');
       await this.recordingService.startRecording({
@@ -329,6 +434,11 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         if (res.exchanges && res.exchanges.length > 0) {
           this.transcriptExchanges = res.exchanges;
         }
+        this.recordingService.getPatientConsultationSessions(pid).subscribe({
+          next: (sessions) => {
+            this.patientSessions = sessions || [];
+          }
+        });
       },
       error: (err) => console.error('Upload & transcription failed:', err)
     });
