@@ -1,5 +1,37 @@
 export type UserRole = 'ADMIN' | 'DOCTOR' | 'PATIENT';
 
+export interface UserProfile {
+  id?: string;
+  email: string;
+  full_name?: string;
+  name?: string;
+  role: UserRole;
+  department?: string;
+  specialization?: string;
+  designation?: string;
+  phone_number?: string;
+  avatar_initials?: string;
+  is_active?: boolean;
+}
+
+export interface SendOTPResponse {
+  success: boolean;
+  message: string;
+  email: string;
+  role: string;
+  expires_in_seconds: number;
+  dev_otp?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  access_token: string;
+  token_type: string;
+  user: UserProfile;
+  target_dashboard_url: string;
+}
+
 export interface Doctor {
   id: string;
   name: string;

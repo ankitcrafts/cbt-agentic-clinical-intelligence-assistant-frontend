@@ -14,8 +14,9 @@ export class HeaderComponent {
 
   get roleBadgeText(): string {
     const role = this.authService.currentRole();
-    if (role === 'ADMIN') return 'Administrator Portal';
-    if (role === 'DOCTOR') return 'Dr. Yuki Tanaka';
-    return 'Patient Health Portal';
+    const user = this.authService.currentUser();
+    if (role === 'ADMIN') return `${user?.name || 'Administrator'} (Hospital Operations)`;
+    if (role === 'DOCTOR') return user?.name || 'Dr. Yuki Tanaka';
+    return `${user?.name || 'Patient Portal'}`;
   }
 }

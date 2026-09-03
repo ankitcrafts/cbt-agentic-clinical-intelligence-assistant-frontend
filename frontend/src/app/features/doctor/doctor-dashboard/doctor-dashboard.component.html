@@ -1,195 +1,115 @@
-<!-- VIEW 1: PATIENTS QUEUE LIST (Before Consultation Support) -->
-<div class="cliniq-patient-queue-page" *ngIf="viewMode === 'queue'">
-  <!-- Queue Header -->
-  <div class="queue-page-header">
+<!-- VIEW 1: DOCTOR DASHBOARD SCHEDULE (Matching Image 1) -->
+<div class="cliniq-doctor-dashboard" *ngIf="viewMode === 'queue'">
+  <!-- Top Greeting & Hospital Info Header -->
+  <div class="dashboard-header-row">
     <div class="header-left">
-      <h1 class="main-title serif-title">Patient Consultations Queue</h1>
-      <p class="subtitle">
-        Welcome, Dr. Yuki Tanaka · Today: Aug 13, 2026 · {{ totalAppointmentsCount }} Consultations Scheduled
+      <h1 class="doctor-greeting serif-title">{{ doctorGreeting }}</h1>
+      <p class="doctor-subtitle">
+        {{ todayDateFormatted }} · {{ totalAppointmentsCount }} appointments today
       </p>
     </div>
+
     <div class="header-right">
-      <span class="live-clock-badge">
-        <i class="fa-regular fa-clock"></i> Live Queue Updated
-      </span>
-    </div>
-  </div>
-
-  <!-- KPI Summary Stats Cards -->
-  <div class="queue-stats-grid">
-    <div class="stat-kpi-card">
-      <div class="kpi-icon-wrap" style="background: rgba(13, 148, 136, 0.12); color: #0d9488;">
-        <i class="fa-solid fa-users"></i>
+      <div class="doctor-meta-col">
+        <span class="hospital-name">{{ hospitalInfo }}</span>
+        <span class="duty-badge">{{ dutyStatus }}</span>
       </div>
-      <div class="kpi-info">
-        <span class="kpi-val font-mono">{{ totalAppointmentsCount }}</span>
-        <span class="kpi-label">Today's Total</span>
-      </div>
-    </div>
-
-    <div class="stat-kpi-card">
-      <div class="kpi-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
-        <i class="fa-solid fa-hourglass-half"></i>
-      </div>
-      <div class="kpi-info">
-        <span class="kpi-val font-mono">{{ waitingCount }}</span>
-        <span class="kpi-label">Waiting in Queue</span>
-      </div>
-    </div>
-
-    <div class="stat-kpi-card">
-      <div class="kpi-icon-wrap" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
-        <i class="fa-solid fa-stethoscope"></i>
-      </div>
-      <div class="kpi-info">
-        <span class="kpi-val font-mono">{{ inProgressCount }}</span>
-        <span class="kpi-label">Active / In Progress</span>
-      </div>
-    </div>
-
-    <div class="stat-kpi-card">
-      <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
-        <i class="fa-solid fa-circle-check"></i>
-      </div>
-      <div class="kpi-info">
-        <span class="kpi-val font-mono">{{ completedCount }}</span>
-        <span class="kpi-label">Completed</span>
+      <div class="doctor-avatar-circle" title="Dr. Yuki Tanaka">
+        <span>{{ doctorInitials }}</span>
       </div>
     </div>
   </div>
 
-  <!-- Search & Filter Bar -->
-  <div class="queue-filter-bar">
-    <div class="search-input-wrap">
-      <i class="fa-solid fa-magnifying-glass search-icon"></i>
-      <input 
-        type="text" 
-        class="search-input" 
-        placeholder="Search patient by name, PID, or medical reason..." 
-        [(ngModel)]="searchTerm"
-      />
-      <button class="clear-search-btn" *ngIf="searchTerm" (click)="searchTerm = ''">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+  <!-- Summary KPI Stat Cards Grid (4 Cards) -->
+  <div class="stat-cards-grid">
+    <div class="stat-card">
+      <span class="stat-label">TOTAL TODAY</span>
+      <div class="stat-value font-mono">{{ totalAppointmentsCount }}</div>
+      <span class="stat-subtext">Appointments</span>
     </div>
 
-    <div class="status-filter-pills">
-      <button 
-        type="button" 
-        class="filter-pill-btn" 
-        [class.active]="statusFilter === 'ALL'" 
-        (click)="statusFilter = 'ALL'"
-      >
-        All ({{ totalAppointmentsCount }})
-      </button>
-      <button 
-        type="button" 
-        class="filter-pill-btn" 
-        [class.active]="statusFilter === 'IN_PROGRESS'" 
-        (click)="statusFilter = 'IN_PROGRESS'"
-      >
-        In Progress ({{ inProgressCount }})
-      </button>
-      <button 
-        type="button" 
-        class="filter-pill-btn" 
-        [class.active]="statusFilter === 'WAITING'" 
-        (click)="statusFilter = 'WAITING'"
-      >
-        Waiting ({{ waitingCount }})
-      </button>
-      <button 
-        type="button" 
-        class="filter-pill-btn" 
-        [class.active]="statusFilter === 'COMPLETED'" 
-        (click)="statusFilter = 'COMPLETED'"
-      >
-        Completed ({{ completedCount }})
-      </button>
+    <div class="stat-card">
+      <span class="stat-label">IN PROGRESS</span>
+      <div class="stat-value font-mono">{{ inProgressCount }}</div>
+      <span class="stat-subtext">Active session</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">WAITING</span>
+      <div class="stat-value font-mono">{{ waitingCount }}</div>
+      <span class="stat-subtext">In waiting room</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">REMAINING</span>
+      <div class="stat-value font-mono">{{ remainingCount }}</div>
+      <span class="stat-subtext">Scheduled</span>
     </div>
   </div>
 
-  <!-- Patient Queue Cards List -->
-  <div class="queue-cards-list">
+  <!-- Section Title -->
+  <div class="schedule-section-header">
+    TODAY'S SCHEDULE
+  </div>
+
+  <!-- Today's Schedule Patient Cards List -->
+  <div class="schedule-cards-list">
     <div 
-      class="patient-queue-card" 
-      *ngFor="let p of filteredPatients"
-      [class.active-highlight]="p.status === 'IN_PROGRESS'"
-      [class.completed-card]="p.status === 'COMPLETED'"
+      class="schedule-card" 
+      *ngFor="let p of patientsQueue"
+      [class.in-progress-card]="p.status === 'IN_PROGRESS'"
+      (click)="openConsultation(p)"
+      [title]="'Click to view consultation for ' + p.name"
     >
-      <div class="card-left-section">
-        <div class="patient-avatar-box" [class.active-avatar]="p.status === 'IN_PROGRESS'">
+      <!-- Left Section: Time, Avatar, Patient Details & Tags -->
+      <div class="card-left-group">
+        <div class="time-block">
+          <span class="time-text font-mono">{{ p.time }}</span>
+          <span class="duration-text">{{ p.duration }}</span>
+        </div>
+
+        <div class="patient-avatar-box">
           <span>{{ p.initials }}</span>
         </div>
 
-        <div class="patient-primary-meta">
-          <div class="name-row">
-            <h3 class="patient-name">{{ p.name }}</h3>
-            <span class="demographics-tag">{{ p.age }}y &bull; {{ p.gender }}</span>
-            <span class="pid-badge">PID: {{ p.id }}</span>
+        <div class="patient-info-block">
+          <div class="patient-headline">
+            <span class="patient-name">{{ p.name }}</span>
+            <span class="patient-demographics">{{ p.demographics }}</span>
           </div>
 
-          <div class="visit-details-row">
-            <span class="time-slot"><i class="fa-regular fa-clock"></i> {{ p.time }}</span>
-            <span class="dot-divider">&bull;</span>
-            <span class="visit-type">{{ p.visitType }}</span>
-            <span class="dot-divider">&bull;</span>
+          <div class="patient-subline">
+            <span class="visit-type-pill">{{ p.visitType }}</span>
             <span class="reason-text">{{ p.reason }}</span>
           </div>
         </div>
       </div>
 
-      <div class="card-mid-vitals">
-        <div class="vital-pill">
-          <span class="vital-lbl">BP</span>
-          <span class="vital-val font-mono">{{ p.vitals.bp }}</span>
+      <!-- Right Section: Status Badge & Clinical Condition + Hover Arrow -->
+      <div class="card-right-group">
+        <div class="status-condition-stack">
+          <div 
+            class="status-pill"
+            [class.status-in-progress]="p.status === 'IN_PROGRESS'"
+            [class.status-waiting]="p.status === 'WAITING'"
+            [class.status-scheduled]="p.status === 'SCHEDULED'"
+          >
+            <span class="status-dot"></span>
+            <span>{{ p.statusLabel }}</span>
+          </div>
+
+          <span class="condition-text">{{ p.condition }}</span>
         </div>
-        <div class="vital-pill">
-          <span class="vital-lbl">HR</span>
-          <span class="vital-val font-mono">{{ p.vitals.hr }}</span>
-        </div>
-        <div class="vital-pill" *ngIf="p.vitals.pain !== '0/10'">
-          <span class="vital-lbl">Pain</span>
-          <span class="vital-val font-mono">{{ p.vitals.pain }}</span>
+
+        <div class="card-hover-arrow" aria-hidden="true">
+          <i class="fa-solid fa-chevron-right"></i>
         </div>
       </div>
-
-      <div class="card-right-actions">
-        <span 
-          class="queue-status-badge"
-          [class.status-in-progress]="p.status === 'IN_PROGRESS'"
-          [class.status-waiting]="p.status === 'WAITING'"
-          [class.status-scheduled]="p.status === 'SCHEDULED'"
-          [class.status-completed]="p.status === 'COMPLETED'"
-        >
-          <span class="status-dot"></span>
-          {{ p.statusLabel }}
-        </span>
-
-        <button 
-          type="button" 
-          class="btn-start-consult" 
-          [class.primary-btn]="p.status !== 'COMPLETED'"
-          (click)="openConsultation(p)"
-        >
-          <i class="fa-solid" [class.fa-stethoscope]="p.status !== 'COMPLETED'" [class.fa-eye]="p.status === 'COMPLETED'"></i>
-          <span>{{ p.status === 'IN_PROGRESS' ? 'Open Active Support' : (p.status === 'COMPLETED' ? 'View SOAP Note' : 'Start Consultation') }}</span>
-          <i class="fa-solid fa-arrow-right"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Empty search state -->
-    <div class="empty-search-state" *ngIf="filteredPatients.length === 0">
-      <i class="fa-solid fa-user-slash empty-icon"></i>
-      <h4>No patients match the search or filter</h4>
-      <p>Try resetting the search keyword or switching filters.</p>
-      <button class="filter-pill-btn" (click)="searchTerm = ''; statusFilter = 'ALL'">Reset Filters</button>
     </div>
   </div>
 </div>
 
-<!-- VIEW 2: DOCTOR CONSULTATION SUPPORT WORKSPACE -->
+<!-- VIEW 2: DOCTOR CONSULTATION SUPPORT WORKSPACE (Matching Images 2, 3 & 4) -->
 <div class="cliniq-consultation-page" *ngIf="viewMode === 'consultation'">
   <!-- Title & Visit Header with Back Navigation and Live Session Indicator -->
   <div class="page-title-header">
@@ -204,24 +124,68 @@
       </div>
       <h1 class="main-title serif-title">Consultation Support</h1>
       <p class="subtitle">
-        Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.reason }}
+        Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.visitType }} · {{ visitDetails.condition }}
       </p>
     </div>
-    <div class="live-session-indicator">
+    <div class="live-session-indicator" *ngIf="selectedSessionId === 'live'">
       <span class="live-pulse-dot"></span>
       <span class="live-label">Live session</span>
+    </div>
+    <div class="live-session-indicator" *ngIf="selectedSessionId !== 'live'" style="background: rgba(45, 212, 191, 0.15); border-color: rgba(45, 212, 191, 0.4);">
+      <span class="live-pulse-dot" style="background: #2dd4bf; box-shadow: 0 0 8px #2dd4bf;"></span>
+      <span class="live-label" style="color: #2dd4bf;">Past Session Record</span>
+    </div>
+  </div>
+
+  <!-- Consultation Sessions Selector Bar -->
+  <div class="patient-sessions-bar" *ngIf="patientSessions.length > 0" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1.25rem; padding: 0.65rem 1rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;">
+    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+      <span style="font-size: 0.775rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem;">
+        <i class="fa-solid fa-clock-rotate-left" style="color: #2dd4bf;"></i> Patient Consultation History:
+      </span>
+      <button 
+        *ngFor="let s of patientSessions" 
+        type="button" 
+        class="session-tab-btn" 
+        [class.active]="selectedSessionId === s.id"
+        (click)="selectSession(s)"
+        style="padding: 0.35rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+        [style.background]="selectedSessionId === s.id ? 'rgba(45, 212, 191, 0.25)' : 'rgba(255, 255, 255, 0.06)'"
+        [style.border]="selectedSessionId === s.id ? '1px solid #2dd4bf' : '1px solid rgba(255, 255, 255, 0.12)'"
+        [style.color]="selectedSessionId === s.id ? '#2dd4bf' : '#e2e8f0'">
+        <i class="fa-solid fa-file-waveform" style="margin-right: 0.35rem;"></i>
+        {{ s.sessionTitle }}
+        <span *ngIf="s.appointmentDate" style="font-size: 0.72rem; opacity: 0.75; margin-left: 0.3rem;">({{ s.appointmentDate | slice:0:10 }})</span>
+      </button>
+
+      <button 
+        type="button" 
+        class="session-tab-btn" 
+        [class.active]="selectedSessionId === 'live'"
+        (click)="selectLiveSession()"
+        style="padding: 0.35rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+        [style.background]="selectedSessionId === 'live' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.06)'"
+        [style.border]="selectedSessionId === 'live' ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.12)'"
+        [style.color]="selectedSessionId === 'live' ? '#6ee7b7' : '#e2e8f0'">
+        <i class="fa-solid fa-microphone-lines" style="margin-right: 0.35rem;"></i>
+        + Today's Active Session
+      </button>
+    </div>
+
+    <div *ngIf="selectedSessionId !== 'live'" style="font-size: 0.75rem; color: #2dd4bf; display: flex; align-items: center; gap: 0.35rem;">
+      <i class="fa-solid fa-circle-info"></i> Viewing previous session record
     </div>
   </div>
 
   <!-- 2-Column Main Workspace Grid -->
   <div class="workspace-grid">
-    <!-- LEFT COLUMN -->
+    <!-- LEFT COLUMN: Recording Box + Live Transcript -->
     <div class="workspace-col-left">
-      <!-- 1. Session Recording Box (Preserved Intact) -->
+      <!-- 1. Session Recording Box (Preserved Exact Structure) -->
       <div class="session-recording-box">
         <div class="recording-top-row">
           <div class="recording-meta">
-            <h3 class="box-title">{{ recordingService.sessionTitle() }}</h3>
+            <h3 class="box-title">{{ recordingService.sessionTitle() || 'Session 1' }}</h3>
             <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · Max: 20 min</span>
           </div>
           <div class="live-pill" [class.paused]="currentState === 'PAUSED'" [class.stopped]="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED'">
@@ -230,6 +194,145 @@
               {{ currentState === 'RECORDING' ? 'Live' : (currentState === 'PAUSED' ? 'Paused' : (currentState === 'REQUESTING_PERMISSION' ? 'Connecting...' : (currentState === 'UPLOADING' ? 'Uploading...' : (currentState === 'UPLOADED' ? 'Uploaded' : (currentState === 'FAILED' ? 'Error' : 'Ready'))))) }}
             </span>
           </div>
+        </div>
+
+        <!-- Consultation Channel Switcher (In-Person vs MS Teams vs Google Meet vs WhatsApp vs File Upload) -->
+        <div class="consultation-mode-selector-bar" style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 0.5rem 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+            <span style="font-size: 0.725rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.25rem;">
+              <i class="fa-solid fa-headset" style="color: #2dd4bf; margin-right: 0.25rem;"></i> Channel:
+            </span>
+            <button 
+              type="button" 
+              class="mode-pill-btn" 
+              [class.active]="recordingService.consultationMode() === 'IN_PERSON'"
+              (click)="setConsultationMode('IN_PERSON')"
+              [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
+              [style.background]="recordingService.consultationMode() === 'IN_PERSON' ? 'rgba(13, 148, 136, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
+              [style.border-color]="recordingService.consultationMode() === 'IN_PERSON' ? '#2dd4bf' : 'rgba(255, 255, 255, 0.1)'"
+              [style.color]="recordingService.consultationMode() === 'IN_PERSON' ? '#2dd4bf' : '#cbd5e1'"
+            >
+              <i class="fa-solid fa-user-doctor" style="margin-right: 0.25rem;"></i> In-Person
+            </button>
+            <button 
+              type="button" 
+              class="mode-pill-btn" 
+              [class.active]="recordingService.consultationMode() === 'REMOTE_TEAMS'"
+              (click)="setConsultationMode('REMOTE_TEAMS')"
+              [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
+              [style.background]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'rgba(99, 102, 241, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
+              [style.border-color]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? '#818cf8' : 'rgba(255, 255, 255, 0.1)'"
+              [style.color]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? '#a5b4fc' : '#cbd5e1'"
+            >
+              <i class="fa-brands fa-microsoft" style="margin-right: 0.25rem;"></i> MS Teams
+            </button>
+            <button 
+              type="button" 
+              class="mode-pill-btn" 
+              [class.active]="recordingService.consultationMode() === 'REMOTE_MEET'"
+              (click)="setConsultationMode('REMOTE_MEET')"
+              [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
+              [style.background]="recordingService.consultationMode() === 'REMOTE_MEET' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
+              [style.border-color]="recordingService.consultationMode() === 'REMOTE_MEET' ? '#34d399' : 'rgba(255, 255, 255, 0.1)'"
+              [style.color]="recordingService.consultationMode() === 'REMOTE_MEET' ? '#6ee7b7' : '#cbd5e1'"
+            >
+              <i class="fa-brands fa-google" style="margin-right: 0.25rem;"></i> Google Meet
+            </button>
+            <button 
+              type="button" 
+              class="mode-pill-btn" 
+              [class.active]="recordingService.consultationMode() === 'REMOTE_WHATSAPP'"
+              (click)="setConsultationMode('REMOTE_WHATSAPP')"
+              [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
+              [style.background]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? 'rgba(34, 197, 94, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
+              [style.border-color]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? '#4ade80' : 'rgba(255, 255, 255, 0.1)'"
+              [style.color]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? '#86efac' : '#cbd5e1'"
+            >
+              <i class="fa-brands fa-whatsapp" style="margin-right: 0.25rem;"></i> WhatsApp
+            </button>
+            <button 
+              type="button" 
+              class="mode-pill-btn" 
+              [class.active]="recordingService.consultationMode() === 'FILE_UPLOAD'"
+              (click)="setConsultationMode('FILE_UPLOAD')"
+              [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
+              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
+              [style.background]="recordingService.consultationMode() === 'FILE_UPLOAD' ? 'rgba(168, 85, 247, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
+              [style.border-color]="recordingService.consultationMode() === 'FILE_UPLOAD' ? '#c084fc' : 'rgba(255, 255, 255, 0.1)'"
+              [style.color]="recordingService.consultationMode() === 'FILE_UPLOAD' ? '#d8b4fe' : '#cbd5e1'"
+            >
+              <i class="fa-solid fa-file-arrow-up" style="margin-right: 0.25rem;"></i> Upload File
+            </button>
+          </div>
+
+          <button 
+            *ngIf="recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP'"
+            type="button" 
+            (click)="openTeleconsultGuide()" 
+            style="background: none; border: none; color: #38bdf8; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; text-decoration: underline;"
+          >
+            <i class="fa-solid fa-circle-question"></i> How to share audio?
+          </button>
+        </div>
+
+        <!-- Teleconsultation Helper Guidance Card -->
+        <div *ngIf="(recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP') && currentState !== 'RECORDING'" style="margin-bottom: 0.85rem; padding: 0.65rem 0.85rem; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 8px; font-size: 0.785rem; color: #bfdbfe; display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;">
+          <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+            <i class="fa-solid fa-sliders" style="color: #60a5fa; margin-top: 0.15rem; font-size: 0.9rem;"></i>
+            <div>
+              <strong>Dual-Stream Web Audio Mixer:</strong> Click <em>Start Recording</em>, select your {{ recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'MS Teams' : (recordingService.consultationMode() === 'REMOTE_MEET' ? 'Google Meet' : 'WhatsApp') }} tab/window, and ensure <strong>"Share audio"</strong> is checked. Both Doctor &amp; Patient audio will be mixed and diarized automatically.
+            </div>
+          </div>
+          <button type="button" (click)="openTeleconsultGuide()" style="white-space: nowrap; font-size: 0.72rem; padding: 0.25rem 0.55rem; background: rgba(59, 130, 246, 0.25); border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 4px; color: #93c5fd; cursor: pointer;">
+            View Setup Guide
+          </button>
+        </div>
+
+        <!-- Dual Audio Channel Live Status Badges -->
+        <div *ngIf="currentState === 'RECORDING' && (recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP')" style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+          <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+            <i class="fa-solid fa-microphone"></i> Doctor Mic: Live
+          </span>
+          <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+            <i class="fa-solid fa-volume-high"></i> Remote {{ recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'Teams' : (recordingService.consultationMode() === 'REMOTE_MEET' ? 'Meet' : 'WhatsApp') }} Audio: Live
+          </span>
+          <span style="font-size: 0.72rem; color: #94a3b8;">
+            (Real-time Web Audio API Mix)
+          </span>
+        </div>
+
+        <!-- Drag & Drop Audio File Upload Zone (Shown in FILE_UPLOAD mode) -->
+        <div 
+          *ngIf="recordingService.consultationMode() === 'FILE_UPLOAD' && currentState !== 'RECORDING'"
+          class="teleconsultation-dropzone"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onFileDropped($event)"
+          style="margin-bottom: 1rem; border: 2px dashed rgba(168, 85, 247, 0.45); border-radius: 10px; padding: 1.25rem 1rem; text-align: center; background: rgba(168, 85, 247, 0.06); transition: all 0.2s;"
+          [style.background]="isDragOver ? 'rgba(168, 85, 247, 0.2)' : 'rgba(168, 85, 247, 0.06)'"
+        >
+          <input type="file" #fileInput (change)="onFileSelected($event)" accept="audio/*,.wav,.mp3,.m4a,.webm,.ogg" style="display: none;" />
+          <div style="font-size: 1.75rem; color: #c084fc; margin-bottom: 0.35rem;">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div style="font-weight: 600; font-size: 0.85rem; color: #e2e8f0; margin-bottom: 0.25rem;">
+            Drop Teams / Google Meet / WhatsApp call recording here
+          </div>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.65rem;">
+            Supports WAV, MP3, M4A, WebM, OGG files (Auto-diarized with Deepgram Nova-3)
+          </div>
+          <button 
+            type="button" 
+            class="btn-play-pause" 
+            (click)="fileInput.click()" 
+            style="font-size: 0.75rem; padding: 0.3rem 0.85rem; background: rgba(168, 85, 247, 0.25); border-color: rgba(168, 85, 247, 0.5); color: #d8b4fe;"
+          >
+            <i class="fa-solid fa-folder-open"></i> Browse Call Audio File
+          </button>
         </div>
 
         <!-- Waveform Progress Bar -->
@@ -252,10 +355,26 @@
 
         <!-- Controls Row -->
         <div class="recording-controls-row" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <!-- Start Recording Button -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || (currentState === 'FAILED' && !recordingService.recordedFile())" (click)="startRecording()">
-            <i class="fa-solid fa-microphone"></i>
-            <span>Start Recording</span>
+          <!-- Start Recording Button (Shown when IDLE or no saved sessions exist) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || (!hasRecordings && currentState !== 'RECORDING' && currentState !== 'PAUSED')" (click)="startRecording()">
+            <ng-container [ngSwitch]="recordingService.consultationMode()">
+              <i *ngSwitchCase="'IN_PERSON'" class="fa-solid fa-microphone"></i>
+              <i *ngSwitchCase="'REMOTE_TEAMS'" class="fa-brands fa-microsoft" style="color: #818cf8;"></i>
+              <i *ngSwitchCase="'REMOTE_MEET'" class="fa-brands fa-google" style="color: #34d399;"></i>
+              <i *ngSwitchCase="'REMOTE_WHATSAPP'" class="fa-brands fa-whatsapp" style="color: #4ade80;"></i>
+              <i *ngSwitchCase="'FILE_UPLOAD'" class="fa-solid fa-folder-open" style="color: #c084fc;"></i>
+              <i *ngSwitchDefault class="fa-solid fa-microphone"></i>
+            </ng-container>
+            <span>
+              <ng-container [ngSwitch]="recordingService.consultationMode()">
+                <span *ngSwitchCase="'IN_PERSON'">Start In-Person Recording</span>
+                <span *ngSwitchCase="'REMOTE_TEAMS'">Start Teams Call Recording</span>
+                <span *ngSwitchCase="'REMOTE_MEET'">Start Google Meet Recording</span>
+                <span *ngSwitchCase="'REMOTE_WHATSAPP'">Start WhatsApp Call Recording</span>
+                <span *ngSwitchCase="'FILE_UPLOAD'">Select Call Audio File</span>
+                <span *ngSwitchDefault>Start Recording</span>
+              </ng-container>
+            </span>
           </button>
 
           <!-- Pause Button -->
@@ -276,57 +395,55 @@
             <span>Stop Recording</span>
           </button>
 
-          <!-- Preview Playback Button -->
-          <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="togglePreviewPlayback()">
-            <i class="fa-solid" [class.fa-play]="!isPlayingPreview" [class.fa-pause]="isPlayingPreview"></i>
-            <span>{{ isPlayingPreview ? 'Playing preview...' : 'Play Recording Preview' }}</span>
-          </button>
-
-          <!-- Download Audio File Button -->
-          <button type="button" class="btn-play-pause" *ngIf="recordingService.audioUrl()" (click)="downloadRecording()" title="Download recorded audio file to local computer">
+          <!-- Download Audio File Button (Only when not recording/paused AND has recordings) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState !== 'RECORDING' && currentState !== 'PAUSED' && hasRecordings" (click)="downloadRecording()" title="Download latest recorded audio file to local computer">
             <i class="fa-solid fa-download"></i>
             <span>Download Audio</span>
           </button>
 
-          <!-- Upload Recording Button -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD'" (click)="uploadRecording()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
-            <i class="fa-solid fa-cloud-arrow-up" style="background: #10b981; color: #fff;"></i>
-            <span>Upload Recording</span>
-          </button>
-
-          <!-- Retry Upload Button -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'FAILED' && recordingService.recordedFile()" (click)="retryUpload()" style="background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4);">
-            <i class="fa-solid fa-rotate-right" style="background: #f59e0b; color: #fff;"></i>
-            <span>Retry Upload</span>
-          </button>
-
-          <!-- Reset / New Session Button -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED' || currentState === 'FAILED'" (click)="recordingService.resetState()" style="opacity: 0.8;">
+          <!-- Reset / New Session Button (Only when not recording/paused AND has recordings) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState !== 'RECORDING' && currentState !== 'PAUSED' && hasRecordings" (click)="recordingService.resetState()" style="opacity: 0.9;">
             <i class="fa-solid fa-plus"></i>
             <span>New Session</span>
           </button>
         </div>
 
         <!-- Hidden Audio Player element for playback -->
-        <audio #audioPlayer [src]="activePlayingAudioUrl || recordingService.audioUrl()" (ended)="onAudioEnded()" style="display: none;"></audio>
+        <audio #audioPlayer [src]="activePlayingAudioUrl || latestRecordingUrl" (ended)="onAudioEnded()" style="display: none;"></audio>
 
         <!-- Status & Error Feedback Banner -->
+        <div class="recording-feedback-msg" *ngIf="isProcessingAudio" style="margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: 6px; background: rgba(13, 148, 136, 0.2); border: 1px solid rgba(45, 212, 191, 0.4); color: #2dd4bf; font-size: 0.825rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <span>Uploading audio to Google Drive &amp; generating real-time transcript with Deepgram Nova-3...</span>
+        </div>
+
         <div class="recording-feedback-msg" *ngIf="recordingService.errorMessage()" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.8rem;">
           <i class="fa-solid fa-circle-exclamation"></i> {{ recordingService.errorMessage() }}
         </div>
-        <div class="recording-feedback-msg" *ngIf="currentState === 'UPLOADED'" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; font-size: 0.8rem;">
-          <i class="fa-solid fa-circle-check"></i> Recording successfully uploaded to backend contract. Storage-agnostic payload ready.
+
+        <div class="recording-feedback-msg" *ngIf="currentState === 'UPLOADED' && !isProcessingAudio" style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; font-size: 0.8rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <i class="fa-solid fa-circle-check"></i> Audio recording uploaded to Google Drive &amp; transcribed in real time.
+          </div>
+          <a *ngIf="gdriveLink" [href]="gdriveLink" target="_blank" rel="noopener noreferrer" style="color: #2dd4bf; text-decoration: underline; font-weight: 600; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+            <i class="fa-brands fa-google-drive"></i> Open in Google Drive <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem;"></i>
+          </a>
         </div>
 
-        <!-- Recorded Sessions History List (Multiple Sessions) -->
+        <!-- Recorded Sessions History List -->
         <div class="recorded-sessions-history" *ngIf="recordedSessions.length > 0" style="margin-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 1rem;">
-          <div class="history-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+          <div class="history-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
             <span style="font-size: 0.825rem; font-weight: 700; color: #2dd4bf; text-transform: uppercase; letter-spacing: 0.05em;">
               <i class="fa-solid fa-list-check"></i> Recorded Sessions List ({{ recordedSessions.length }})
             </span>
-            <button type="button" class="btn-play-pause" *ngIf="hasPendingUploads" (click)="uploadAllSessions()" style="font-size: 0.75rem; padding: 0.3rem 0.75rem; background: rgba(45, 212, 191, 0.2); border-color: rgba(45, 212, 191, 0.4);">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Upload All Sessions
-            </button>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <button type="button" class="btn-play-pause" *ngIf="hasPendingUploads" (click)="uploadAllSessions()" style="font-size: 0.75rem; padding: 0.3rem 0.75rem; background: rgba(45, 212, 191, 0.2); border-color: rgba(45, 212, 191, 0.4);">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload All Sessions
+              </button>
+              <button type="button" class="btn-play-pause" (click)="clearAllSessions()" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5;" title="Clear all recorded sessions from history">
+                <i class="fa-solid fa-trash-can" style="background: #ef4444; color: #fff;"></i> Clear All
+              </button>
+            </div>
           </div>
 
           <div class="sessions-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto;">
@@ -355,6 +472,9 @@
                 <button type="button" class="action-icon-btn" [disabled]="s.status === 'UPLOADING' || s.status === 'UPLOADED'" (click)="uploadSession(s)" [title]="s.status === 'UPLOADED' ? 'Already Uploaded' : 'Upload Audio to Server'" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
                   <i class="fa-solid" [class.fa-check]="s.status === 'UPLOADED'" [class.fa-cloud-arrow-up]="s.status !== 'UPLOADED'" style="font-size: 0.75rem;"></i>
                 </button>
+                <button type="button" class="action-icon-btn" (click)="deleteSession(s.id)" title="Delete session from list" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -365,18 +485,35 @@
       <div class="cliniq-card transcript-box">
         <div class="transcript-header">
           <h3 class="box-title">Transcript</h3>
-          <span class="transcript-meta">10 exchanges · AI-generated</span>
+          <span class="transcript-meta">{{ currentTranscriptExchanges.length }} exchanges · {{ currentTranscriptExchanges.length > 0 ? 'AI-generated' : 'Awaiting audio' }}</span>
         </div>
 
-        <div class="transcript-messages-list">
+        <!-- Empty state when no transcript available yet -->
+        <div class="empty-transcript-state animated-fade-in" *ngIf="currentTranscriptExchanges.length === 0">
+          <div class="empty-glow-ring">
+            <div class="empty-icon-circle">
+              <i class="fa-solid fa-microphone-lines"></i>
+            </div>
+          </div>
+          <div class="empty-title">No Transcript Available</div>
+          <div class="empty-sub">
+            Start recording or upload consultation audio for <strong>{{ visitDetails.patientName }}</strong> to generate dynamic speech-to-text dialogue turns.
+          </div>
+          <div class="empty-audio-hint">
+            <span class="live-ping-dot"></span>
+            <span>Real-time diarized transcription via Deepgram Nova-3</span>
+          </div>
+        </div>
+
+        <div class="transcript-messages-list" *ngIf="currentTranscriptExchanges.length > 0">
           <div 
             class="chat-bubble-row" 
-            *ngFor="let ex of transcriptExchanges"
+            *ngFor="let ex of currentTranscriptExchanges"
             [class.doctor-row]="ex.isDoctor"
             [class.patient-row]="!ex.isDoctor"
           >
             <div class="avatar-bubble" [class.doctor-avatar]="ex.isDoctor" [class.patient-avatar]="!ex.isDoctor">
-              {{ ex.speaker }}
+              {{ ex.isDoctor ? 'YT' : (visitDetails.initials || 'AK') }}
             </div>
             <div class="bubble-content">
               <p class="bubble-text">{{ ex.text }}</p>
@@ -386,248 +523,590 @@
       </div>
     </div>
 
-    <!-- RIGHT COLUMN: 5-Tab Clinical Intelligence Dashboard -->
+    <!-- RIGHT COLUMN -->
     <div class="workspace-col-right">
-      <div class="cliniq-card intelligence-panel-card">
-        <!-- Tab Navigation Bar matching Figma -->
-        <div class="intel-tabs-nav">
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'analysis'" 
-            (click)="setActiveTab('analysis')"
-          >
-            Analysis &amp; Summary
-          </button>
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'clinical'" 
-            (click)="setActiveTab('clinical')"
-          >
-            Clinical Decision
-          </button>
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'medicines'" 
-            (click)="setActiveTab('medicines')"
-          >
-            Medicines
-          </button>
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'confidence'" 
-            (click)="setActiveTab('confidence')"
-          >
-            Confidence
-          </button>
-          <button 
-            type="button" 
-            class="intel-tab-btn" 
-            [class.active]="activeTab === 'soap'" 
-            (click)="setActiveTab('soap')"
-          >
-            SOAP Report
-          </button>
-        </div>
-
-        <!-- Tab Body Content -->
-        <div class="intel-tab-content-area">
-          <!-- TAB 1: Analysis & Summary -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'analysis'">
-            <!-- Clinical Summary Section -->
-            <div class="intel-section">
-              <span class="eyebrow-tag">CLINICAL SUMMARY</span>
-              <div class="summary-narrative-card">
-                <p class="summary-text">{{ clinicalSummary }}</p>
-              </div>
+      <!-- STATE A: PATIENT CARD + AI SUGGESTIONS + RUN CLINICAL ANALYSIS CTA (100% Matching Image 4) -->
+      <ng-container *ngIf="rightPanelMode === 'suggestions'">
+        <!-- 1. Patient Context Card (Matching Image 4) -->
+        <div class="cliniq-card patient-context-panel-card">
+          <div class="patient-card-header">
+            <div class="patient-circle-avatar">
+              <span>{{ visitDetails.initials || 'AK' }}</span>
             </div>
-
-            <!-- Key Findings Section -->
-            <div class="intel-section">
-              <span class="eyebrow-tag">KEY FINDINGS</span>
-              <div class="key-findings-grid">
-                <div class="finding-card" *ngFor="let item of keyFindings">
-                  <span class="finding-label">{{ item.label }}</span>
-                  <span class="finding-val">{{ item.value }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Identified Issues Section -->
-            <div class="intel-section">
-              <span class="eyebrow-tag">IDENTIFIED ISSUES</span>
-              <div class="identified-issues-list">
-                <div class="issue-item-card" *ngFor="let issue of identifiedIssues" [class]="'issue-' + issue.type">
-                  <span class="issue-bullet" [style.color]="issue.dotColor">●</span>
-                  <span class="issue-text">{{ issue.text }}</span>
-                </div>
+            <div class="patient-header-details">
+              <h4 class="patient-name">{{ visitDetails.patientName }}</h4>
+              <div class="patient-meta-line">
+                <span class="patient-demographics">{{ visitDetails.demographics }}</span>
+                <span class="patient-condition-tag">{{ visitDetails.condition }}</span>
               </div>
             </div>
           </div>
 
-          <!-- TAB 2: Clinical Decision -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
-            <!-- Differential Diagnosis Ranking -->
-            <div class="intel-section">
-              <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
-              <div class="differential-ranking-list">
-                <div class="diff-diag-card" *ngFor="let diag of differentialDiagnoses">
-                  <div class="diag-header-row">
-                    <div class="diag-title-group">
-                      <span class="rank-circle">{{ diag.rank }}</span>
-                      <span class="diag-title">{{ diag.title }}</span>
-                      <span class="icd-tag">{{ diag.icdCode }}</span>
+          <div class="patient-info-table">
+            <div class="info-row">
+              <span class="info-label">Visit type</span>
+              <span class="info-value">{{ visitDetails.visitType }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Reason</span>
+              <span class="info-value">{{ visitDetails.reason }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Last visit</span>
+              <span class="info-value">{{ visitDetails.lastVisit || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Scheduled</span>
+              <span class="info-value">{{ visitDetails.time }} · {{ visitDetails.duration }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. AI Suggestions Card (Matching Image 4) -->
+        <div class="cliniq-card ai-suggestions-panel-card">
+          <div class="suggestions-header">
+            <div class="header-left-title">
+              <span class="sparkle-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+              <span class="title-text">AI Suggestions</span>
+            </div>
+            <span class="live-updating-tag">{{ currentAISuggestions.length > 0 ? 'live · updating' : 'awaiting audio' }}</span>
+          </div>
+
+          <!-- Empty state when no AI suggestions yet -->
+          <div class="empty-suggestions-state animated-fade-in" *ngIf="currentAISuggestions.length === 0">
+            <div class="empty-glow-ring">
+              <div class="empty-icon-circle">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+              </div>
+            </div>
+            <div class="empty-title">Awaiting Audio Recording</div>
+            <div class="empty-sub">
+              Clinical decision support recommendations will appear here in real-time once <strong>{{ visitDetails.patientName }}</strong>'s consultation is recorded and transcribed.
+            </div>
+            <div class="empty-audio-hint">
+              <span class="live-ping-dot"></span>
+              <span>Autonomous clinical prompts &amp; red-flag alerts</span>
+            </div>
+          </div>
+
+          <div class="suggestions-list" *ngIf="currentAISuggestions.length > 0">
+            <div 
+              class="nudge-card" 
+              *ngFor="let nudge of currentAISuggestions"
+              [class.nudge-high]="nudge.type === 'high'"
+              [class.nudge-medium]="nudge.type === 'medium'"
+            >
+              <span class="nudge-tag">{{ nudge.tag }}</span>
+              <p class="nudge-text">{{ nudge.text }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Primary Action Button: Run Clinical Analysis (Matching Image 4) -->
+        <button 
+          type="button" 
+          class="run-clinical-analysis-btn" 
+          [disabled]="!canRunClinicalAnalysis || isProcessingAudio" 
+          [class.disabled-btn]="!canRunClinicalAnalysis || isProcessingAudio"
+          (click)="runClinicalAnalysis()"
+          [title]="canRunClinicalAnalysis ? 'Run Clinical Decision Support & SOAP report generation' : 'Locked: Record consultation audio to generate transcript and unlock clinical analysis'"
+        >
+          <div class="btn-text-group">
+            <span class="btn-main-title">
+              <i class="fa-solid fa-lock" *ngIf="!canRunClinicalAnalysis" style="font-size: 0.85rem; margin-right: 0.35rem; opacity: 0.8;"></i>
+              <i class="fa-solid fa-spinner fa-spin" *ngIf="isProcessingAudio" style="font-size: 0.85rem; margin-right: 0.35rem;"></i>
+              Run Clinical Analysis
+            </span>
+            <span class="btn-sub-title">
+              {{ canRunClinicalAnalysis ? 'DDx · medicines · confidence · SOAP report' : 'Awaiting audio recording & transcript processing' }}
+            </span>
+          </div>
+          <div class="btn-arrow-box">
+            <i class="fa-solid" [class.fa-lock]="!canRunClinicalAnalysis" [class.fa-spinner]="isProcessingAudio" [class.fa-spin]="isProcessingAudio" [class.fa-arrow-right]="canRunClinicalAnalysis && !isProcessingAudio"></i>
+          </div>
+        </button>
+      </ng-container>
+
+      <!-- STATE B: 5-TAB CLINICAL INTELLIGENCE PANEL (100% Matching Image 3) -->
+      <ng-container *ngIf="rightPanelMode === 'analysis'">
+        <div class="cliniq-card intelligence-panel-card">
+          <!-- Back to Suggestions link -->
+          <div class="panel-top-nav-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.5rem 0.5rem 1.5rem; border-bottom: 1px solid var(--border-color); background: rgba(13, 148, 136, 0.03);">
+            <button type="button" class="btn-back-suggestions" (click)="backToSuggestions()" style="background: none; border: none; color: var(--accent-green); font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; padding: 0;">
+              <i class="fa-solid fa-arrow-left"></i>
+              <span>Patient Details &amp; AI Suggestions</span>
+            </button>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Clinical Intelligence Engine</span>
+          </div>
+
+          <!-- Tab Navigation Bar (Matching Image 3) -->
+          <div class="intel-tabs-nav">
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'analysis'" 
+              (click)="setActiveTab('analysis')"
+            >
+              Analysis &amp; Summary
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'clinical'" 
+              (click)="setActiveTab('clinical')"
+            >
+              Clinical Decision
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'medicines'" 
+              (click)="setActiveTab('medicines')"
+            >
+              Medicines
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'confidence'" 
+              (click)="setActiveTab('confidence')"
+            >
+              Confidence
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'soap'" 
+              (click)="setActiveTab('soap')"
+            >
+              SOAP Report
+            </button>
+          </div>
+
+          <!-- Tab Body Content -->
+          <div class="intel-tab-content-area">
+            <!-- TAB 1: Analysis & Summary (Matching Image 3) -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'analysis'">
+              <!-- Clinical Summary Section -->
+              <div class="intel-section">
+                <span class="eyebrow-tag">CLINICAL SUMMARY</span>
+                <div class="summary-narrative-card">
+                  <p class="summary-text">{{ currentClinicalSummary }}</p>
+                </div>
+              </div>
+
+              <!-- Key Findings Section -->
+              <div class="intel-section">
+                <span class="eyebrow-tag">KEY FINDINGS</span>
+                <div class="key-findings-grid">
+                  <div class="finding-card" *ngFor="let item of currentKeyFindings">
+                    <span class="finding-label">{{ item.label }}</span>
+                    <span class="finding-val">{{ item.value }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Identified Issues Section -->
+              <div class="intel-section">
+                <span class="eyebrow-tag">IDENTIFIED ISSUES</span>
+                <div class="identified-issues-list">
+                  <div class="issue-item-card" *ngFor="let issue of currentIdentifiedIssues" [class]="'issue-' + issue.type">
+                    <span class="issue-bullet" [style.color]="issue.dotColor">●</span>
+                    <span class="issue-text">{{ issue.text }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: Clinical Decision -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
+              <div class="intel-section">
+                <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
+                <div class="empty-diff-state animated-fade-in" *ngIf="currentDifferentialDiagnoses.length === 0">
+                  <div class="empty-glow-ring">
+                    <div class="empty-icon-circle">
+                      <i class="fa-solid fa-stethoscope"></i>
                     </div>
-                    <div class="diag-meta-right">
-                      <span class="risk-pill" [class]="diag.risk">{{ diag.riskLabel }}</span>
+                  </div>
+                  <div class="empty-title">No Differential Diagnoses Generated</div>
+                  <div class="empty-sub">Record consultation audio for <strong>{{ visitDetails.patientName }}</strong> to generate AI-ranked differential diagnosis list.</div>
+                </div>
+
+                <div class="differential-ranking-list" *ngIf="currentDifferentialDiagnoses.length > 0">
+                  <div class="diff-diag-card" *ngFor="let diag of currentDifferentialDiagnoses">
+                    <div class="diag-header-row">
+                      <div class="diag-title-group">
+                        <span class="rank-circle">{{ diag.rank }}</span>
+                        <span class="diag-title">{{ diag.title }}</span>
+                        <span class="icd-tag">{{ diag.icdCode }}</span>
+                      </div>
+                      <div class="diag-meta-right">
+                        <span class="risk-pill" [class]="diag.risk">{{ diag.riskLabel }}</span>
+                      </div>
+                    </div>
+
+                    <div class="diag-progress-row">
+                      <div class="progress-track">
+                        <div class="progress-bar-fill" [style.width]="diag.percentage + '%'" [style.background]="diag.color"></div>
+                      </div>
+                      <span class="percentage-readout font-mono">{{ diag.percentage }}%</span>
+                    </div>
+
+                    <p class="diag-desc">{{ diag.description }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: Medicines -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'medicines'">
+              <div class="medicines-rag-sub">
+                <span class="rag-dot">●</span>
+                <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
+              </div>
+
+              <div class="empty-meds-state animated-fade-in" *ngIf="currentGuidelineMedicines.length === 0">
+                <div class="empty-glow-ring">
+                  <div class="empty-icon-circle">
+                    <i class="fa-solid fa-pills"></i>
+                  </div>
+                </div>
+                <div class="empty-title">No Guideline Medicines Extracted</div>
+                <div class="empty-sub">Relevant medications and guideline RAG recommendations will appear after consultation recording.</div>
+              </div>
+
+              <div class="medicines-list" *ngIf="currentGuidelineMedicines.length > 0">
+                <div class="med-card" *ngFor="let med of currentGuidelineMedicines">
+                  <div class="med-top-row">
+                    <div class="med-name-group">
+                      <span class="med-name">{{ med.name }}</span>
+                      <span class="med-class-tag">{{ med.drugClass }}</span>
+                    </div>
+                    <div class="med-grade-group">
+                      <span class="med-grade">{{ med.grade }}</span>
+                      <span class="med-source">{{ med.source }}</span>
                     </div>
                   </div>
 
-                  <div class="diag-progress-row">
+                  <div class="med-dosage-line">{{ med.dosage }}</div>
+                  <p class="med-recommendation">{{ med.recommendation }}</p>
+
+                  <div class="med-warning-box">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>{{ med.warning }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Confidence -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
+              <div class="confidence-overview-card">
+                <div class="score-circle">
+                  <span class="score-val">{{ currentConfidenceMetrics.overallScore }}%</span>
+                  <span class="score-lbl">AI Reliability</span>
+                </div>
+                <div class="overview-info">
+                  <h4>{{ currentConfidenceMetrics.overallLevel }}</h4>
+                  <p>Fully calibrated against peer-reviewed clinical knowledge bases and medical guideline vector embeddings.</p>
+                  <div class="confidence-badge-row">
+                    <span class="hallucination-pill">
+                      <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ currentConfidenceMetrics.hallucinationRisk }}
+                    </span>
+                    <span class="verified-pill">
+                      <i class="fa-solid fa-circle-check"></i> {{ currentConfidenceMetrics.guidelinesCited.length }} Guidelines Verified
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="intel-section" style="margin-top: 1.5rem;">
+                <span class="eyebrow-tag">PIPELINE ACCURACY BREAKDOWN</span>
+                <div class="confidence-breakdown-list">
+                  <div class="breakdown-item" *ngFor="let p of currentConfidenceMetrics.pipeline">
+                    <div class="breakdown-item-header">
+                      <span class="item-name">{{ p.name }}</span>
+                      <span class="item-score font-mono">{{ p.score }}% <span class="status-tag">({{ p.status }})</span></span>
+                    </div>
                     <div class="progress-track">
-                      <div class="progress-bar-fill" [style.width]="diag.percentage + '%'" [style.background]="diag.color"></div>
+                      <div class="progress-bar-fill" [style.width]="p.score + '%'"></div>
                     </div>
-                    <span class="percentage-readout font-mono">{{ diag.percentage }}%</span>
-                  </div>
-
-                  <p class="diag-desc">{{ diag.description }}</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Clinical Red Flags Section -->
-            <div class="intel-section">
-              <span class="eyebrow-tag red-eyebrow">CLINICAL RED FLAGS</span>
-              <div class="red-flag-alert-box" *ngFor="let flag of clinicalRedFlags">
-                <div class="flag-top">
-                  <span class="critical-badge">{{ flag.tag }}</span>
-                  <span class="flag-title">{{ flag.title }}</span>
-                </div>
-                <div class="flag-action">&rarr; {{ flag.action }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 3: Medicines -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'medicines'">
-            <div class="medicines-rag-sub">
-              <span class="rag-dot">●</span>
-              <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
-            </div>
-
-            <div class="medicines-list">
-              <div class="med-card" *ngFor="let med of guidelineMedicines">
-                <div class="med-top-row">
-                  <div class="med-name-group">
-                    <span class="med-name">{{ med.name }}</span>
-                    <span class="med-class-tag">{{ med.drugClass }}</span>
-                  </div>
-                  <div class="med-grade-group">
-                    <span class="med-grade">{{ med.grade }}</span>
-                    <span class="med-source">{{ med.source }}</span>
                   </div>
                 </div>
-
-                <div class="med-dosage-line">{{ med.dosage }}</div>
-                <p class="med-recommendation">{{ med.recommendation }}</p>
-
-                <div class="med-warning-box">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                  <span>{{ med.warning }}</span>
-                </div>
               </div>
-            </div>
-          </div>
 
-          <!-- TAB 4: Confidence -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
-            <div class="confidence-overview-card">
-              <div class="score-circle">
-                <span class="score-val">{{ confidenceMetrics.overallScore }}%</span>
-                <span class="score-lbl">AI Reliability</span>
-              </div>
-              <div class="overview-info">
-                <h4>{{ confidenceMetrics.overallLevel }}</h4>
-                <p>Fully calibrated against peer-reviewed clinical knowledge bases and medical guideline vector embeddings.</p>
-                <div class="confidence-badge-row">
-                  <span class="hallucination-pill">
-                    <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ confidenceMetrics.hallucinationRisk }}
-                  </span>
-                  <span class="verified-pill">
-                    <i class="fa-solid fa-circle-check"></i> {{ confidenceMetrics.guidelinesCited.length }} Guidelines Verified
+              <div class="intel-section" style="margin-top: 1.5rem;">
+                <span class="eyebrow-tag">EVIDENCE CITATION REPOSITORY</span>
+                <div class="sources-tags-wrap">
+                  <span class="source-tag" *ngFor="let g of currentConfidenceMetrics.guidelinesCited">
+                    <i class="fa-solid fa-book-medical"></i> {{ g }}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div class="intel-section" style="margin-top: 1.5rem;">
-              <span class="eyebrow-tag">PIPELINE ACCURACY BREAKDOWN</span>
-              <div class="confidence-breakdown-list">
-                <div class="breakdown-item" *ngFor="let p of confidenceMetrics.pipeline">
-                  <div class="breakdown-item-header">
-                    <span class="item-name">{{ p.name }}</span>
-                    <span class="item-score font-mono">{{ p.score }}% <span class="status-tag">({{ p.status }})</span></span>
+            <!-- TAB 5: Interactive SOAP Report -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'soap'">
+              <div class="soap-action-toolbar">
+                <div class="toolbar-info">
+                  <span class="badge-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Reframing & DB Persistence</span>
+                  <span class="status-msg" *ngIf="saveStatusMessage">{{ saveStatusMessage }}</span>
+                </div>
+                <div class="toolbar-buttons">
+                  <button class="btn-secondary" (click)="openPatientSummaryModal()">
+                    <i class="fa-solid fa-user-doctor"></i> Preview Patient Summary
+                  </button>
+                  <button class="btn-primary" (click)="saveFinalSOAPToDatabase()" [disabled]="isSavingFeedback">
+                    <i class="fa-solid fa-floppy-disk"></i> {{ isSavingFeedback ? 'Saving to DB...' : 'Finalize & Save to DB' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="soap-preview-container">
+                <!-- SUBJECTIVE SECTION -->
+                <div class="soap-box subjective" [class.editing-active]="activeEditSection === 'subjective'">
+                  <div class="soap-box-header">
+                    <div class="header-left">
+                      <div class="letter-badge">S</div>
+                      <h4>Subjective</h4>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection !== 'subjective'">
+                      <button class="btn-icon" (click)="startEditSection('subjective')" title="Edit / AI Reframe Subjective Section">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      </button>
+                    </div>
                   </div>
-                  <div class="progress-track">
-                    <div class="progress-bar-fill" [style.width]="p.score + '%'"></div>
+
+                  <!-- Read-only View -->
+                  <div class="soap-text-block" *ngIf="activeEditSection !== 'subjective'">
+                    <p style="white-space: pre-line;">{{ effectiveSoapReport.subjective }}</p>
+                  </div>
+
+                  <!-- Edit / AI Reframe Mode -->
+                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'subjective'">
+                    <label class="edit-label">Manual Text Edit:</label>
+                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
+
+                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
+                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Reframe in formal clinical tone with hypertension staging...">
+
+                    <div class="edit-actions">
+                      <button class="btn-ai-reframe" (click)="triggerAIReframe('subjective')" [disabled]="isReframing">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
+                      </button>
+                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
+                        <i class="fa-solid fa-check"></i> Save Edit
+                      </button>
+                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div class="intel-section" style="margin-top: 1.5rem;">
-              <span class="eyebrow-tag">EVIDENCE CITATION REPOSITORY</span>
-              <div class="sources-tags-wrap">
-                <span class="source-tag" *ngFor="let g of confidenceMetrics.guidelinesCited">
-                  <i class="fa-solid fa-book-medical"></i> {{ g }}
-                </span>
-              </div>
-            </div>
-          </div>
+                <!-- OBJECTIVE SECTION -->
+                <div class="soap-box objective" [class.editing-active]="activeEditSection === 'objective'">
+                  <div class="soap-box-header">
+                    <div class="header-left">
+                      <div class="letter-badge">O</div>
+                      <h4>Objective</h4>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection !== 'objective'">
+                      <button class="btn-icon" (click)="startEditSection('objective')" title="Edit / AI Reframe Objective Section">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      </button>
+                    </div>
+                  </div>
 
-          <!-- TAB 5: SOAP Report -->
-          <div class="tab-pane animated-pane" *ngIf="activeTab === 'soap'">
-            <div class="soap-preview-container">
-              <div class="soap-box subjective">
-                <div class="letter-badge">S</div>
-                <div class="soap-text-block">
-                  <h4>Subjective</h4>
-                  <p>{{ soapReportData.subjective }}</p>
+                  <!-- Read-only View -->
+                  <div class="soap-text-block" *ngIf="activeEditSection !== 'objective'">
+                    <p style="white-space: pre-line;">{{ effectiveSoapReport.objective }}</p>
+                  </div>
+
+                  <!-- Edit / AI Reframe Mode -->
+                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'objective'">
+                    <label class="edit-label">Manual Text Edit:</label>
+                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
+
+                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
+                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Include specific BP readings and heart rate metrics...">
+
+                    <div class="edit-actions">
+                      <button class="btn-ai-reframe" (click)="triggerAIReframe('objective')" [disabled]="isReframing">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
+                      </button>
+                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
+                        <i class="fa-solid fa-check"></i> Save Edit
+                      </button>
+                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div class="soap-box objective">
-                <div class="letter-badge">O</div>
-                <div class="soap-text-block">
-                  <h4>Objective</h4>
-                  <p>{{ soapReportData.objective }}</p>
+                <!-- ASSESSMENT SECTION -->
+                <div class="soap-box assessment" [class.editing-active]="activeEditSection === 'assessment'">
+                  <div class="soap-box-header">
+                    <div class="header-left">
+                      <div class="letter-badge">A</div>
+                      <h4>Assessment</h4>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection !== 'assessment'">
+                      <button class="btn-icon" (click)="startEditSection('assessment')" title="Edit / AI Reframe Assessment Section">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Read-only View -->
+                  <div class="soap-text-block" *ngIf="activeEditSection !== 'assessment'">
+                    <p style="white-space: pre-line;">{{ effectiveSoapReport.assessment }}</p>
+                  </div>
+
+                  <!-- Edit / AI Reframe Mode -->
+                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'assessment'">
+                    <label class="edit-label">Manual Text Edit:</label>
+                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
+
+                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
+                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Add ICD-10 diagnosis code I10 for Essential Hypertension...">
+
+                    <div class="edit-actions">
+                      <button class="btn-ai-reframe" (click)="triggerAIReframe('assessment')" [disabled]="isReframing">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
+                      </button>
+                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
+                        <i class="fa-solid fa-check"></i> Save Edit
+                      </button>
+                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div class="soap-box assessment">
-                <div class="letter-badge">A</div>
-                <div class="soap-text-block">
-                  <h4>Assessment</h4>
-                  <p style="white-space: pre-line;">{{ soapReportData.assessment }}</p>
-                </div>
-              </div>
+                <!-- PLAN SECTION -->
+                <div class="soap-box plan" [class.editing-active]="activeEditSection === 'plan'">
+                  <div class="soap-box-header">
+                    <div class="header-left">
+                      <div class="letter-badge">P</div>
+                      <h4>Plan</h4>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection !== 'plan'">
+                      <button class="btn-icon" (click)="startEditSection('plan')" title="Edit / AI Reframe Plan Section">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      </button>
+                    </div>
+                  </div>
 
-              <div class="soap-box plan">
-                <div class="letter-badge">P</div>
-                <div class="soap-text-block">
-                  <h4>Plan</h4>
-                  <p style="white-space: pre-line;">{{ soapReportData.plan }}</p>
+                  <!-- Read-only View -->
+                  <div class="soap-text-block" *ngIf="activeEditSection !== 'plan'">
+                    <p style="white-space: pre-line;">{{ effectiveSoapReport.plan }}</p>
+                  </div>
+
+                  <!-- Edit / AI Reframe Mode -->
+                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'plan'">
+                    <label class="edit-label">Manual Text Edit:</label>
+                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
+
+                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
+                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Titrate Amlodipine to 10mg daily and schedule follow-up in 2 weeks...">
+
+                    <div class="edit-actions">
+                      <button class="btn-ai-reframe" (click)="triggerAIReframe('plan')" [disabled]="isReframing">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
+                      </button>
+                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
+                        <i class="fa-solid fa-check"></i> Save Edit
+                      </button>
+                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </ng-container>
     </div>
   </div>
 </div>
 
+<!-- PATIENT SUMMARY PREVIEW MODAL -->
+<div class="modal-overlay animated-fade-in" *ngIf="showPatientPreviewModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="fa-solid fa-notes-medical icon-teal"></i>
+        <h3>Patient-Friendly Summary Preview</h3>
+      </div>
+      <button class="btn-close" (click)="closePatientSummaryModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="patient-card-banner">
+        <div class="avatar">{{ visitDetails.initials || 'AK' }}</div>
+        <div>
+          <h4>{{ visitDetails.patientName }}</h4>
+          <p>{{ visitDetails.demographics }} · {{ visitDetails.visitType }}</p>
+        </div>
+      </div>
 
+      <div class="summary-box">
+        <h4><i class="fa-solid fa-heart-pulse icon-teal"></i> Consultation Summary & Action Plan for Patient:</h4>
+        <div class="summary-text" style="white-space: pre-line;">{{ patientSummaryText }}</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closePatientSummaryModal()">Close</button>
+      <button class="btn-primary" (click)="closePatientSummaryModal()"><i class="fa-solid fa-print"></i> Print / Share with Patient</button>
+    </div>
+  </div>
+</div>
+
+<!-- TELECONSULTATION DUAL-AUDIO SETUP GUIDE MODAL -->
+<div class="modal-overlay animated-fade-in" *ngIf="showTeleconsultationGuideModal" (click)="closeTeleconsultGuide()">
+  <div class="modal-card" (click)="$event.stopPropagation()" style="max-width: 580px;">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="fa-solid fa-headphones-simple icon-teal"></i>
+        <h3>Remote Teleconsultation Audio Setup</h3>
+      </div>
+      <button class="btn-close" (click)="closeTeleconsultGuide()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 1.25rem; line-height: 1.5;">
+        Our integrated Web Audio API mixer captures <strong>both your microphone</strong> (Doctor) and <strong>patient voice from your remote call</strong> (Microsoft Teams, Google Meet, or WhatsApp) directly in the browser with no third-party cables needed.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.75rem;">
+          <div style="width: 26px; height: 26px; border-radius: 50%; background: #2dd4bf; color: #0f172a; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">1</div>
+          <div>
+            <div style="font-size: 0.85rem; font-weight: 700; color: #e2e8f0;">Choose Channel &amp; Click Start Recording</div>
+            <div style="font-size: 0.775rem; color: #94a3b8; margin-top: 0.15rem;">Select <strong>MS Teams</strong>, <strong>Google Meet</strong>, or <strong>WhatsApp</strong> and click the record button.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 8px; padding: 0.75rem;">
+          <div style="width: 26px; height: 26px; border-radius: 50%; background: #3b82f6; color: #fff; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">2</div>
+          <div>
+            <div style="font-size: 0.85rem; font-weight: 700; color: #93c5fd; display: flex; align-items: center; gap: 0.35rem;">
+              <i class="fa-solid fa-circle-check"></i> Check "Share Audio" (Essential)
+            </div>
+            <div style="font-size: 0.775rem; color: #bfdbfe; margin-top: 0.15rem;">
+              When the browser dialog appears, choose the <strong>Chrome Tab</strong> or <strong>Window/Screen</strong> running your call, and ensure the <strong>"Also share tab audio"</strong> / <strong>"Share system audio"</strong> toggle is switched <strong>ON</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.75rem;">
+          <div style="width: 26px; height: 26px; border-radius: 50%; background: #10b981; color: #0f172a; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">3</div>
+          <div>
+            <div style="font-size: 0.85rem; font-weight: 700; color: #e2e8f0;">Real-Time AI Diarization &amp; CDS</div>
+            <div style="font-size: 0.775rem; color: #94a3b8; margin-top: 0.15rem;">Deepgram Nova-3 separates Doctor vs. Patient turns, while the Gemini clinical engine generates live suggestions and differential diagnoses.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content: flex-end;">
+      <button class="btn-primary" (click)="closeTeleconsultGuide()">
+        <i class="fa-solid fa-check"></i> Understood &amp; Ready
+      </button>
+    </div>
+  </div>
+</div>

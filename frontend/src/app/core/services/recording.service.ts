@@ -9,7 +9,12 @@ import {
   RecordingState,
   RecordingSessionMetadata,
   RecordingUploadResponse,
-  RecordedSessionItem
+  RecordedSessionItem,
+  TranscriptExchange,
+  AISuggestion,
+  ClinicalAnalysisData,
+  ConsultationMode,
+  AudioSourceType
 } from '../models/recording.model';
 
 @Injectable({
@@ -19,6 +24,9 @@ export class RecordingService implements OnDestroy {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private mockData = inject(MockDataService);
+
+  // Maximum consultation recording time (20 minutes)
+  readonly MAX_DURATION_SECONDS = 1200;
 
   // Reactive State Signals
   readonly state = signal<RecordingState>('IDLE');
@@ -31,12 +39,32 @@ export class RecordingService implements OnDestroy {
   readonly mimeType = signal<string>('audio/wav');
   readonly selectedFormat = signal<'wav' | 'mp3' | 'webm'>('wav');
 
+  // Consultation Mode & Audio Source Signals
+  readonly consultationMode = signal<ConsultationMode>('IN_PERSON');
+  readonly audioSourceType = signal<AudioSourceType>('MIC');
+
+  // Real-Time Google Drive & Deepgram Transcription Results
+  readonly isTranscribing = signal<boolean>(false);
+  readonly latestTranscript = signal<string>('');
+  readonly latestExchanges = signal<TranscriptExchange[]>([]);
+  readonly latestSuggestions = signal<AISuggestion[]>([]);
+  readonly latestClinicalAnalysis = signal<ClinicalAnalysisData | null>(null);
+  readonly gdriveWebViewLink = signal<string | null>(null);
+  readonly gdriveFileId = signal<string | null>(null);
+
   // Recorded Sessions History List
   readonly recordedSessions = signal<RecordedSessionItem[]>([]);
+
+  // Patient-Isolated Session Storage Map (keyed by patient ID)
+  private patientSessionsMap = new Map<string, any>();
+  currentPatientId: string | null = null;
 
   // Internal Web API References
   private mediaRecorder: MediaRecorder | null = null;
   private mediaStream: MediaStream | null = null;
+  private teleconsultationDisplayStream: MediaStream | null = null;
+  private teleconsultationMicStream: MediaStream | null = null;
+  private teleconsultationAudioContext: any = null;
   private audioChunks: Blob[] = [];
   private timerInterval: any = null;
   private startTimeIso: string | null = null;
@@ -46,6 +74,20 @@ export class RecordingService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.cleanupRecording();
+  }
+
+  /**
+   * Sets consultation mode ('IN_PERSON', 'TELECONSULTATION', 'REMOTE_TEAMS', 'REMOTE_MEET', 'REMOTE_WHATSAPP', 'FILE_UPLOAD').
+   */
+  setConsultationMode(mode: ConsultationMode): void {
+    this.consultationMode.set(mode);
+  }
+
+  /**
+   * Sets audio source type ('MIC', 'SYSTEM_MIXED', 'FILE_UPLOAD').
+   */
+  setAudioSourceType(source: AudioSourceType): void {
+    this.audioSourceType.set(source);
   }
 
   /**
@@ -109,37 +151,147 @@ export class RecordingService implements OnDestroy {
   }
 
   /**
-   * Starts microphone recording.
+   * Starts recording based on current consultation mode.
+   * - In-Person: Captures local microphone.
+   * - Teleconsultation (Teams / Meet / WhatsApp): Captures system/tab audio + doctor microphone and mixes them via Web Audio API.
    */
-  async startRecording(context?: { encounterId?: string; doctorId?: string; patientId?: string }): Promise<void> {
+  async startRecording(
+    context?: { encounterId?: string; doctorId?: string; patientId?: string },
+    modeOverride?: ConsultationMode
+  ): Promise<void> {
     this.errorMessage.set(null);
     this.state.set('REQUESTING_PERMISSION');
 
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      const err = 'Microphone access is not supported by your browser environment.';
-      this.errorMessage.set(err);
-      this.state.set('FAILED');
-      throw new Error(err);
+    if (modeOverride) {
+      this.consultationMode.set(modeOverride);
     }
+    const mode = this.consultationMode();
 
     try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err: any) {
-      const msg = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
-        ? 'Microphone permission denied. Please allow microphone access to record.'
-        : `Microphone access error: ${err.message || 'Unable to access microphone.'}`;
-      this.errorMessage.set(msg);
-      this.state.set('FAILED');
+      if (mode === 'IN_PERSON') {
+        // 1. In-Person Consultation (Microphone only)
+        this.audioSourceType.set('MIC');
+        if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+          const err = 'Microphone access is not supported by your browser environment.';
+          this.errorMessage.set(err);
+          this.state.set('FAILED');
+          throw new Error(err);
+        }
+
+        try {
+          this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err: any) {
+          const msg = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
+            ? 'Microphone permission denied. Please allow microphone access to record.'
+            : `Microphone access error: ${err.message || 'Unable to access microphone.'}`;
+          this.errorMessage.set(msg);
+          this.state.set('FAILED');
+          this.stopMicrophoneTracks();
+          throw err;
+        }
+      } else {
+        // 2. Remote Teleconsultation (Teams, Google Meet, WhatsApp, Zoom)
+        // Captures tab/system audio (Patient voice) + local mic (Doctor voice) and mixes them in real-time
+        this.audioSourceType.set('SYSTEM_MIXED');
+
+        if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
+          const err = 'Screen/Tab system audio capture is not supported by your browser. Please use Google Chrome, Microsoft Edge, or Firefox.';
+          this.errorMessage.set(err);
+          this.state.set('FAILED');
+          throw new Error(err);
+        }
+
+        try {
+          // Request Display Media with Audio track from the Teams/Meet/WhatsApp tab/window
+          this.teleconsultationDisplayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            }
+          });
+        } catch (err: any) {
+          const msg = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
+            ? 'Teleconsultation capture cancelled. Please select your Teams, Google Meet, or WhatsApp tab/window and enable "Share audio".'
+            : `Teleconsultation setup error: ${err.message || 'Unable to capture remote call audio.'}`;
+          this.errorMessage.set(msg);
+          this.state.set('FAILED');
+          this.stopMicrophoneTracks();
+          throw err;
+        }
+
+        const displayAudioTracks = this.teleconsultationDisplayStream.getAudioTracks();
+        if (displayAudioTracks.length === 0) {
+          this.stopMicrophoneTracks();
+          const err = 'No audio track detected from the selected screen/tab! Please ensure you check "Share audio" or "Also share tab audio" when choosing the Teams/Meet/WhatsApp tab.';
+          this.errorMessage.set(err);
+          this.state.set('FAILED');
+          throw new Error(err);
+        }
+
+        // Simultaneously capture Doctor's local microphone
+        try {
+          this.teleconsultationMicStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            }
+          });
+        } catch (micErr) {
+          console.warn('Doctor mic access warning during teleconsultation setup, proceeding with remote call audio only:', micErr);
+        }
+
+        // Mix remote call audio and doctor microphone using Web Audio API AudioContext
+        try {
+          const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+          const audioCtx = new AudioCtx();
+          const destNode = audioCtx.createMediaStreamDestination();
+
+          // Connect remote call audio (patient)
+          const displaySource = audioCtx.createMediaStreamSource(this.teleconsultationDisplayStream);
+          const displayGain = audioCtx.createGain();
+          displayGain.gain.value = 1.0;
+          displaySource.connect(displayGain);
+          displayGain.connect(destNode);
+
+          // Connect doctor microphone
+          if (this.teleconsultationMicStream && this.teleconsultationMicStream.getAudioTracks().length > 0) {
+            const micSource = audioCtx.createMediaStreamSource(this.teleconsultationMicStream);
+            const micGain = audioCtx.createGain();
+            micGain.gain.value = 1.0;
+            micSource.connect(micGain);
+            micGain.connect(destNode);
+          }
+
+          this.teleconsultationAudioContext = audioCtx;
+          this.mediaStream = destNode.stream;
+        } catch (mixErr: any) {
+          console.warn('AudioContext mixing fallback to display stream:', mixErr);
+          this.mediaStream = this.teleconsultationDisplayStream;
+        }
+
+        // Stop recording if the doctor ends the browser tab sharing session
+        this.teleconsultationDisplayStream.getVideoTracks().forEach(track => {
+          track.onended = () => {
+            if (this.state() === 'RECORDING' || this.state() === 'PAUSED') {
+              this.stopRecording(context);
+            }
+          };
+        });
+      }
+    } catch (setupErr) {
       this.stopMicrophoneTracks();
-      throw err;
+      throw setupErr;
     }
 
     const detectedMimeType = this.getSupportedMimeType();
-    this.mimeType.set(detectedMimeType || /* 'audio/webm' || */ 'audio/wav');
+    this.mimeType.set(detectedMimeType || 'audio/wav');
 
     try {
       const options = detectedMimeType ? { mimeType: detectedMimeType } : {};
-      this.mediaRecorder = new MediaRecorder(this.mediaStream, options);
+      this.mediaRecorder = new MediaRecorder(this.mediaStream!, options);
     } catch (err: any) {
       const msg = `MediaRecorder initialization failed: ${err.message || 'Unsupported MIME type.'}`;
       this.errorMessage.set(msg);
@@ -171,6 +323,84 @@ export class RecordingService implements OnDestroy {
     this.mediaRecorder.start(1000);
     this.state.set('RECORDING');
     this.startTimer();
+  }
+
+  /**
+   * Handles pre-recorded audio file upload (from Teams, Google Meet, WhatsApp, or Zoom recording).
+   */
+  async handleUploadedAudioFile(
+    file: File,
+    context?: { encounterId?: string; doctorId?: string; patientId?: string }
+  ): Promise<void> {
+    if (!file) return;
+
+    this.cleanupRecording();
+    this.consultationMode.set('FILE_UPLOAD');
+    this.audioSourceType.set('FILE_UPLOAD');
+    this.errorMessage.set(null);
+
+    const previewUrl = URL.createObjectURL(file);
+    let duration = 0;
+
+    // Detect duration using audio element
+    try {
+      duration = await new Promise<number>((resolve) => {
+        const tempAudio = new Audio();
+        tempAudio.src = previewUrl;
+        tempAudio.onloadedmetadata = () => {
+          resolve(Math.round(tempAudio.duration) || 60);
+        };
+        tempAudio.onerror = () => {
+          resolve(60);
+        };
+      });
+    } catch (e) {
+      duration = 60;
+    }
+
+    this.durationSeconds.set(duration);
+    this.mimeType.set(file.type || 'audio/wav');
+    this.recordedBlob.set(file);
+    this.recordedFile.set(file);
+    this.audioUrl.set(previewUrl);
+
+    const encounterId = context?.encounterId || this.mockData.activeConsultation().id || 'CONS-41233';
+    const doctorId = context?.doctorId || 'DOC-001';
+    const patientId = context?.patientId || this.mockData.activeConsultation().patientPid || 'P1245';
+
+    const metadata: RecordingSessionMetadata = {
+      encounterId,
+      doctorId,
+      patientId,
+      recordingStartedAt: new Date().toISOString(),
+      recordingEndedAt: new Date().toISOString(),
+      durationSeconds: duration,
+      mimeType: file.type || 'audio/wav',
+      fileName: file.name,
+      fileSize: file.size,
+      consultationMode: 'FILE_UPLOAD',
+      audioSource: 'FILE_UPLOAD'
+    };
+
+    const sessionItem: RecordedSessionItem = {
+      id: `session_${Date.now()}_${this.sessionNumber()}`,
+      sessionNumber: this.sessionNumber(),
+      sessionTitle: `${this.sessionTitle()} (Uploaded Call File)`,
+      durationSeconds: duration,
+      formattedDuration: this.formatDuration(duration),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      recordedBlob: file,
+      recordedFile: file,
+      audioUrl: previewUrl,
+      metadata,
+      consultationMode: 'FILE_UPLOAD',
+      audioSource: 'FILE_UPLOAD',
+      status: 'READY'
+    };
+
+    this.sessionMetadata.set(metadata);
+    this.recordedSessions.update(list => [...list, sessionItem]);
+    this.state.set('READY_TO_UPLOAD');
   }
 
   /**
@@ -271,13 +501,15 @@ export class RecordingService implements OnDestroy {
           durationSeconds: this.durationSeconds(),
           mimeType: targetMime,
           fileName,
-          fileSize: finalBlob.size
+          fileSize: finalBlob.size,
+          consultationMode: this.consultationMode(),
+          audioSource: this.audioSourceType()
         };
 
         const sessionItem: RecordedSessionItem = {
           id: `session_${Date.now()}_${this.sessionNumber()}`,
           sessionNumber: this.sessionNumber(),
-          sessionTitle: this.sessionTitle(),
+          sessionTitle: `${this.sessionTitle()}${this.consultationMode() !== 'IN_PERSON' ? ' (Teleconsultation)' : ''}`,
           durationSeconds: metadata.durationSeconds,
           formattedDuration: this.formatDuration(metadata.durationSeconds),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -285,6 +517,8 @@ export class RecordingService implements OnDestroy {
           recordedFile: file,
           audioUrl: previewUrl,
           metadata,
+          consultationMode: this.consultationMode(),
+          audioSource: this.audioSourceType(),
           status: 'READY'
         };
 
@@ -400,10 +634,18 @@ export class RecordingService implements OnDestroy {
 
   /**
    * Prepares multipart/form-data payload and uploads recording to backend.
-   * DO NOT set Content-Type header manually; browser/HttpClient automatically handles boundary.
+   * Uploads to Google Drive, triggers real-time Deepgram transcription & AI analysis.
    */
-  uploadRecording(overrideContext?: { encounterId?: string; doctorId?: string; patientId?: string }): Observable<RecordingUploadResponse> {
-    if (this.state() === 'UPLOADING') {
+  uploadRecording(overrideContext?: {
+    encounterId?: string;
+    doctorId?: string;
+    patientId?: string;
+    doctorName?: string;
+    patientName?: string;
+    doctorInitials?: string;
+    patientInitials?: string;
+  }): Observable<RecordingUploadResponse> {
+    if (this.state() === 'UPLOADING' || this.state() === 'TRANSCRIBING') {
       return throwError(() => new Error('Upload is already in progress.'));
     }
 
@@ -418,43 +660,33 @@ export class RecordingService implements OnDestroy {
     }
 
     this.state.set('UPLOADING');
+    this.isTranscribing.set(true);
     this.errorMessage.set(null);
 
-    const encounterId = overrideContext?.encounterId || metadata.encounterId;
-    const doctorId = overrideContext?.doctorId || metadata.doctorId;
-    const patientId = overrideContext?.patientId || metadata.patientId;
+    const activeCons = this.mockData.activeConsultation();
+    const encounterId = overrideContext?.encounterId || metadata.encounterId || activeCons.id || 'CONS-41233';
+    const doctorId = overrideContext?.doctorId || metadata.doctorId || 'DOC-001';
+    const patientId = overrideContext?.patientId || metadata.patientId || activeCons.patientPid || 'P1245';
+    const doctorName = overrideContext?.doctorName || 'Dr. Yuki Tanaka';
+    const patientName = overrideContext?.patientName || activeCons.patientName || 'Marcus Delgado';
+    const doctorInitials = overrideContext?.doctorInitials || 'YT';
+    const patientInitials = overrideContext?.patientInitials || 'MD';
 
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('encounter_id', encounterId);
     formData.append('doctor_id', doctorId);
     formData.append('patient_id', patientId);
+    formData.append('doctor_name', doctorName);
+    formData.append('patient_name', patientName);
+    formData.append('doctor_initials', doctorInitials);
+    formData.append('patient_initials', patientInitials);
     formData.append('recording_started_at', metadata.recordingStartedAt);
     formData.append('recording_ended_at', metadata.recordingEndedAt);
     formData.append('duration_seconds', metadata.durationSeconds.toString());
-
-    // Mock upload mode support for development when FastAPI backend is not yet running
-    if (environment.useMockUpload) {
-      const mockResponse: RecordingUploadResponse = {
-        id: `REC-${Date.now()}`,
-        status: 'Uploaded',
-        encounterId,
-        audioUrl: this.audioUrl() || undefined,
-        message: 'Audio recording saved to Google Drive folder'
-      };
-
-      return of(mockResponse).pipe(
-        delay(600),
-        tap((res) => {
-          this.state.set('UPLOADED');
-        }),
-        catchError((err) => {
-          this.errorMessage.set('Upload error occurred.');
-          this.state.set('FAILED');
-          return throwError(() => err);
-        })
-      );
-    }
+    formData.append('consultation_mode', metadata.consultationMode || this.consultationMode() || 'IN_PERSON');
+    formData.append('audio_source', metadata.audioSource || this.audioSourceType() || 'MIC');
+    formData.append('auto_transcribe', 'true');
 
     // Real API POST call to configured FastAPI backend endpoint
     const url = `${environment.apiBaseUrl}${environment.recordingEndpoint}`;
@@ -462,8 +694,57 @@ export class RecordingService implements OnDestroy {
     return this.http.post<RecordingUploadResponse>(url, formData).pipe(
       tap((res) => {
         this.state.set('UPLOADED');
+        this.isTranscribing.set(false);
+
+        // Store Google Drive & Transcription results in reactive signals
+        if (res.gdriveWebViewLink) {
+          this.gdriveWebViewLink.set(res.gdriveWebViewLink);
+        }
+        if (res.gdriveFileId) {
+          this.gdriveFileId.set(res.gdriveFileId);
+        }
+        if (res.transcript) {
+          this.latestTranscript.set(res.transcript);
+        }
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.latestExchanges.set(res.exchanges);
+        }
+        const suggestions = res.ai_suggestions || res.aiSuggestions;
+        if (suggestions && suggestions.length > 0) {
+          this.latestSuggestions.set(suggestions);
+        }
+        const analysis = res.clinical_analysis || res.clinicalAnalysis;
+        if (analysis) {
+          this.latestClinicalAnalysis.set(analysis);
+        }
+
+        // Sync with active consultation details
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.mockData.activeConsultation.update(prev => ({
+            ...prev,
+            transcript: res.exchanges!.map(e => ({
+              speaker: e.isDoctor ? 'Doctor' : 'Patient',
+              text: e.text,
+              timestamp: e.timestamp || '00:00'
+            })),
+            soapNote: res.soap_report ? {
+              subjective: res.soap_report.subjective || prev.soapNote.subjective,
+              objective: res.soap_report.objective || prev.soapNote.objective,
+              assessment: res.soap_report.assessment || prev.soapNote.assessment,
+              plan: res.soap_report.plan || prev.soapNote.plan,
+            } : prev.soapNote
+          }));
+        }
+
+        // Save session data to patient-specific cache
+        const normPid = patientId ? (patientId.startsWith('#') ? patientId : '#' + patientId) : (this.currentPatientId || 'P1245');
+        this.saveCurrentPatientSession(normPid);
+        if (this.currentPatientId) {
+          this.saveCurrentPatientSession(this.currentPatientId);
+        }
       }),
       catchError((error) => {
+        this.isTranscribing.set(false);
         const errorMsg = error.error?.detail || error.message || 'Upload failed due to network error. Local recording retained.';
         this.errorMessage.set(errorMsg);
         this.state.set('FAILED');
@@ -492,7 +773,6 @@ export class RecordingService implements OnDestroy {
     document.body.removeChild(a);
   }
 
-
   /**
    * Retries uploading retained local recording.
    */
@@ -501,7 +781,7 @@ export class RecordingService implements OnDestroy {
   }
 
   /**
-   * Stops all active microphone tracks to release hardware indicator.
+   * Stops all active microphone & teleconsultation display hardware tracks to release hardware indicator.
    */
   stopMicrophoneTracks(): void {
     if (this.mediaStream) {
@@ -512,6 +792,28 @@ export class RecordingService implements OnDestroy {
       });
       this.mediaStream = null;
     }
+    if (this.teleconsultationDisplayStream) {
+      this.teleconsultationDisplayStream.getTracks().forEach((track) => {
+        if (track.readyState === 'live') {
+          track.stop();
+        }
+      });
+      this.teleconsultationDisplayStream = null;
+    }
+    if (this.teleconsultationMicStream) {
+      this.teleconsultationMicStream.getTracks().forEach((track) => {
+        if (track.readyState === 'live') {
+          track.stop();
+        }
+      });
+      this.teleconsultationMicStream = null;
+    }
+    if (this.teleconsultationAudioContext) {
+      try {
+        this.teleconsultationAudioContext.close();
+      } catch (e) {}
+      this.teleconsultationAudioContext = null;
+    }
   }
 
   /**
@@ -520,39 +822,76 @@ export class RecordingService implements OnDestroy {
   uploadSessionItem(session: RecordedSessionItem): Observable<RecordingUploadResponse> {
     this.updateSessionStatus(session.id, 'UPLOADING');
 
+    const activeCons = this.mockData.activeConsultation();
+    const rawPid = session.metadata.patientId || this.currentPatientId || activeCons.patientPid || 'P1245';
+    const normPid = rawPid.startsWith('#') ? rawPid : '#' + rawPid;
+    const pName = activeCons.patientName || 'Patient';
+    const pInitials = pName ? pName.split(' ').map(n => n[0]).join('') : 'PT';
+
     const formData = new FormData();
     formData.append('file', session.recordedFile, session.recordedFile.name);
     formData.append('encounter_id', session.metadata.encounterId);
     formData.append('doctor_id', session.metadata.doctorId);
-    formData.append('patient_id', session.metadata.patientId);
+    formData.append('patient_id', normPid);
+    formData.append('doctor_name', 'Dr. Yuki Tanaka');
+    formData.append('patient_name', pName);
+    formData.append('doctor_initials', 'YT');
+    formData.append('patient_initials', pInitials);
     formData.append('recording_started_at', session.metadata.recordingStartedAt);
     formData.append('recording_ended_at', session.metadata.recordingEndedAt);
     formData.append('duration_seconds', session.metadata.durationSeconds.toString());
-
-    if (environment.useMockUpload) {
-      const mockResponse: RecordingUploadResponse = {
-        id: `REC-${Date.now()}`,
-        status: 'Uploaded',
-        encounterId: session.metadata.encounterId,
-        audioUrl: session.audioUrl,
-        message: `${session.sessionTitle} saved to Google Drive folder`
-      };
-      return of(mockResponse).pipe(
-        delay(600),
-        tap(() => {
-          this.updateSessionStatus(session.id, 'UPLOADED');
-        }),
-        catchError((err) => {
-          this.updateSessionStatus(session.id, 'FAILED', 'Upload error.');
-          return throwError(() => err);
-        })
-      );
-    }
+    formData.append('consultation_mode', session.consultationMode || session.metadata.consultationMode || this.consultationMode() || 'IN_PERSON');
+    formData.append('audio_source', session.audioSource || session.metadata.audioSource || this.audioSourceType() || 'MIC');
+    formData.append('auto_transcribe', 'true');
 
     const url = `${environment.apiBaseUrl}${environment.recordingEndpoint}`;
     return this.http.post<RecordingUploadResponse>(url, formData).pipe(
-      tap(() => {
+      tap((res) => {
         this.updateSessionStatus(session.id, 'UPLOADED');
+        if (res.gdriveWebViewLink) {
+          this.gdriveWebViewLink.set(res.gdriveWebViewLink);
+        }
+        if (res.gdriveFileId) {
+          this.gdriveFileId.set(res.gdriveFileId);
+        }
+        if (res.transcript) {
+          this.latestTranscript.set(res.transcript);
+        }
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.latestExchanges.set(res.exchanges);
+        }
+        const suggestions = res.ai_suggestions || res.aiSuggestions;
+        if (suggestions && suggestions.length > 0) {
+          this.latestSuggestions.set(suggestions);
+        }
+        const analysis = res.clinical_analysis || res.clinicalAnalysis;
+        if (analysis) {
+          this.latestClinicalAnalysis.set(analysis);
+        }
+
+        // Sync with active consultation details
+        if (res.exchanges && res.exchanges.length > 0) {
+          this.mockData.activeConsultation.update(prev => ({
+            ...prev,
+            transcript: res.exchanges!.map(e => ({
+              speaker: e.isDoctor ? 'Doctor' : 'Patient',
+              text: e.text,
+              timestamp: e.timestamp || '00:00'
+            })),
+            wordCount: res.transcript ? res.transcript.split(/\s+/).length : prev.wordCount,
+            soapNote: res.soap_report ? {
+              subjective: res.soap_report.subjective || prev.soapNote.subjective,
+              objective: res.soap_report.objective || prev.soapNote.objective,
+              assessment: res.soap_report.assessment || prev.soapNote.assessment,
+              plan: res.soap_report.plan || prev.soapNote.plan,
+            } : prev.soapNote
+          }));
+        }
+
+        this.saveCurrentPatientSession(normPid);
+        if (this.currentPatientId) {
+          this.saveCurrentPatientSession(this.currentPatientId);
+        }
       }),
       catchError((error) => {
         const errorMsg = error.error?.detail || error.message || 'Upload failed.';
@@ -583,7 +922,335 @@ export class RecordingService implements OnDestroy {
   }
 
   /**
-   * Resets recording state and cleans up resources.
+   * Deletes an individual session from history by ID.
+   */
+  deleteSession(sessionId: string): void {
+    const target = this.recordedSessions().find(s => s.id === sessionId);
+    if (target?.audioUrl) {
+      try {
+        URL.revokeObjectURL(target.audioUrl);
+      } catch (e) {}
+    }
+    this.recordedSessions.update(list => list.filter(s => s.id !== sessionId));
+
+    const remaining = this.recordedSessions();
+    if (remaining.length === 0) {
+      this.resetToInitialState();
+    } else {
+      const latest = remaining[remaining.length - 1];
+      this.durationSeconds.set(latest.durationSeconds);
+      this.audioUrl.set(latest.audioUrl);
+      this.recordedBlob.set(latest.recordedBlob);
+      this.recordedFile.set(latest.recordedFile);
+      this.sessionMetadata.set(latest.metadata);
+      this.sessionTitle.set(latest.sessionTitle);
+      this.state.set('READY_TO_UPLOAD');
+    }
+  }
+
+  /**
+   * Clears all recorded sessions from history.
+   */
+  clearAllSessions(): void {
+    this.recordedSessions().forEach(s => {
+      if (s.audioUrl) {
+        try {
+          URL.revokeObjectURL(s.audioUrl);
+        } catch (e) {}
+      }
+    });
+    this.recordedSessions.set([]);
+    this.resetToInitialState();
+  }
+
+  /**
+   * Deletes the active in-progress or unsaved recording session.
+   */
+  deleteCurrentRecording(): void {
+    const url = this.audioUrl();
+    if (url) {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (e) {}
+    }
+    this.recordedBlob.set(null);
+    this.recordedFile.set(null);
+    this.audioUrl.set(null);
+    this.sessionMetadata.set(null);
+    this.durationSeconds.set(0);
+    this.state.set('IDLE');
+
+    if (this.recordedSessions().length === 0) {
+      this.resetToInitialState();
+    }
+  }
+
+  /**
+   * Completely resets to pristine initial state (Session 1, IDLE, 0s).
+   */
+  resetToInitialState(): void {
+    this.cleanupRecording();
+    this.state.set('IDLE');
+    this.durationSeconds.set(0);
+    this.errorMessage.set(null);
+    this.recordedBlob.set(null);
+    this.recordedFile.set(null);
+    this.audioUrl.set(null);
+    this.sessionMetadata.set(null);
+    this.sessionNumber.set(1);
+    this.sessionTitle.set('Session 1');
+    if (this.currentPatientId) {
+      this.saveCurrentPatientSession(this.currentPatientId);
+    }
+  }
+
+  /**
+   * Switches active patient session context.
+   * Isolates recordings, transcripts, AI suggestions, and analysis per patient ID.
+   */
+  switchPatient(patientId: string): void {
+    const normPid = patientId.startsWith('#') ? patientId : '#' + patientId;
+    const rawPid = patientId.replace('#', '');
+
+    if (this.currentPatientId === normPid || this.currentPatientId === rawPid) {
+      return;
+    }
+
+    // Stop ongoing recording if any
+    if (this.state() === 'RECORDING' || this.state() === 'PAUSED') {
+      try {
+        this.stopTimer();
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+          this.mediaRecorder.stop();
+        }
+        this.stopMicrophoneTracks();
+      } catch (e) {}
+    }
+
+    // Save previous patient session
+    if (this.currentPatientId) {
+      this.saveCurrentPatientSession(this.currentPatientId);
+    }
+
+    this.currentPatientId = normPid;
+
+    const saved = this.patientSessionsMap.get(normPid) || this.patientSessionsMap.get(rawPid) || this.patientSessionsMap.get(patientId);
+
+    if (saved) {
+      // Restore this specific patient's saved recording session data
+      this.state.set(saved.state || 'IDLE');
+      this.durationSeconds.set(saved.durationSeconds || 0);
+      this.recordedBlob.set(saved.recordedBlob || null);
+      this.recordedFile.set(saved.recordedFile || null);
+      this.audioUrl.set(saved.audioUrl || null);
+      this.sessionMetadata.set(saved.sessionMetadata || null);
+      this.latestTranscript.set(saved.latestTranscript || '');
+      this.latestExchanges.set(saved.latestExchanges || []);
+      this.latestSuggestions.set(saved.latestSuggestions || []);
+      this.latestClinicalAnalysis.set(saved.latestClinicalAnalysis || null);
+      this.gdriveWebViewLink.set(saved.gdriveWebViewLink || null);
+      this.gdriveFileId.set(saved.gdriveFileId || null);
+      this.recordedSessions.set(saved.recordedSessions || []);
+      this.consultationMode.set(saved.consultationMode || 'IN_PERSON');
+      this.audioSourceType.set(saved.audioSourceType || 'MIC');
+      this.sessionNumber.set(saved.sessionNumber || 1);
+      this.sessionTitle.set(saved.sessionTitle || 'Session 1');
+      this.errorMessage.set(null);
+    } else {
+      // Clean slate for new / unrecorded patient
+      this.state.set('IDLE');
+      this.durationSeconds.set(0);
+      this.errorMessage.set(null);
+      this.recordedBlob.set(null);
+      this.recordedFile.set(null);
+      this.audioUrl.set(null);
+      this.sessionMetadata.set(null);
+      this.latestTranscript.set('');
+      this.latestExchanges.set([]);
+      this.latestSuggestions.set([]);
+      this.latestClinicalAnalysis.set(null);
+      this.gdriveWebViewLink.set(null);
+      this.gdriveFileId.set(null);
+      this.recordedSessions.set([]);
+      this.consultationMode.set('IN_PERSON');
+      this.audioSourceType.set('MIC');
+      this.sessionNumber.set(1);
+      this.sessionTitle.set('Session 1');
+    }
+  }
+
+  /**
+   * Persists active signals into patient-isolated storage map.
+   */
+  saveCurrentPatientSession(patientIdOverride?: string): void {
+    const pid = patientIdOverride || this.currentPatientId;
+    if (!pid) return;
+
+    this.patientSessionsMap.set(pid, {
+      patientId: pid,
+      state: this.state(),
+      durationSeconds: this.durationSeconds(),
+      recordedBlob: this.recordedBlob(),
+      recordedFile: this.recordedFile(),
+      audioUrl: this.audioUrl(),
+      sessionMetadata: this.sessionMetadata(),
+      latestTranscript: this.latestTranscript(),
+      latestExchanges: this.latestExchanges(),
+      latestSuggestions: this.latestSuggestions(),
+      latestClinicalAnalysis: this.latestClinicalAnalysis(),
+      gdriveWebViewLink: this.gdriveWebViewLink(),
+      gdriveFileId: this.gdriveFileId(),
+      recordedSessions: this.recordedSessions(),
+      consultationMode: this.consultationMode(),
+      audioSourceType: this.audioSourceType(),
+      sessionNumber: this.sessionNumber(),
+      sessionTitle: this.sessionTitle()
+    });
+  }
+
+  /**
+   * Analyzes conversation turns directly via backend endpoint.
+   */
+  analyzeConversation(conversationTurns: any[], transcriptText: string = ''): Observable<any> {
+    const url = `${environment.apiBaseUrl}/analyze-conversation`;
+    return this.http.post<any>(url, {
+      conversation: conversationTurns,
+      transcript: transcriptText
+    }).pipe(
+      tap((res) => {
+        if (res.ai_suggestions || res.aiSuggestions) {
+          this.latestSuggestions.set(res.ai_suggestions || res.aiSuggestions);
+        }
+        if (res.clinical_analysis || res.clinicalAnalysis) {
+          this.latestClinicalAnalysis.set(res.clinical_analysis || res.clinicalAnalysis);
+        } else {
+          this.latestClinicalAnalysis.set({
+            summary: res.summary,
+            entities: res.entities,
+            differential_diagnosis: res.differential_diagnosis,
+            soap_report: res.soap_report,
+            ai_suggestions: res.ai_suggestions
+          });
+        }
+        if (this.currentPatientId) {
+          this.saveCurrentPatientSession(this.currentPatientId);
+        }
+      })
+    );
+  }
+
+  /**
+   * Reframes a specific section of the SOAP report using AI based on doctor instructions.
+   */
+  reframeSOAPSection(section: string, originalContent: string, editReason: string, fullSoap?: any): Observable<any> {
+    const payload = {
+      section,
+      original_content: originalContent,
+      edit_reason: editReason,
+      full_soap: fullSoap
+    };
+    const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
+    return this.http.post<any>(`${baseUrl}/api/v1/soap/reframe`, payload).pipe(
+      catchError(err => {
+        // Fallback endpoint if version path is different
+        return this.http.post<any>(`${baseUrl}/soap/reframe`, payload);
+      })
+    );
+  }
+
+  /**
+   * Saves finalized SOAP note edits, reason, and patient summary feedback to database for fine-tuning.
+   */
+  saveSOAPFeedback(payload: {
+    encounter_id: string;
+    doctor_id?: string;
+    patient_id?: string;
+    original_soap: any;
+    edited_soap: any;
+    edit_reason?: string;
+    edited_section?: string;
+    patient_summary?: string;
+    is_finalized?: boolean;
+  }): Observable<any> {
+    const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
+    return this.http.post<any>(`${baseUrl}/api/v1/soap/feedback`, payload).pipe(
+      catchError(err => {
+        return this.http.post<any>(`${baseUrl}/soap/feedback`, payload);
+      })
+    );
+  }
+
+  /**
+   * Retrieves saved SOAP feedback history for an encounter.
+   */
+  fetchSOAPFeedback(encounterId: string): Observable<any> {
+    const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
+    return this.http.get<any>(`${baseUrl}/api/v1/soap/feedback/${encounterId}`).pipe(
+      catchError(err => {
+        return this.http.get<any>(`${baseUrl}/soap/feedback/${encounterId}`);
+      })
+    );
+  }
+
+  /**
+   * Fetches stored consultation sessions for a patient from database.
+   */
+  getPatientConsultationSessions(patientId: string): Observable<any[]> {
+    const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
+    const cleanPid = patientId.startsWith('#') ? patientId : '#' + patientId;
+    return this.http.get<any[]>(`${baseUrl}/api/v1/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+      catchError(() => {
+        return this.http.get<any[]>(`${baseUrl}/patients/${encodeURIComponent(cleanPid)}/sessions`);
+      }),
+      catchError(err => {
+        console.warn('Failed to fetch patient consultation sessions from backend:', err);
+        return of([]);
+      })
+    );
+  }
+
+  /**
+   * Fetches single consultation session details by ID.
+   */
+  getConsultationSessionDetail(sessionId: string): Observable<any> {
+    const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
+    return this.http.get<any>(`${baseUrl}/api/v1/sessions/${encodeURIComponent(sessionId)}`).pipe(
+      catchError(() => {
+        return this.http.get<any>(`${baseUrl}/sessions/${encodeURIComponent(sessionId)}`);
+      })
+    );
+  }
+
+  /**
+   * Loads a consultation session (e.g. Session 1 history) into the active dashboard state.
+   */
+  loadConsultationSession(session: any): void {
+    if (!session) return;
+    this.sessionNumber.set(session.sessionNumber || 1);
+    this.sessionTitle.set(session.sessionTitle || `Session ${session.sessionNumber || 1}`);
+    this.latestTranscript.set(session.transcript || '');
+    this.latestExchanges.set(session.conversation || []);
+    this.latestSuggestions.set(session.aiSuggestions || session.ai_suggestions || []);
+    this.latestClinicalAnalysis.set(session.clinicalAnalysis || session.clinical_analysis || null);
+    this.gdriveWebViewLink.set(session.gdriveWebViewLink || null);
+    this.gdriveFileId.set(session.gdriveFileId || null);
+
+    // Synchronize mock data state
+    this.mockData.activeConsultation.update(prev => ({
+      ...prev,
+      transcript: (session.conversation || []).map((e: any) => ({
+        speaker: e.isDoctor ? 'Doctor' : (e.speaker || 'Patient'),
+        text: e.text,
+        timestamp: e.timestamp || '00:00'
+      })),
+      wordCount: session.transcript ? session.transcript.split(/\s+/).length : prev.wordCount,
+      soapNote: session.soapReport || session.soap_report || prev.soapNote
+    }));
+  }
+
+
+  /**
+   * Resets recording state and cleans up resources for the next new session.
    */
   resetState(): void {
     this.cleanupRecording();
@@ -597,9 +1264,6 @@ export class RecordingService implements OnDestroy {
     this.sessionTitle.set(`Session ${this.sessionNumber()}`);
   }
 
-  // Maximum duration per recording: 20 minutes (1200 seconds)
-  readonly MAX_DURATION_SECONDS = 1200;
-  
   // Session tracking signal (e.g. Session 1, Session 2, etc.)
   readonly sessionNumber = signal<number>(1);
   readonly sessionTitle = signal<string>('Session 1');
