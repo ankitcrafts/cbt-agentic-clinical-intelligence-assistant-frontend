@@ -80,6 +80,9 @@
 
           <div class="patient-subline">
             <span class="visit-type-pill">{{ p.visitType }}</span>
+            <span class="badge-choice-mini" *ngIf="p.isPreferredDoctorChoice" title="Patient specifically requested you as their preferred doctor">
+              <i class="fa-solid fa-star"></i> Patient Choice
+            </span>
             <span class="reason-text">{{ p.reason }}</span>
           </div>
         </div>

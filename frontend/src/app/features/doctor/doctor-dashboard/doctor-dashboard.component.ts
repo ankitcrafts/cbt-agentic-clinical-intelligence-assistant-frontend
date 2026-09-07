@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { RecordingService } from '../../../core/services/recording.service';
+import { AppointmentService } from '../../../core/services/appointment.service';
 import { RecordedSessionItem } from '../../../core/models/recording.model';
 
 @Component({
@@ -17,6 +18,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   mockData = inject(MockDataService);
   recordingService = inject(RecordingService);
+  appointmentService = inject(AppointmentService);
 
   @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
 
@@ -58,111 +60,32 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return user?.avatar_initials || 'DOC';
   }
 
-  // Patient Queue / Schedule Data
-  patientsQueue = [
-    {
-      id: '#00847261',
-      name: 'Marcus Delgado',
-      initials: 'MD',
-      age: 42,
-      gender: 'M',
-      demographics: '42M · #00847261',
-      time: '09:00',
-      duration: '30 min',
-      visitType: 'Follow-up',
-      reason: 'Hypertension review + new headache complaint',
-      condition: 'Hypertension Stage 1',
-      status: 'IN_PROGRESS',
-      statusLabel: 'In Progress',
-      lastVisit: 'July 14, 2026',
-      vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10' }
-    },
-    {
-      id: '#00391847',
-      name: 'Priya Sharma',
-      initials: 'PS',
-      age: 34,
-      gender: 'F',
-      demographics: '34F · #00391847',
-      time: '09:45',
-      duration: '20 min',
-      visitType: 'Consultation',
-      reason: 'Persistent fatigue, thyroid history',
-      condition: 'Hypothyroidism',
-      status: 'WAITING',
-      statusLabel: 'Waiting',
-      lastVisit: 'May 02, 2026',
-      vitals: { bp: '118/76 mmHg', hr: '68 bpm', pain: '0/10' }
-    },
-    {
-      id: '#00512938',
-      name: 'Elias Voss',
-      initials: 'EV',
-      age: 58,
-      gender: 'M',
-      demographics: '58M · #00512938',
-      time: '10:15',
-      duration: '30 min',
-      visitType: 'Annual Check',
-      reason: 'Routine annual review, diabetes management',
-      condition: 'Type 2 Diabetes',
-      status: 'WAITING',
-      statusLabel: 'Waiting',
-      lastVisit: 'Feb 11, 2026',
-      vitals: { bp: '132/84 mmHg', hr: '74 bpm', pain: '0/10' }
-    },
-    {
-      id: '#00673920',
-      name: 'Anya Kowalski',
-      initials: 'AK',
-      age: 29,
-      gender: 'F',
-      demographics: '29F · #00673920',
-      time: '11:00',
-      duration: '45 min',
-      visitType: 'New Patient',
-      reason: 'Chest tightness, shortness of breath on exertion',
-      condition: 'New presentation',
-      status: 'SCHEDULED',
-      statusLabel: 'Scheduled',
-      lastVisit: '—',
-      vitals: { bp: '122/80 mmHg', hr: '82 bpm', pain: '3/10' }
-    },
-    {
-      id: '#00182736',
-      name: 'Samuel Obi',
-      initials: 'SO',
-      age: 67,
-      gender: 'M',
-      demographics: '67M · #00182736',
-      time: '11:55',
-      duration: '20 min',
-      visitType: 'Follow-up',
-      reason: 'Post-catheterisation review, stable angina',
-      condition: 'Stable Angina',
-      status: 'SCHEDULED',
-      statusLabel: 'Scheduled',
-      lastVisit: 'June 20, 2026',
-      vitals: { bp: '128/82 mmHg', hr: '64 bpm', pain: '1/10' }
-    },
-    {
-      id: '#00847193',
-      name: 'Lin Wei',
-      initials: 'LW',
-      age: 45,
-      gender: 'F',
-      demographics: '45F · #00847193',
-      time: '14:00',
-      duration: '30 min',
-      visitType: 'Follow-up',
-      reason: 'AF management, medication titration',
-      condition: 'Atrial Fibrillation',
-      status: 'SCHEDULED',
-      statusLabel: 'Scheduled',
-      lastVisit: 'March 18, 2026',
-      vitals: { bp: '126/80 mmHg', hr: '76 bpm', pain: '0/10' }
-    }
-  ];
+  // Dynamic Patient Queue / Schedule Data from AppointmentService
+  get patientsQueue() {
+    const user = this.authService.currentUser();
+    const docName = user?.name || 'Dr. Yuki Tanaka';
+    const queue = this.appointmentService.getDoctorQueue(docName);
+    
+    return queue.map(p => ({
+      id: p.id,
+      name: p.name,
+      initials: p.initials,
+      age: p.age,
+      gender: p.gender,
+      demographics: p.demographics,
+      time: p.assignedTimeSlot || '09:00 AM',
+      duration: p.assignedDuration || '30 min',
+      visitType: p.visitType,
+      reason: p.reason,
+      condition: p.condition,
+      status: p.arrivalStatus === 'IN_CONSULTATION' ? 'IN_PROGRESS' : (p.arrivalStatus === 'ARRIVED' ? 'WAITING' : 'SCHEDULED'),
+      statusLabel: p.arrivalStatus === 'IN_CONSULTATION' ? 'In Progress' : (p.arrivalStatus === 'ARRIVED' ? 'Waiting' : 'Scheduled'),
+      lastVisit: p.lastVisit || '—',
+      vitals: p.vitals || { bp: '120/80 mmHg', hr: '72 bpm', pain: '0/10' },
+      isPreferredDoctorChoice: p.isPreferredDoctorChoice,
+      preferredDoctorName: p.preferredDoctorName
+    }));
+  }
 
   // Active Consultation Details
   visitDetails: any = {

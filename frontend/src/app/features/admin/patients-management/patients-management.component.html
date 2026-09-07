@@ -1,57 +1,467 @@
 <div class="management-page">
-  <div class="page-header">
-    <div>
-      <h1>Patients Management</h1>
-      <p class="subtitle">Manage all patients in the platform</p>
+  <!-- Toast Notification Banner -->
+  <div class="toast-banner animated-fade-in" *ngIf="toastMessage">
+    <div class="toast-content">
+      <i class="fa-solid fa-circle-check"></i>
+      <span>{{ toastMessage }}</span>
     </div>
+    <button type="button" class="toast-close" (click)="toastMessage = null"><i class="fa-solid fa-xmark"></i></button>
   </div>
 
-  <div class="card table-card">
-    <div class="filter-bar">
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" [(ngModel)]="searchTerm" placeholder="Search patients...">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="main-title serif-title">Patient Intake &amp; Doctor Scheduling Desk</h1>
+      <p class="subtitle">Distribute arriving clinic patients, manage doctor timing slots, and honor patient-preferred physician choices.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openRegisterModal()">
+      <i class="fa-solid fa-user-plus"></i>
+      <span>Register Arriving Patient</span>
+    </button>
+  </div>
+
+  <!-- Quick Overview KPI Cards -->
+  <div class="quick-kpi-grid">
+    <div class="cliniq-card kpi-card" [class.active-kpi]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'">
+      <div class="kpi-icon-wrap icon-blue">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">TOTAL PATIENTS</span>
+        <span class="kpi-num serif-title">{{ appointmentService.totalPatientsCount() }}</span>
       </div>
     </div>
 
+    <div class="cliniq-card kpi-card unassigned-card" [class.active-kpi]="statusFilter === 'UNASSIGNED'" (click)="statusFilter = 'UNASSIGNED'">
+      <div class="kpi-icon-wrap icon-amber">
+        <i class="fa-solid fa-user-clock"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">UNASSIGNED / ARRIVED</span>
+        <span class="kpi-num serif-title">{{ appointmentService.unassignedPatientsCount() }}</span>
+      </div>
+      <span class="kpi-badge-alert" *ngIf="appointmentService.unassignedPatientsCount() > 0">Needs Allocation</span>
+    </div>
+
+    <div class="cliniq-card kpi-card" [class.active-kpi]="statusFilter === 'SCHEDULED'" (click)="statusFilter = 'SCHEDULED'">
+      <div class="kpi-icon-wrap icon-teal">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">SCHEDULED SLOTS</span>
+        <span class="kpi-num serif-title">{{ appointmentService.scheduledPatientsCount() }}</span>
+      </div>
+    </div>
+
+    <div class="cliniq-card kpi-card">
+      <div class="kpi-icon-wrap icon-purple">
+        <i class="fa-solid fa-user-doctor"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">DOCTORS ON DUTY</span>
+        <span class="kpi-num serif-title">{{ appointmentService.activeDoctorsOnDuty() }}/{{ doctorsList.length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="card table-card">
+    <div class="desk-toolbar">
+      <div class="filter-tabs-group">
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'ALL'"
+          (click)="statusFilter = 'ALL'"
+        >
+          All Patients ({{ patientsList.length }})
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'UNASSIGNED'"
+          (click)="statusFilter = 'UNASSIGNED'"
+        >
+          <span class="dot-amber" *ngIf="appointmentService.unassignedPatientsCount() > 0"></span>
+          Unassigned / Arrived ({{ appointmentService.unassignedPatientsCount() }})
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'SCHEDULED'"
+          (click)="statusFilter = 'SCHEDULED'"
+        >
+          Scheduled Slots ({{ appointmentService.scheduledPatientsCount() }})
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'IN_CONSULTATION'"
+          (click)="statusFilter = 'IN_CONSULTATION'"
+        >
+          In Consultation
+        </button>
+      </div>
+
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Search by patient, MRN, symptom, doctor...">
+      </div>
+    </div>
+
+    <!-- Patients Intake & Scheduling Table -->
     <div class="table-container">
-      <table class="custom-table">
+      <table class="custom-table cliniq-desk-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Age</th>
-            <th>Gender</th>
-            <th>Phone</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>PATIENT DETAILS</th>
+            <th>ARRIVAL TIME</th>
+            <th>REASON / COMPLAINT</th>
+            <th>ASSIGNED PHYSICIAN</th>
+            <th>TIMING SLOT</th>
+            <th>PREFERENCE</th>
+            <th class="text-right">ALLOCATION ACTION</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let pat of filteredPatients">
-            <td class="font-bold">{{ pat.name }}</td>
-            <td>{{ pat.age }}</td>
-            <td>{{ pat.gender }}</td>
-            <td class="text-muted">{{ pat.phone }}</td>
+          <tr *ngFor="let pat of filteredPatients" [class.unassigned-row]="!pat.assignedDoctorId">
+            <!-- Patient Profile -->
             <td>
-              <span class="badge" [class.badge-active]="pat.status === 'Active'" [class.badge-inactive]="pat.status === 'Inactive'">
-                <span class="badge-dot"></span> {{ pat.status }}
-              </span>
+              <div class="patient-cell">
+                <div class="patient-avatar-circle">
+                  <span>{{ pat.initials }}</span>
+                </div>
+                <div class="patient-info-wrap">
+                  <span class="patient-name-text">{{ pat.name }}</span>
+                  <span class="patient-demographics-text">{{ pat.demographics }} · {{ pat.phone }}</span>
+                </div>
+              </div>
             </td>
+
+            <!-- Arrival Time & Status -->
             <td>
-              <button class="action-icon-btn" title="View Patient Details"><i class="fa-regular fa-eye"></i></button>
+              <div class="arrival-cell">
+                <span class="time-text"><i class="fa-regular fa-clock"></i> {{ pat.arrivalTime }}</span>
+                <span class="status-pill" 
+                      [class.status-arrived]="pat.arrivalStatus === 'ARRIVED'"
+                      [class.status-scheduled]="pat.arrivalStatus === 'SCHEDULED'"
+                      [class.status-in-consult]="pat.arrivalStatus === 'IN_CONSULTATION'">
+                  {{ pat.arrivalStatus === 'ARRIVED' ? 'Arrived / Waiting' : (pat.arrivalStatus === 'IN_CONSULTATION' ? 'In Consultation' : 'Scheduled') }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Reason / Condition -->
+            <td>
+              <div class="reason-cell">
+                <span class="reason-main">{{ pat.reason }}</span>
+                <span class="condition-tag" *ngIf="pat.condition">{{ pat.condition }}</span>
+              </div>
+            </td>
+
+            <!-- Assigned Doctor -->
+            <td>
+              <div class="doctor-cell" *ngIf="pat.assignedDoctorName">
+                <div class="doc-avatar-mini">{{ pat.assignedDoctorName | slice:4:6 }}</div>
+                <div class="doc-info-mini">
+                  <span class="doc-name-bold">{{ pat.assignedDoctorName }}</span>
+                  <span class="doc-type-label">{{ pat.visitType }}</span>
+                </div>
+              </div>
+              <div class="unassigned-badge" *ngIf="!pat.assignedDoctorName">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Needs Doctor Assignment</span>
+              </div>
+            </td>
+
+            <!-- Timing Slot -->
+            <td>
+              <div class="slot-cell" *ngIf="pat.assignedTimeSlot">
+                <span class="slot-pill">
+                  <i class="fa-solid fa-calendar-day"></i> {{ pat.assignedTimeSlot }}
+                </span>
+                <span class="slot-duration">{{ pat.assignedDuration || '30 min' }}</span>
+              </div>
+              <span class="slot-empty-text" *ngIf="!pat.assignedTimeSlot">— No slot set —</span>
+            </td>
+
+            <!-- Doctor Choice Preference -->
+            <td>
+              <div class="preference-cell">
+                <span class="badge-choice" *ngIf="pat.isPreferredDoctorChoice" title="Patient specifically requested this physician of their choice">
+                  <i class="fa-solid fa-star"></i> Patient Choice
+                </span>
+                <span class="badge-standard" *ngIf="!pat.isPreferredDoctorChoice">
+                  General Allocation
+                </span>
+              </div>
+            </td>
+
+            <!-- Actions -->
+            <td class="text-right">
+              <button 
+                type="button" 
+                class="btn-assign-action" 
+                [class.btn-assign-primary]="!pat.assignedDoctorId"
+                [class.btn-assign-reassign]="!!pat.assignedDoctorId"
+                (click)="openAssignModal(pat)"
+              >
+                <i class="fa-solid" [class.fa-calendar-plus]="!pat.assignedDoctorId" [class.fa-pen-to-square]="!!pat.assignedDoctorId"></i>
+                <span>{{ pat.assignedDoctorId ? 'Change Slot' : 'Assign Doctor & Slot' }}</span>
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredPatients.length === 0">
+            <td colspan="7" class="empty-table-cell">
+              <i class="fa-solid fa-user-check"></i>
+              <p>No patients found matching the selected filter or search term.</p>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
+    <!-- Table Footer -->
     <div class="table-footer">
-      <span>Showing 1 to {{ filteredPatients.length }} of 1,245 patients</span>
-      <div class="pagination">
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <span>... 250</span>
+      <span>Showing {{ filteredPatients.length }} of {{ patientsList.length }} patients in clinic reception</span>
+      <div class="table-footer-legend">
+        <span class="legend-item"><i class="fa-solid fa-star" style="color: #f59e0b;"></i> Patient Preferred Choice</span>
+        <span class="legend-item"><span class="dot-green"></span> Doctor Available</span>
+        <span class="legend-item"><span class="dot-grey"></span> Slot Booked</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 1: ASSIGN DOCTOR & TIMING SLOT (HONORING PREFERRED DOCTOR CHOICE)
+       ========================================================================== -->
+  <div class="modal-backdrop animated-fade-in" *ngIf="showAssignModal && selectedPatient">
+    <div class="card modal-card assign-doctor-modal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+          <div>
+            <h3>Assign Doctor &amp; Consultation Slot</h3>
+            <span class="modal-subtitle">Distribute patient or allocate preferred physician timing slot</span>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeAssignModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Patient Context Card -->
+        <div class="patient-modal-banner">
+          <div class="banner-avatar">{{ selectedPatient.initials }}</div>
+          <div class="banner-meta">
+            <h4>{{ selectedPatient.name }} <span class="id-tag">{{ selectedPatient.id }}</span></h4>
+            <p>{{ selectedPatient.demographics }} · Arrived: <strong>{{ selectedPatient.arrivalTime }}</strong></p>
+            <p class="reason-highlight"><i class="fa-solid fa-notes-medical"></i> Reason: {{ selectedPatient.reason }}</p>
+          </div>
+        </div>
+
+        <!-- Doctor Choice Preference Toggle -->
+        <div class="preference-selection-box">
+          <label class="section-label">Doctor Allocation Mode:</label>
+          <div class="preference-toggle-row">
+            <button 
+              type="button" 
+              class="pref-toggle-btn" 
+              [class.active]="!isPreferredChoice"
+              (click)="isPreferredChoice = false"
+            >
+              <i class="fa-solid fa-network-wired"></i>
+              <span>Department / Best Available Doctor</span>
+            </button>
+            <button 
+              type="button" 
+              class="pref-toggle-btn active-star" 
+              [class.active]="isPreferredChoice"
+              (click)="isPreferredChoice = true"
+            >
+              <i class="fa-solid fa-star"></i>
+              <span>Patient's Preferred Doctor of Choice</span>
+            </button>
+          </div>
+          <p class="pref-hint" *ngIf="isPreferredChoice">
+            <i class="fa-solid fa-circle-info"></i> Patient has requested a specific doctor. Select their chosen physician below to view that doctor's individual timing slots.
+          </p>
+        </div>
+
+        <!-- Doctor Selector Dropdown -->
+        <div class="form-group">
+          <label class="section-label">
+            Select Physician:
+            <span class="label-sub" *ngIf="isPreferredChoice">(Patient's Selected Doctor)</span>
+          </label>
+          <div class="select-doctor-grid">
+            <div 
+              class="doc-option-card" 
+              *ngFor="let doc of doctorsList"
+              [class.selected]="selectedDoctorId === doc.id"
+              [class.disabled]="!doc.available"
+              (click)="doc.available ? onDoctorChange(doc.id) : null"
+            >
+              <div class="doc-opt-header">
+                <div class="doc-opt-avatar">{{ doc.initials }}</div>
+                <div class="doc-opt-details">
+                  <span class="doc-opt-name">{{ doc.name }}</span>
+                  <span class="doc-opt-spec">{{ doc.specialty }}</span>
+                </div>
+              </div>
+              <div class="doc-opt-footer">
+                <span class="doc-status-tag" [class.on-duty]="doc.available" [class.off-duty]="!doc.available">
+                  {{ doc.dutyStatus }}
+                </span>
+                <span class="doc-avail-slots">
+                  {{ getAvailableSlotsCount(doc) }} slots available
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Timing Slots Matrix for Selected Doctor -->
+        <div class="timing-slots-section" *ngIf="selectedDoctor">
+          <div class="slots-header">
+            <label class="section-label">
+              Available Timing Slots for <strong>{{ selectedDoctor.name }}</strong> (Today):
+            </label>
+            <span class="slots-legend">Click an open green slot to book</span>
+          </div>
+
+          <div class="slots-grid">
+            <div 
+              class="slot-btn-pill" 
+              *ngFor="let s of currentDoctorSlots"
+              [class.slot-available]="s.status === 'AVAILABLE'"
+              [class.slot-booked]="s.status === 'BOOKED' && s.bookedPatientId !== selectedPatient.id"
+              [class.slot-selected]="selectedSlotTime === s.time"
+              (click)="selectSlot(s)"
+            >
+              <div class="slot-time-row">
+                <i class="fa-regular fa-clock"></i>
+                <span class="slot-time">{{ s.time }}</span>
+              </div>
+              <span class="slot-state-text">
+                {{ s.status === 'AVAILABLE' ? 'Available (' + s.duration + ')' : (s.bookedPatientId === selectedPatient.id ? 'Current Slot' : 'Booked: ' + (s.bookedPatientName | slice:0:12)) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visit Type & Notes -->
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="section-label">Consultation Visit Type:</label>
+            <select class="form-select" [(ngModel)]="selectedVisitType">
+              <option value="New Patient">New Patient Presentation</option>
+              <option value="Follow-up">Cardiology / Specialist Follow-up</option>
+              <option value="Consultation">General Clinical Consultation</option>
+              <option value="Annual Check">Annual Preventive Health Check</option>
+              <option value="Emergency">Urgent Triage Consultation</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="section-label">Admin Booking Notes (Optional):</label>
+            <input type="text" class="form-input" [(ngModel)]="bookingNotes" placeholder="e.g. Patient brought previous ECG report...">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeAssignModal()">Cancel</button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          [disabled]="!selectedSlotTime"
+          (click)="confirmAssignment()"
+        >
+          <i class="fa-solid fa-check"></i>
+          <span>Confirm &amp; Assign Consultation Slot</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 2: REGISTER ARRIVING WALK-IN PATIENT
+       ========================================================================== -->
+  <div class="modal-backdrop animated-fade-in" *ngIf="showRegisterModal">
+    <div class="card modal-card register-modal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge icon-teal">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <h3>Register Arriving Clinic Patient</h3>
+            <span class="modal-subtitle">Intake walk-in or new arrival at hospital reception</span>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeRegisterModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="section-label">Patient Full Name *</label>
+            <input type="text" class="form-input" [(ngModel)]="newPatient.name" placeholder="e.g. Marcus Delgado">
+          </div>
+          <div class="form-group">
+            <label class="section-label">Phone Number</label>
+            <input type="text" class="form-input" [(ngModel)]="newPatient.phone" placeholder="+1 (555) 000-0000">
+          </div>
+        </div>
+
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="section-label">Age</label>
+            <input type="number" class="form-input" [(ngModel)]="newPatient.age" min="1" max="120">
+          </div>
+          <div class="form-group">
+            <label class="section-label">Gender</label>
+            <select class="form-select" [(ngModel)]="newPatient.gender">
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="section-label">Visit Type</label>
+            <select class="form-select" [(ngModel)]="newPatient.visitType">
+              <option value="New Patient">New Patient</option>
+              <option value="Follow-up">Follow-up</option>
+              <option value="Consultation">Consultation</option>
+              <option value="Annual Check">Annual Check</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="section-label">Chief Complaint / Symptoms *</label>
+          <input type="text" class="form-input" [(ngModel)]="newPatient.reason" placeholder="e.g. Recurring afternoon headaches (~4-5x/week), hypertension follow-up">
+        </div>
+
+        <div class="form-group">
+          <label class="section-label">Preferred Physician Request (Optional):</label>
+          <select class="form-select" [(ngModel)]="newPatient.preferredDoctorName">
+            <option value="">No preference — allocate best available</option>
+            <option *ngFor="let d of doctorsList" [value]="d.name">
+              {{ d.name }} ({{ d.specialty }})
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeRegisterModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="saveNewPatient()">
+          <i class="fa-solid fa-user-check"></i>
+          <span>Save &amp; Open Slot Allocation</span>
+        </button>
       </div>
     </div>
   </div>

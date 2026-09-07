@@ -1,0 +1,479 @@
+import { Injectable, signal, computed } from '@angular/core';
+
+export interface DoctorSlot {
+  id: string;
+  time: string;           // e.g. "09:00 AM", "09:45 AM", "10:30 AM", "11:15 AM", "02:00 PM", "02:45 PM", "03:30 PM", "04:15 PM"
+  duration: string;       // e.g. "30 min"
+  status: 'AVAILABLE' | 'BOOKED';
+  bookedPatientId?: string;
+  bookedPatientName?: string;
+}
+
+export interface DoctorProfile {
+  id: string;
+  name: string;
+  initials: string;
+  specialty: string;
+  department: string;
+  email: string;
+  available: boolean;
+  dutyStatus: 'On duty' | 'In consultation' | 'Off duty';
+  slots: DoctorSlot[];
+}
+
+export interface ClinicPatient {
+  id: string;               // e.g. "#00847261"
+  pid: string;              // e.g. "P-00847261"
+  name: string;
+  initials: string;
+  age: number;
+  gender: 'M' | 'F' | 'Other';
+  phone: string;
+  demographics: string;     // e.g. "42M · #00847261"
+  arrivalTime: string;      // e.g. "08:45 AM"
+  arrivalStatus: 'ARRIVED' | 'SCHEDULED' | 'IN_CONSULTATION' | 'COMPLETED';
+  reason: string;
+  condition: string;
+  lastVisit?: string;
+  vitals?: { bp: string; hr: string; pain: string; spo2?: string; temp?: string };
+  
+  // Assignment & Booking fields
+  assignedDoctorId?: string;
+  assignedDoctorName?: string;
+  assignedTimeSlot?: string;
+  assignedDuration?: string;
+  isPreferredDoctorChoice?: boolean;  // True if patient specifically chose this doctor
+  preferredDoctorName?: string;
+  visitType: 'New Patient' | 'Follow-up' | 'Annual Check' | 'Consultation' | 'Emergency';
+  bookingNotes?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AppointmentService {
+  // Pre-configured Doctors with Daily Timing Slots
+  doctors = signal<DoctorProfile[]>([
+    {
+      id: 'DOC-001',
+      name: 'Dr. Yuki Tanaka',
+      initials: 'YT',
+      specialty: 'Cardiologist',
+      department: 'Cardiology',
+      email: 'yuki.tanaka@stmercy.org',
+      available: true,
+      dutyStatus: 'On duty',
+      slots: [
+        { id: 's1', time: '09:00 AM', duration: '30 min', status: 'BOOKED', bookedPatientId: '#00847261', bookedPatientName: 'Marcus Delgado' },
+        { id: 's2', time: '09:45 AM', duration: '30 min', status: 'BOOKED', bookedPatientId: '#00391847', bookedPatientName: 'Priya Sharma' },
+        { id: 's3', time: '10:30 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's4', time: '11:15 AM', duration: '45 min', status: 'BOOKED', bookedPatientId: '#00673920', bookedPatientName: 'Anya Kowalski' },
+        { id: 's5', time: '02:00 PM', duration: '30 min', status: 'BOOKED', bookedPatientId: '#00847193', bookedPatientName: 'Lin Wei' },
+        { id: 's6', time: '02:45 PM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's7', time: '03:30 PM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's8', time: '04:15 PM', duration: '30 min', status: 'AVAILABLE' }
+      ]
+    },
+    {
+      id: 'DOC-002',
+      name: 'Dr. Rahul Sharma',
+      initials: 'RS',
+      specialty: 'Cardiologist & Interventionalist',
+      department: 'Cardiology',
+      email: 'rahul.sharma@stmercy.org',
+      available: true,
+      dutyStatus: 'On duty',
+      slots: [
+        { id: 's10', time: '09:30 AM', duration: '30 min', status: 'BOOKED', bookedPatientId: '#00182736', bookedPatientName: 'Samuel Obi' },
+        { id: 's11', time: '10:15 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's12', time: '11:00 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's13', time: '02:00 PM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's14', time: '02:45 PM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's15', time: '03:30 PM', duration: '30 min', status: 'AVAILABLE' }
+      ]
+    },
+    {
+      id: 'DOC-003',
+      name: 'Dr. Neha Verma',
+      initials: 'NV',
+      specialty: 'Neurologist',
+      department: 'Neurology',
+      email: 'neha.verma@stmercy.org',
+      available: true,
+      dutyStatus: 'On duty',
+      slots: [
+        { id: 's20', time: '09:00 AM', duration: '45 min', status: 'BOOKED', bookedPatientId: '#00512938', bookedPatientName: 'Elias Voss' },
+        { id: 's21', time: '10:00 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's22', time: '10:45 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's23', time: '11:30 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's24', time: '02:15 PM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's25', time: '03:00 PM', duration: '30 min', status: 'AVAILABLE' }
+      ]
+    },
+    {
+      id: 'DOC-004',
+      name: 'Dr. Amit Patel',
+      initials: 'AP',
+      specialty: 'Orthopedic Surgeon',
+      department: 'Orthopedics',
+      email: 'amit.patel@stmercy.org',
+      available: true,
+      dutyStatus: 'On duty',
+      slots: [
+        { id: 's30', time: '09:30 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's31', time: '10:15 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's32', time: '11:00 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's33', time: '02:00 PM', duration: '30 min', status: 'AVAILABLE' }
+      ]
+    },
+    {
+      id: 'DOC-005',
+      name: 'Dr. Sneha Iyer',
+      initials: 'SI',
+      specialty: 'Pediatrician',
+      department: 'Pediatrics',
+      email: 'sneha.iyer@stmercy.org',
+      available: false,
+      dutyStatus: 'Off duty',
+      slots: [
+        { id: 's40', time: '09:00 AM', duration: '30 min', status: 'AVAILABLE' }
+      ]
+    },
+    {
+      id: 'DOC-006',
+      name: 'Dr. Vikram Singh',
+      initials: 'VS',
+      specialty: 'General Physician',
+      department: 'Internal Medicine',
+      email: 'vikram.singh@stmercy.org',
+      available: true,
+      dutyStatus: 'On duty',
+      slots: [
+        { id: 's50', time: '09:00 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's51', time: '09:45 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's52', time: '10:30 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's53', time: '11:15 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's54', time: '02:00 PM', duration: '30 min', status: 'AVAILABLE' }
+      ]
+    }
+  ]);
+
+  // Arriving / Registered Hospital Patients
+  patients = signal<ClinicPatient[]>([
+    {
+      id: '#00847261',
+      pid: 'P-00847261',
+      name: 'Marcus Delgado',
+      initials: 'MD',
+      age: 42,
+      gender: 'M',
+      phone: '+1 (555) 234-5678',
+      demographics: '42M · #00847261',
+      arrivalTime: '08:45 AM',
+      arrivalStatus: 'IN_CONSULTATION',
+      reason: 'Hypertension review + new headache complaint',
+      condition: 'Hypertension Stage 1',
+      lastVisit: 'July 14, 2026',
+      vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10', spo2: '98%', temp: '36.6 °C' },
+      assignedDoctorId: 'DOC-001',
+      assignedDoctorName: 'Dr. Yuki Tanaka',
+      assignedTimeSlot: '09:00 AM',
+      assignedDuration: '30 min',
+      isPreferredDoctorChoice: true,
+      preferredDoctorName: 'Dr. Yuki Tanaka',
+      visitType: 'Follow-up',
+      bookingNotes: 'Patient requested Dr. Yuki Tanaka specifically for cardiology follow-up.'
+    },
+    {
+      id: '#00391847',
+      pid: 'P-00391847',
+      name: 'Priya Sharma',
+      initials: 'PS',
+      age: 34,
+      gender: 'F',
+      phone: '+1 (555) 345-6789',
+      demographics: '34F · #00391847',
+      arrivalTime: '09:15 AM',
+      arrivalStatus: 'SCHEDULED',
+      reason: 'Persistent morning dizziness & fatigue, thyroid review',
+      condition: 'Hypothyroidism',
+      lastVisit: 'May 02, 2026',
+      vitals: { bp: '118/76 mmHg', hr: '68 bpm', pain: '0/10', spo2: '99%', temp: '36.8 °C' },
+      assignedDoctorId: 'DOC-001',
+      assignedDoctorName: 'Dr. Yuki Tanaka',
+      assignedTimeSlot: '09:45 AM',
+      assignedDuration: '30 min',
+      isPreferredDoctorChoice: false,
+      visitType: 'Consultation',
+      bookingNotes: 'Assigned based on cardiology queue availability.'
+    },
+    {
+      id: '#00512938',
+      pid: 'P-00512938',
+      name: 'Elias Voss',
+      initials: 'EV',
+      age: 58,
+      gender: 'M',
+      phone: '+1 (555) 456-7890',
+      demographics: '58M · #00512938',
+      arrivalTime: '08:50 AM',
+      arrivalStatus: 'SCHEDULED',
+      reason: 'Routine annual check, peripheral tingling review',
+      condition: 'Type 2 Diabetes',
+      lastVisit: 'Feb 11, 2026',
+      vitals: { bp: '132/84 mmHg', hr: '74 bpm', pain: '0/10' },
+      assignedDoctorId: 'DOC-003',
+      assignedDoctorName: 'Dr. Neha Verma',
+      assignedTimeSlot: '09:00 AM',
+      assignedDuration: '45 min',
+      isPreferredDoctorChoice: true,
+      preferredDoctorName: 'Dr. Neha Verma',
+      visitType: 'Annual Check',
+      bookingNotes: 'Patient preferred Dr. Neha Verma for neurology evaluation.'
+    },
+    {
+      id: '#00673920',
+      pid: 'P-00673920',
+      name: 'Anya Kowalski',
+      initials: 'AK',
+      age: 29,
+      gender: 'F',
+      phone: '+1 (555) 567-8901',
+      demographics: '29F · #00673920',
+      arrivalTime: '09:30 AM',
+      arrivalStatus: 'SCHEDULED',
+      reason: 'Chest tightness, shortness of breath on exertion',
+      condition: 'New presentation',
+      lastVisit: '—',
+      vitals: { bp: '122/80 mmHg', hr: '82 bpm', pain: '3/10' },
+      assignedDoctorId: 'DOC-001',
+      assignedDoctorName: 'Dr. Yuki Tanaka',
+      assignedTimeSlot: '11:15 AM',
+      assignedDuration: '45 min',
+      isPreferredDoctorChoice: true,
+      preferredDoctorName: 'Dr. Yuki Tanaka',
+      visitType: 'New Patient',
+      bookingNotes: 'New referral requested senior cardiologist Dr. Yuki Tanaka.'
+    },
+    {
+      id: '#00182736',
+      pid: 'P-00182736',
+      name: 'Samuel Obi',
+      initials: 'SO',
+      age: 67,
+      gender: 'M',
+      phone: '+1 (555) 678-9012',
+      demographics: '67M · #00182736',
+      arrivalTime: '09:10 AM',
+      arrivalStatus: 'SCHEDULED',
+      reason: 'Post-catheterisation review, stable angina check',
+      condition: 'Stable Angina',
+      lastVisit: 'June 20, 2026',
+      vitals: { bp: '128/82 mmHg', hr: '64 bpm', pain: '1/10' },
+      assignedDoctorId: 'DOC-002',
+      assignedDoctorName: 'Dr. Rahul Sharma',
+      assignedTimeSlot: '09:30 AM',
+      assignedDuration: '30 min',
+      isPreferredDoctorChoice: false,
+      visitType: 'Follow-up'
+    },
+    {
+      id: '#00847193',
+      pid: 'P-00847193',
+      name: 'Lin Wei',
+      initials: 'LW',
+      age: 45,
+      gender: 'F',
+      phone: '+1 (555) 789-0123',
+      demographics: '45F · #00847193',
+      arrivalTime: '09:40 AM',
+      arrivalStatus: 'SCHEDULED',
+      reason: 'AF management, medication titration check',
+      condition: 'Atrial Fibrillation',
+      lastVisit: 'March 18, 2026',
+      vitals: { bp: '126/80 mmHg', hr: '76 bpm', pain: '0/10' },
+      assignedDoctorId: 'DOC-001',
+      assignedDoctorName: 'Dr. Yuki Tanaka',
+      assignedTimeSlot: '02:00 PM',
+      assignedDuration: '30 min',
+      isPreferredDoctorChoice: true,
+      preferredDoctorName: 'Dr. Yuki Tanaka',
+      visitType: 'Follow-up'
+    },
+    {
+      id: '#00928174',
+      pid: 'P-00928174',
+      name: 'Arjun Nair',
+      initials: 'AN',
+      age: 51,
+      gender: 'M',
+      phone: '+1 (555) 890-1234',
+      demographics: '51M · #00928174',
+      arrivalTime: '09:50 AM',
+      arrivalStatus: 'ARRIVED',
+      reason: 'Elevated home BP readings, palpitation episodes',
+      condition: 'Arrhythmia screening',
+      lastVisit: '—',
+      vitals: { bp: '144/92 mmHg', hr: '88 bpm', pain: '0/10' },
+      assignedDoctorId: undefined,
+      assignedDoctorName: undefined,
+      assignedTimeSlot: undefined,
+      isPreferredDoctorChoice: false,
+      visitType: 'Consultation',
+      bookingNotes: 'Walk-in patient awaiting doctor allocation.'
+    },
+    {
+      id: '#00472910',
+      pid: 'P-00472910',
+      name: 'Fatima Al-Zahra',
+      initials: 'FA',
+      age: 39,
+      gender: 'F',
+      phone: '+1 (555) 901-2345',
+      demographics: '39F · #00472910',
+      arrivalTime: '10:05 AM',
+      arrivalStatus: 'ARRIVED',
+      reason: 'Acute joint inflammation, knee swelling post-exercise',
+      condition: 'Acute Arthralgia',
+      lastVisit: '—',
+      vitals: { bp: '120/78 mmHg', hr: '70 bpm', pain: '6/10' },
+      assignedDoctorId: undefined,
+      assignedDoctorName: undefined,
+      assignedTimeSlot: undefined,
+      isPreferredDoctorChoice: false,
+      visitType: 'New Patient',
+      bookingNotes: 'Requested Orthopedic specialist assessment.'
+    }
+  ]);
+
+  // Derived metrics for Admin Dashboard
+  totalPatientsCount = computed(() => this.patients().length);
+  unassignedPatientsCount = computed(() => this.patients().filter(p => !p.assignedDoctorId || p.arrivalStatus === 'ARRIVED').length);
+  scheduledPatientsCount = computed(() => this.patients().filter(p => p.assignedDoctorId && p.arrivalStatus !== 'COMPLETED').length);
+  activeDoctorsOnDuty = computed(() => this.doctors().filter(d => d.available && d.dutyStatus === 'On duty').length);
+
+  /**
+   * Assign or Reassign a Doctor and Timing Slot to a Patient
+   */
+  assignDoctorAndSlot(
+    patientId: string,
+    doctorId: string,
+    timeSlot: string,
+    isPreferredChoice: boolean = false,
+    preferredDoctorName?: string,
+    visitType?: 'New Patient' | 'Follow-up' | 'Annual Check' | 'Consultation' | 'Emergency',
+    bookingNotes?: string
+  ): { success: boolean; message: string } {
+    const doc = this.doctors().find(d => d.id === doctorId);
+    if (!doc) {
+      return { success: false, message: 'Doctor not found.' };
+    }
+
+    const slot = doc.slots.find(s => s.time === timeSlot);
+    if (!slot) {
+      return { success: false, message: 'Selected time slot does not exist.' };
+    }
+
+    // Update the doctor's slots
+    this.doctors.update(docs => docs.map(d => {
+      if (d.id === doctorId) {
+        return {
+          ...d,
+          slots: d.slots.map(s => {
+            if (s.time === timeSlot) {
+              return {
+                ...s,
+                status: 'BOOKED' as const,
+                bookedPatientId: patientId,
+                bookedPatientName: this.patients().find(p => p.id === patientId)?.name || 'Patient'
+              };
+            }
+            return s;
+          })
+        };
+      }
+      return d;
+    }));
+
+    // Update the patient record
+    this.patients.update(list => list.map(p => {
+      if (p.id === patientId) {
+        return {
+          ...p,
+          assignedDoctorId: doc.id,
+          assignedDoctorName: doc.name,
+          assignedTimeSlot: timeSlot,
+          assignedDuration: slot.duration,
+          arrivalStatus: 'SCHEDULED' as const,
+          isPreferredDoctorChoice: isPreferredChoice,
+          preferredDoctorName: isPreferredChoice ? (preferredDoctorName || doc.name) : undefined,
+          visitType: visitType || p.visitType,
+          bookingNotes: bookingNotes || (isPreferredChoice ? `Patient selected ${doc.name} as preferred physician.` : `Assigned to ${doc.name} at ${timeSlot}`)
+        };
+      }
+      return p;
+    }));
+
+    return { 
+      success: true, 
+      message: `Successfully booked ${patientId} with ${doc.name} for ${timeSlot}${isPreferredChoice ? ' (Patient Preferred Choice)' : ''}.` 
+    };
+  }
+
+  /**
+   * Register a new incoming walk-in patient at clinic reception
+   */
+  registerWalkinPatient(patientData: Partial<ClinicPatient>): ClinicPatient {
+    const idNum = Math.floor(1000000 + Math.random() * 9000000);
+    const newId = `#${idNum}`;
+    const initials = (patientData.name || 'New Patient')
+      .split(' ')
+      .map(n => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+
+    const newPatient: ClinicPatient = {
+      id: newId,
+      pid: `P-${idNum}`,
+      name: patientData.name || 'New Patient',
+      initials: initials,
+      age: patientData.age || 35,
+      gender: patientData.gender || 'M',
+      phone: patientData.phone || '+1 (555) 000-0000',
+      demographics: `${patientData.age || 35}${patientData.gender || 'M'} · ${newId}`,
+      arrivalTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      arrivalStatus: 'ARRIVED',
+      reason: patientData.reason || 'General medical consultation',
+      condition: patientData.condition || 'Triage review',
+      vitals: patientData.vitals || { bp: '120/80 mmHg', hr: '72 bpm', pain: '0/10' },
+      visitType: patientData.visitType || 'New Patient',
+      isPreferredDoctorChoice: !!patientData.preferredDoctorName,
+      preferredDoctorName: patientData.preferredDoctorName
+    };
+
+    this.patients.update(list => [newPatient, ...list]);
+    return newPatient;
+  }
+
+  /**
+   * Get dynamic Queue for a specific Doctor
+   */
+  getDoctorQueue(doctorName: string) {
+    const matchedDoctor = this.doctors().find(d => 
+      d.name.toLowerCase().includes(doctorName.toLowerCase()) || 
+      doctorName.toLowerCase().includes(d.name.toLowerCase())
+    );
+
+    const docId = matchedDoctor?.id || 'DOC-001';
+    return this.patients().filter(p => p.assignedDoctorId === docId);
+  }
+
+  /**
+   * Get available slots for a given doctor
+   */
+  getDoctorSlots(doctorId: string): DoctorSlot[] {
+    const doc = this.doctors().find(d => d.id === doctorId);
+    return doc?.slots || [];
+  }
+}
