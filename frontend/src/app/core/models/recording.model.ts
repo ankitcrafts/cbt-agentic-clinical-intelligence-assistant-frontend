@@ -62,13 +62,28 @@ export interface ClinicalAnalysisData {
   summary?: any;
   entities?: any;
   differential_diagnosis?: DifferentialDiagnosisItem[] | any;
+  differentialDiagnosis?: DifferentialDiagnosisItem[] | any;
+  guideline_medicines?: any[];
+  guidelineMedicines?: any[];
+  medicines?: any[];
+  red_flags?: any[];
+  redFlags?: any[];
+  confidence_metrics?: any;
+  confidenceMetrics?: any;
   soap_report?: {
     subjective?: string;
     objective?: string;
     assessment?: string;
     plan?: string;
   };
+  soapReport?: {
+    subjective?: string;
+    objective?: string;
+    assessment?: string;
+    plan?: string;
+  };
   ai_suggestions?: AISuggestion[];
+  aiSuggestions?: AISuggestion[];
 }
 
 export interface RecordingUploadResponse {
