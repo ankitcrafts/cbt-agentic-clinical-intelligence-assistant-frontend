@@ -116,66 +116,60 @@
 <div class="cliniq-consultation-page" *ngIf="viewMode === 'consultation'">
   <!-- Title & Visit Header with Back Navigation and Live Session Indicator -->
   <div class="page-title-header">
-    <div class="title-left-group">
-      <div class="header-nav-row" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+    <div class="title-left-group">      <div class="header-nav-row">
         <button type="button" class="btn-back-queue" (click)="backToQueue()" title="Return to Patient Consultations Queue">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Patient Queue</span>
         </button>
-        <span style="color: var(--text-muted); font-size: 0.85rem;">/</span>
-        <span style="color: var(--accent-green); font-size: 0.85rem; font-weight: 600;">Active Consultation</span>
+        <span class="nav-separator">/</span>
+        <span class="nav-active-crumb">Active Consultation</span>
       </div>
       <h1 class="main-title serif-title">Consultation Support</h1>
-      <p class="subtitle">
-        Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.visitType }} · {{ visitDetails.condition }}
-      </p>
+      <div class="subtitle-badge-row">
+        <span class="sub-chip patient-chip"><i class="fa-solid fa-user-injured"></i> {{ visitDetails.patientName }}</span>
+        <span class="sub-chip visit-chip"><i class="fa-solid fa-hashtag"></i> {{ visitDetails.visitId }}</span>
+        <span class="sub-chip type-chip"><i class="fa-solid fa-clipboard-check"></i> {{ visitDetails.visitType }}</span>
+        <span class="sub-chip condition-chip"><i class="fa-solid fa-heart-pulse"></i> {{ visitDetails.condition }}</span>
+      </div>
     </div>
     <div class="live-session-indicator" *ngIf="selectedSessionId === 'live'">
       <span class="live-pulse-dot"></span>
       <span class="live-label">Live session</span>
     </div>
-    <div class="live-session-indicator" *ngIf="selectedSessionId !== 'live'" style="background: rgba(45, 212, 191, 0.15); border-color: rgba(45, 212, 191, 0.4);">
-      <span class="live-pulse-dot" style="background: #2dd4bf; box-shadow: 0 0 8px #2dd4bf;"></span>
-      <span class="live-label" style="color: #2dd4bf;">Past Session Record</span>
+    <div class="live-session-indicator past-session-indicator" *ngIf="selectedSessionId !== 'live'">
+      <span class="past-pulse-dot"></span>
+      <span class="past-label">Past Session Record</span>
     </div>
   </div>
 
   <!-- Consultation Sessions Selector Bar -->
-  <div class="patient-sessions-bar" *ngIf="patientSessions.length > 0" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1.25rem; padding: 0.65rem 1rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;">
-    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-      <span style="font-size: 0.775rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem;">
-        <i class="fa-solid fa-clock-rotate-left" style="color: #2dd4bf;"></i> Patient Consultation History:
+  <div class="patient-sessions-bar" *ngIf="patientSessions.length > 0">
+    <div class="sessions-tabs-group">
+      <span class="sessions-bar-label">
+        <i class="fa-solid fa-clock-rotate-left"></i> Patient Consultation History:
       </span>
       <button 
         *ngFor="let s of patientSessions" 
         type="button" 
         class="session-tab-btn" 
         [class.active]="selectedSessionId === s.id"
-        (click)="selectSession(s)"
-        style="padding: 0.35rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-        [style.background]="selectedSessionId === s.id ? 'rgba(45, 212, 191, 0.25)' : 'rgba(255, 255, 255, 0.06)'"
-        [style.border]="selectedSessionId === s.id ? '1px solid #2dd4bf' : '1px solid rgba(255, 255, 255, 0.12)'"
-        [style.color]="selectedSessionId === s.id ? '#2dd4bf' : '#e2e8f0'">
-        <i class="fa-solid fa-file-waveform" style="margin-right: 0.35rem;"></i>
+        (click)="selectSession(s)">
+        <i class="fa-solid fa-file-waveform"></i>
         {{ s.sessionTitle }}
-        <span *ngIf="s.appointmentDate" style="font-size: 0.72rem; opacity: 0.75; margin-left: 0.3rem;">({{ s.appointmentDate | slice:0:10 }})</span>
+        <span *ngIf="s.appointmentDate" class="session-date-sub">({{ s.appointmentDate | slice:0:10 }})</span>
       </button>
 
       <button 
         type="button" 
-        class="session-tab-btn" 
+        class="session-tab-btn today-session-btn" 
         [class.active]="selectedSessionId === 'live'"
-        (click)="selectLiveSession()"
-        style="padding: 0.35rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-        [style.background]="selectedSessionId === 'live' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.06)'"
-        [style.border]="selectedSessionId === 'live' ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.12)'"
-        [style.color]="selectedSessionId === 'live' ? '#6ee7b7' : '#e2e8f0'">
-        <i class="fa-solid fa-microphone-lines" style="margin-right: 0.35rem;"></i>
+        (click)="selectLiveSession()">
+        <i class="fa-solid fa-microphone-lines"></i>
         + Today's Active Session
       </button>
     </div>
 
-    <div *ngIf="selectedSessionId !== 'live'" style="font-size: 0.75rem; color: #2dd4bf; display: flex; align-items: center; gap: 0.35rem;">
+    <div *ngIf="selectedSessionId !== 'live'" class="past-session-notice">
       <i class="fa-solid fa-circle-info"></i> Viewing previous session record
     </div>
   </div>
@@ -200,110 +194,90 @@
         </div>
 
         <!-- Consultation Channel Switcher (In-Person vs MS Teams vs Google Meet vs WhatsApp vs File Upload) -->
-        <div class="consultation-mode-selector-bar" style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 0.5rem 0.75rem;">
-          <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-            <span style="font-size: 0.725rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.25rem;">
-              <i class="fa-solid fa-headset" style="color: #2dd4bf; margin-right: 0.25rem;"></i> Channel:
+        <div class="consultation-mode-selector-bar">
+          <div class="mode-chips-wrapper">
+            <span class="channel-label">
+              <i class="fa-solid fa-headset"></i> Channel:
             </span>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-in-person" 
               [class.active]="recordingService.consultationMode() === 'IN_PERSON'"
               (click)="setConsultationMode('IN_PERSON')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'IN_PERSON' ? 'rgba(13, 148, 136, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'IN_PERSON' ? '#2dd4bf' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'IN_PERSON' ? '#2dd4bf' : '#cbd5e1'"
             >
-              <i class="fa-solid fa-user-doctor" style="margin-right: 0.25rem;"></i> In-Person
+              <i class="fa-solid fa-user-doctor"></i> In-Person
             </button>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-teams" 
               [class.active]="recordingService.consultationMode() === 'REMOTE_TEAMS'"
               (click)="setConsultationMode('REMOTE_TEAMS')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'rgba(99, 102, 241, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? '#818cf8' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? '#a5b4fc' : '#cbd5e1'"
             >
-              <i class="fa-brands fa-microsoft" style="margin-right: 0.25rem;"></i> MS Teams
+              <i class="fa-brands fa-microsoft"></i> MS Teams
             </button>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-meet" 
               [class.active]="recordingService.consultationMode() === 'REMOTE_MEET'"
               (click)="setConsultationMode('REMOTE_MEET')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'REMOTE_MEET' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'REMOTE_MEET' ? '#34d399' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'REMOTE_MEET' ? '#6ee7b7' : '#cbd5e1'"
             >
-              <i class="fa-brands fa-google" style="margin-right: 0.25rem;"></i> Google Meet
+              <i class="fa-brands fa-google"></i> Google Meet
             </button>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-whatsapp" 
               [class.active]="recordingService.consultationMode() === 'REMOTE_WHATSAPP'"
               (click)="setConsultationMode('REMOTE_WHATSAPP')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? 'rgba(34, 197, 94, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? '#4ade80' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? '#86efac' : '#cbd5e1'"
             >
-              <i class="fa-brands fa-whatsapp" style="margin-right: 0.25rem;"></i> WhatsApp
+              <i class="fa-brands fa-whatsapp"></i> WhatsApp
             </button>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-upload" 
               [class.active]="recordingService.consultationMode() === 'FILE_UPLOAD'"
               (click)="setConsultationMode('FILE_UPLOAD')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'FILE_UPLOAD' ? 'rgba(168, 85, 247, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'FILE_UPLOAD' ? '#c084fc' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'FILE_UPLOAD' ? '#d8b4fe' : '#cbd5e1'"
             >
-              <i class="fa-solid fa-file-arrow-up" style="margin-right: 0.25rem;"></i> Upload File
+              <i class="fa-solid fa-file-arrow-up"></i> Upload File
             </button>
           </div>
 
           <button 
             *ngIf="recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP'"
             type="button" 
+            class="teleconsult-help-link"
             (click)="openTeleconsultGuide()" 
-            style="background: none; border: none; color: #38bdf8; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; text-decoration: underline;"
           >
             <i class="fa-solid fa-circle-question"></i> How to share audio?
           </button>
         </div>
 
         <!-- Teleconsultation Helper Guidance Card -->
-        <div *ngIf="(recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP') && currentState !== 'RECORDING'" style="margin-bottom: 0.85rem; padding: 0.65rem 0.85rem; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 8px; font-size: 0.785rem; color: #bfdbfe; display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;">
-          <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-            <i class="fa-solid fa-sliders" style="color: #60a5fa; margin-top: 0.15rem; font-size: 0.9rem;"></i>
+        <div *ngIf="(recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP') && currentState !== 'RECORDING'" class="teleconsult-info-card">
+          <div class="teleconsult-info-content">
+            <i class="fa-solid fa-sliders teleconsult-icon"></i>
             <div>
               <strong>Dual-Stream Web Audio Mixer:</strong> Click <em>Start Recording</em>, select your {{ recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'MS Teams' : (recordingService.consultationMode() === 'REMOTE_MEET' ? 'Google Meet' : 'WhatsApp') }} tab/window, and ensure <strong>"Share audio"</strong> is checked. Both Doctor &amp; Patient audio will be mixed and diarized automatically.
             </div>
           </div>
-          <button type="button" (click)="openTeleconsultGuide()" style="white-space: nowrap; font-size: 0.72rem; padding: 0.25rem 0.55rem; background: rgba(59, 130, 246, 0.25); border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 4px; color: #93c5fd; cursor: pointer;">
+          <button type="button" class="btn-view-setup" (click)="openTeleconsultGuide()">
             View Setup Guide
           </button>
         </div>
 
         <!-- Dual Audio Channel Live Status Badges -->
-        <div *ngIf="currentState === 'RECORDING' && (recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP')" style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-          <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+        <div *ngIf="currentState === 'RECORDING' && (recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP')" class="dual-channel-live-status-row">
+          <span class="live-mic-badge doc-mic">
             <i class="fa-solid fa-microphone"></i> Doctor Mic: Live
           </span>
-          <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <span class="live-mic-badge remote-mic">
             <i class="fa-solid fa-volume-high"></i> Remote {{ recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'Teams' : (recordingService.consultationMode() === 'REMOTE_MEET' ? 'Meet' : 'WhatsApp') }} Audio: Live
           </span>
-          <span style="font-size: 0.72rem; color: #94a3b8;">
+          <span class="mix-tech-note">
             (Real-time Web Audio API Mix)
           </span>
         </div>

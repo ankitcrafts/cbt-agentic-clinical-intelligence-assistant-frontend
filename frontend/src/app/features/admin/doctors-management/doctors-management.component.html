@@ -1,86 +1,134 @@
 <div class="management-page">
   <div class="page-header">
     <div>
-      <h1>Doctors Management</h1>
-      <p class="subtitle">Manage all doctors in the hospital</p>
+      <h1 class="main-title serif-title">Doctors &amp; Clinical Specialists</h1>
+      <p class="subtitle">Overview of medical staff, active duty statuses, patient queue load, and timing slot availability.</p>
     </div>
-    <button class="btn btn-success" (click)="toggleAddModal()">
-      <i class="fa-solid fa-plus"></i> Add Doctor
+    <button class="btn btn-primary glow-btn" (click)="toggleAddModal()">
+      <i class="fa-solid fa-user-doctor"></i> Add Doctor
     </button>
   </div>
 
   <div class="card table-card">
-    <div class="filter-bar">
+    <div class="desk-toolbar">
       <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" [(ngModel)]="searchTerm" placeholder="Search doctors...">
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Search doctor, specialty, department...">
       </div>
     </div>
 
     <div class="table-container">
-      <table class="custom-table">
+      <table class="custom-table cliniq-desk-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Specialization</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>PHYSICIAN PROFILE</th>
+            <th>SPECIALTY &amp; DEPARTMENT</th>
+            <th>DUTY STATUS</th>
+            <th>ACTIVE PATIENT QUEUE</th>
+            <th>AVAILABLE SLOTS</th>
+            <th class="text-right">SLOTS MATRIX</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let doc of filteredDoctors">
-            <td class="font-bold">{{ doc.name }}</td>
-            <td>{{ doc.specialization }}</td>
-            <td class="text-muted">{{ doc.email }}</td>
             <td>
-              <span class="badge" [class.badge-active]="doc.status === 'Active'" [class.badge-inactive]="doc.status === 'Inactive'">
-                <span class="badge-dot"></span> {{ doc.status }}
+              <div class="patient-cell">
+                <div class="patient-avatar-circle" style="background: #ccfbf1; color: #0f766e;">
+                  <span>{{ doc.initials }}</span>
+                </div>
+                <div class="patient-info-wrap">
+                  <span class="patient-name-text">{{ doc.name }}</span>
+                  <span class="patient-demographics-text">{{ doc.email }} · {{ doc.id }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="doc-text-meta">
+                <span class="doc-name">{{ doc.specialty }}</span>
+                <span class="visit-type-tag">{{ doc.department }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="doc-duty-badge" [class.duty-on]="doc.dutyStatus === 'On duty'" [class.duty-off]="doc.dutyStatus === 'Off duty'">
+                <span class="dot"></span> {{ doc.dutyStatus }}
               </span>
             </td>
             <td>
-              <button class="action-icon-btn" title="View/Edit"><i class="fa-regular fa-eye"></i></button>
+              <span class="slot-badge"><i class="fa-solid fa-users"></i> {{ doc.queueCount || 0 }} Patients</span>
+            </td>
+            <td>
+              <span class="slots-avail-tag" style="font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 0.2rem 0.55rem; border-radius: 6px;">
+                {{ getAvailableSlots(doc) }} of {{ doc.slots.length }} Free
+              </span>
+            </td>
+            <td class="text-right">
+              <div style="display: flex; gap: 0.3rem; justify-content: flex-end; flex-wrap: wrap; max-width: 320px; margin-left: auto;">
+                <span 
+                  *ngFor="let s of doc.slots" 
+                  style="font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 4px;"
+                  [style.background]="s.status === 'AVAILABLE' ? '#f0fdf9' : '#f1f5f9'"
+                  [style.color]="s.status === 'AVAILABLE' ? '#0d9488' : '#94a3b8'"
+                  [style.border]="s.status === 'AVAILABLE' ? '1px solid #99f6e4' : '1px solid #e2e8f0'"
+                  [title]="s.status === 'BOOKED' ? 'Booked: ' + (s.bookedPatientName || 'Patient') : 'Available slot'"
+                >
+                  {{ s.time }}
+                </span>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <div class="table-footer">
-      <span>Showing 1 to {{ filteredDoctors.length }} of 48 doctors</span>
-      <div class="pagination">
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <span>... 10</span>
-      </div>
-    </div>
   </div>
 
   <!-- Add Doctor Modal -->
-  <div class="modal-backdrop" *ngIf="showAddModal">
-    <div class="card modal-card">
+  <div class="modal-backdrop animated-fade-in" *ngIf="showAddModal">
+    <div class="modal-dialog register-modal-dialog">
       <div class="modal-header">
-        <h3>Add New Doctor</h3>
-        <button class="close-btn" (click)="toggleAddModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge icon-purple">
+            <i class="fa-solid fa-user-doctor"></i>
+          </div>
+          <div>
+            <h2 class="serif-title modal-heading">Add Attending Physician</h2>
+            <p class="modal-sub">Register a new specialist and generate standard timing slots.</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" (click)="toggleAddModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
+
       <div class="modal-body">
         <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" [(ngModel)]="newDoctor.name" placeholder="Dr. John Doe">
+          <label class="input-label">Full Name with Title</label>
+          <input type="text" class="custom-input" [(ngModel)]="newDoctor.name" placeholder="e.g. Dr. Maya Lin">
+        </div>
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label class="input-label">Medical Specialization</label>
+            <input type="text" class="custom-input" [(ngModel)]="newDoctor.specialty" placeholder="e.g. Cardiologist">
+          </div>
+          <div class="form-group">
+            <label class="input-label">Department</label>
+            <select class="custom-select" [(ngModel)]="newDoctor.department">
+              <option value="Cardiology">Cardiology</option>
+              <option value="Neurology">Neurology</option>
+              <option value="Orthopedics">Orthopedics</option>
+              <option value="Pediatrics">Pediatrics</option>
+              <option value="Internal Medicine">Internal Medicine</option>
+            </select>
+          </div>
         </div>
         <div class="form-group">
-          <label>Specialization</label>
-          <input type="text" [(ngModel)]="newDoctor.specialization" placeholder="Cardiologist">
-        </div>
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" [(ngModel)]="newDoctor.email" placeholder="john@hospital.com">
+          <label class="input-label">Hospital Email</label>
+          <input type="email" class="custom-input" [(ngModel)]="newDoctor.email" placeholder="e.g. maya.lin@stmercy.org">
         </div>
       </div>
+
       <div class="modal-footer">
-        <button class="btn btn-outline" (click)="toggleAddModal()">Cancel</button>
-        <button class="btn btn-success" (click)="addDoctor()">Save Doctor</button>
+        <button type="button" class="btn btn-outline" (click)="toggleAddModal()">Cancel</button>
+        <button type="button" class="btn btn-primary glow-btn" (click)="addDoctor()">
+          <i class="fa-solid fa-check"></i> Register Doctor
+        </button>
       </div>
     </div>
   </div>

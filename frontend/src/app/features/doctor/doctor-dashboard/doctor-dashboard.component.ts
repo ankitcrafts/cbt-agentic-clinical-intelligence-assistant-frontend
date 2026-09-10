@@ -193,6 +193,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       error: (err) => console.warn('Failed to load consultation sessions for patient:', err)
     });
 
+    // Update patient status to IN_CONSULTATION
+    this.appointmentService.updatePatient(patientId, { arrivalStatus: 'IN_CONSULTATION' });
+
     // Start with Patient Card + AI Suggestions + Run Clinical Analysis button
     this.rightPanelMode = 'suggestions';
     this.viewMode = 'consultation';
@@ -785,6 +788,12 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         this.saveStatusMessage = `✓ SOAP Report & Doctor Feedback persisted to database successfully (ID: ${res.id}).`;
         if (res.patientSummary) {
           this.patientSummaryText = res.patientSummary;
+        }
+        if (this.visitDetails?.visitId) {
+          this.appointmentService.updatePatient(this.visitDetails.visitId, {
+            arrivalStatus: 'COMPLETED',
+            lastVisit: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          });
         }
       },
       error: (err) => {
