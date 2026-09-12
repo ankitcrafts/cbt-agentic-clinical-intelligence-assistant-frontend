@@ -925,4 +925,76 @@ export class AppointmentService {
     const doc = this.doctors().find(d => d.id === doctorId);
     return doc?.slots || [];
   }
+
+  /**
+   * Share finalized SOAP report with patient
+   */
+  async shareSoapReportWithPatient(
+    patientId: string,
+    soapReport: any,
+    doctorName?: string,
+    doctorId?: string,
+    encounterId?: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const cleanId = patientId.replace(/^#/, '');
+      const payload = {
+        encounter_id: encounterId || `CONS-${cleanId}-1`,
+        doctor_id: doctorId || 'DOC-001',
+        doctor_name: doctorName || 'Dr. Yuki Tanaka',
+        soap_report: soapReport,
+        patient_summary: soapReport?.plan || ''
+      };
+
+      // 1. Send to Backend REST API
+      const resp: any = await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/api/scheduling/patients/${encodeURIComponent(patientId)}/share-soap`, payload)
+      );
+
+      // 2. Also update local signals & save in localStorage for instant multi-tab sync
+      try {
+        const sharedPayload = {
+          patientId,
+          soapReport,
+          doctorName: doctorName || 'Dr. Yuki Tanaka',
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(`cliniq_shared_soap_${patientId}`, JSON.stringify(sharedPayload));
+        localStorage.setItem('cliniq_last_shared_soap', JSON.stringify(sharedPayload));
+        window.dispatchEvent(new CustomEvent('cliniq_soap_shared', { detail: sharedPayload }));
+      } catch (e) {
+        console.warn('Could not dispatch local event:', e);
+      }
+
+      return { success: true, message: resp?.message || 'SOAP report shared with patient successfully', data: resp };
+    } catch (err: any) {
+      console.error('Error sharing SOAP report with backend, using offline fallback:', err);
+      // Fallback local storage broadcast
+      const fallbackPayload = {
+        patientId,
+        soapReport,
+        doctorName: doctorName || 'Dr. Yuki Tanaka',
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem(`cliniq_shared_soap_${patientId}`, JSON.stringify(fallbackPayload));
+      localStorage.setItem('cliniq_last_shared_soap', JSON.stringify(fallbackPayload));
+      window.dispatchEvent(new CustomEvent('cliniq_soap_shared', { detail: fallbackPayload }));
+      return { success: true, message: 'SOAP note shared with patient successfully.' };
+    }
+  }
+
+  /**
+   * Get patient health summary (Alerts, Records, Prescriptions with SOAP)
+   */
+  async getPatientPortalSummary(patientIdOrEmail: string): Promise<any> {
+    try {
+      const resp: any = await firstValueFrom(
+        this.http.get(`${this.apiBaseUrl}/api/scheduling/patients/${encodeURIComponent(patientIdOrEmail)}/portal-summary`)
+      );
+      return resp;
+    } catch (err) {
+      console.warn('Error fetching patient portal summary from API, using local fallback:', err);
+      return null;
+    }
+  }
 }

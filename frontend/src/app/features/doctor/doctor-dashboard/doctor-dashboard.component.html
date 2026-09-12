@@ -836,6 +836,17 @@
                   <span class="soap-note-meta">Aug 13, 2026 · 09:41 AM · Dr. Yuki Tanaka</span>
                 </div>
                 <div class="soap-header-btn-group">
+                  <button 
+                    type="button" 
+                    class="btn-soap-header-action btn-share-patient" 
+                    [class.btn-shared-success]="isSoapShared"
+                    (click)="shareSoapWithPatient()" 
+                    [disabled]="isSharingSoap"
+                    [title]="isSoapShared ? 'SOAP Report shared with patient portal' : 'Share verified SOAP Report with patient portal'"
+                  >
+                    <i class="fa-solid" [class.fa-check-double]="isSoapShared" [class.fa-share-nodes]="!isSoapShared"></i>
+                    {{ isSharingSoap ? 'Sharing...' : (isSoapShared ? 'Shared with Patient ✓' : 'Share with Patient') }}
+                  </button>
                   <button type="button" class="btn-soap-header-action btn-print" (click)="printSoapNote()">
                     <i class="fa-solid fa-print"></i> Print
                   </button>
@@ -843,6 +854,15 @@
                     <i class="fa-solid fa-file-arrow-down"></i> Export PDF
                   </button>
                 </div>
+              </div>
+
+              <!-- Shared Status Toast / Banner -->
+              <div class="soap-share-alert" *ngIf="soapShareMessage">
+                <div class="alert-content">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span>{{ soapShareMessage }}</span>
+                </div>
+                <button type="button" class="close-share-alert" (click)="soapShareMessage = null">×</button>
               </div>
 
               <!-- Patient Banner in SOAP Note -->

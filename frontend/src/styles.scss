@@ -774,6 +774,15 @@ body {
         color: var(--text-light);
         text-align: center;
         margin-top: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+
+        i {
+          color: var(--accent-green, #0d9488);
+          font-size: 0.825rem;
+        }
       }
     }
   }

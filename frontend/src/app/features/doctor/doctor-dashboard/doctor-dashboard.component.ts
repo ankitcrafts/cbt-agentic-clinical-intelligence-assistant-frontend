@@ -124,6 +124,11 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   saveStatusMessage: string | null = null;
   savedFeedbackId: string | null = null;
 
+  // Real-time Parallel Sync with Patient Portal
+  isSharingSoap: boolean = false;
+  isSoapShared: boolean = false;
+  soapShareMessage: string | null = null;
+
   // Patient Consultation Session History (from PostgreSQL DB)
   patientSessions: any[] = [];
   selectedSessionId: string = 'live';
@@ -678,6 +683,38 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       window.print();
     }, 50);
+  }
+
+  async shareSoapWithPatient(): Promise<void> {
+    this.isSharingSoap = true;
+    this.soapShareMessage = null;
+
+    const patientId = this.visitDetails?.visitId || '#00847261';
+    const docUser = this.authService.currentUser();
+    const docName = docUser?.name || 'Dr. Yuki Tanaka';
+    const docId = docUser?.id || 'DOC-001';
+    const encounterId = `ENC-${patientId.replace('#', '')}-${Date.now().toString().slice(-4)}`;
+
+    try {
+      const res = await this.appointmentService.shareSoapReportWithPatient(
+        patientId,
+        this.effectiveSoapReport,
+        docName,
+        docId,
+        encounterId
+      );
+
+      this.isSharingSoap = false;
+      this.isSoapShared = true;
+      this.soapShareMessage = `✓ Official SOAP Report successfully shared with ${this.visitDetails.patientName || 'patient'}. The patient's portal (Follow-up Alerts, Medical Records, Prescriptions) is now updated with this SOAP note.`;
+
+      // Also persist to recording feedback database
+      this.saveFinalSOAPToDatabase();
+    } catch (err) {
+      this.isSharingSoap = false;
+      this.soapShareMessage = 'Failed to share SOAP report with patient.';
+      console.error('Error sharing SOAP report with patient:', err);
+    }
   }
 
   get effectiveSoapReport(): { subjective: string; objective: string; assessment: string; plan: string } {

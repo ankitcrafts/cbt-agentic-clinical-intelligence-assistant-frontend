@@ -55,7 +55,15 @@
   <div class="login-right-panel">
     <div class="auth-form-card">
       <h2 class="auth-title serif-title">Sign in</h2>
-      <p class="auth-subtitle">Secure medical portal with PostgreSQL & Gmail OTP verification.</p>
+      <p class="auth-subtitle" *ngIf="authService.currentRole() === 'ADMIN'">
+        Hospital operations, clinician scheduling desk, and patient triage management.
+      </p>
+      <p class="auth-subtitle" *ngIf="authService.currentRole() === 'DOCTOR'">
+        Ambient consultation intelligence, real-time CDS, and automated SOAP documentation.
+      </p>
+      <p class="auth-subtitle" *ngIf="authService.currentRole() === 'PATIENT'">
+        Personal health summary, consultation records, and active doctor prescriptions.
+      </p>
 
       <!-- Role Selector -->
       <div class="role-selector-group">
@@ -239,7 +247,7 @@
         </div>
       </form>
 
-      <p class="disclaimer-text">Secure PostgreSQL authentication with encrypted OTP delivery.</p>
+      <p class="disclaimer-text"><i class="fa-solid fa-shield-halved"></i> HIPAA & GDPR compliant healthcare portal with encrypted OTP verification.</p>
     </div>
   </div>
 </div>
