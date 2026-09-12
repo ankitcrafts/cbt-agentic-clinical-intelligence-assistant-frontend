@@ -14,7 +14,7 @@
         <span class="hospital-name">{{ hospitalInfo }}</span>
         <span class="duty-badge">{{ dutyStatus }}</span>
       </div>
-      <div class="doctor-avatar-circle" title="Dr. Yuki Tanaka">
+      <div class="doctor-avatar-circle" [title]="currentDoctorName">
         <span>{{ doctorInitials }}</span>
       </div>
     </div>
@@ -140,14 +140,33 @@
         <span class="sub-chip condition-chip"><i class="fa-solid fa-heart-pulse"></i> {{ visitDetails.condition }}</span>
       </div>
     </div>
-    <div class="live-session-indicator" *ngIf="selectedSessionId === 'live'">
-      <span class="live-pulse-dot"></span>
-      <span class="live-label">Live session</span>
+    <div class="header-right-actions">
+      <button 
+        type="button" 
+        class="btn-complete-consultation"
+        (click)="closeAndCompleteConsultation()"
+        [disabled]="isClosingConsultation"
+        title="Complete and close consultation session for this patient"
+      >
+        <i class="fa-solid fa-circle-check" *ngIf="!isClosingConsultation"></i>
+        <i class="fa-solid fa-spinner fa-spin" *ngIf="isClosingConsultation"></i>
+        <span>{{ isClosingConsultation ? 'Closing...' : 'Close Consultation' }}</span>
+      </button>
+      <div class="live-session-indicator" *ngIf="selectedSessionId === 'live'">
+        <span class="live-pulse-dot"></span>
+        <span class="live-label">Live session</span>
+      </div>
+      <div class="live-session-indicator past-session-indicator" *ngIf="selectedSessionId !== 'live'">
+        <span class="past-pulse-dot"></span>
+        <span class="past-label">Past Session Record</span>
+      </div>
     </div>
-    <div class="live-session-indicator past-session-indicator" *ngIf="selectedSessionId !== 'live'">
-      <span class="past-pulse-dot"></span>
-      <span class="past-label">Past Session Record</span>
-    </div>
+  </div>
+
+  <!-- Notification Banner upon Consultation Closure -->
+  <div class="close-consultation-banner" *ngIf="closeSuccessNotification">
+    <i class="fa-solid fa-circle-check"></i>
+    <span>{{ closeSuccessNotification }}</span>
   </div>
 
   <!-- Consultation Sessions Selector Bar -->

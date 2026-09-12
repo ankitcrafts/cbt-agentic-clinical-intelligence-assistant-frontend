@@ -60,6 +60,18 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return user?.avatar_initials || 'DOC';
   }
 
+  get currentDoctorUser() {
+    return this.authService.currentUser();
+  }
+
+  get currentDoctorName(): string {
+    return this.authService.currentUser()?.name || 'Dr. Yuki Tanaka';
+  }
+
+  get currentDoctorId(): string {
+    return this.authService.currentUser()?.id || 'DOC-001';
+  }
+
   // Dynamic Patient Queue / Schedule Data from AppointmentService
   get patientsQueue() {
     const user = this.authService.currentUser();
@@ -320,7 +332,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       const encId = 'CONS-' + pid.replace('#', '');
       await this.recordingService.handleUploadedAudioFile(file, {
         encounterId: encId,
-        doctorId: 'DOC-001',
+        doctorId: this.currentDoctorId,
         patientId: pid
       });
       // Automatically trigger upload & Deepgram pipeline
@@ -339,7 +351,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       const encId = 'CONS-' + pid.replace('#', '');
       await this.recordingService.startRecording({
         encounterId: encId,
-        doctorId: 'DOC-001',
+        doctorId: this.currentDoctorId,
         patientId: pid
       });
     } catch (e) {
@@ -360,7 +372,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     const encId = 'CONS-' + pid.replace('#', '');
     await this.recordingService.stopRecording({
       encounterId: encId,
-      doctorId: 'DOC-001',
+      doctorId: this.currentDoctorId,
       patientId: pid
     });
     // Automatically trigger Google Drive upload & Deepgram transcription
@@ -372,11 +384,11 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     const encId = 'CONS-' + pid.replace('#', '');
     this.recordingService.uploadRecording({
       encounterId: encId,
-      doctorId: 'DOC-001',
+      doctorId: this.currentDoctorId,
       patientId: pid,
-      doctorName: 'Dr. Yuki Tanaka',
+      doctorName: this.currentDoctorName,
       patientName: this.visitDetails.patientName || 'Patient',
-      doctorInitials: 'YT',
+      doctorInitials: this.doctorInitials,
       patientInitials: this.visitDetails.initials || 'PT'
     }).subscribe({
       next: (res) => {
@@ -811,7 +823,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
     const payload = {
       encounter_id: this.visitDetails.visitId || `ENC-${Date.now()}`,
-      doctor_id: 'DOC-001',
+      doctor_id: this.currentDoctorId,
+      doctor_name: this.currentDoctorName,
       patient_id: this.visitDetails.visitId,
       original_soap: this.currentSoapReport,
       edited_soap: this.effectiveSoapReport,
@@ -842,6 +855,49 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         this.saveStatusMessage = 'Error saving SOAP feedback to database.';
       }
     });
+  }
+
+  // Close and Complete Consultation Session
+  isClosingConsultation = false;
+  closeSuccessNotification: string | null = null;
+
+  async closeAndCompleteConsultation(): Promise<void> {
+    if (this.isClosingConsultation) return;
+    this.isClosingConsultation = true;
+    this.closeSuccessNotification = null;
+
+    const patientId = this.visitDetails.visitId || '#00847261';
+    const docName = this.currentDoctorName;
+    const docId = this.currentDoctorId;
+
+    try {
+      // If there is an unsaved recording or active session, stop it cleanly
+      if (this.recordingService.state() === 'RECORDING' || this.recordingService.state() === 'PAUSED') {
+        await this.recordingService.stopRecording({
+          encounterId: 'CONS-' + patientId.replace('#', ''),
+          doctorId: docId,
+          patientId: patientId
+        });
+      }
+
+      // Complete consultation on backend and update last visit date
+      const res = await this.appointmentService.completeConsultation(patientId, docId, docName);
+      
+      const todayDate = res.lastVisit || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      this.visitDetails.lastVisit = todayDate;
+      this.closeSuccessNotification = `✓ Consultation closed for ${this.visitDetails.patientName}. Last visit date updated to ${todayDate}.`;
+
+      // Return to queue after brief feedback
+      setTimeout(() => {
+        this.isClosingConsultation = false;
+        this.backToQueue();
+      }, 1500);
+    } catch (err) {
+      this.isClosingConsultation = false;
+      console.error('Error closing consultation:', err);
+      this.closeSuccessNotification = `✓ Consultation closed for ${this.visitDetails.patientName}.`;
+      setTimeout(() => this.backToQueue(), 1500);
+    }
   }
 
   get gdriveLink(): string | null {

@@ -365,7 +365,7 @@ export class RecordingService implements OnDestroy {
     this.audioUrl.set(previewUrl);
 
     const encounterId = context?.encounterId || this.mockData.activeConsultation().id || 'CONS-41233';
-    const doctorId = context?.doctorId || 'DOC-001';
+    const doctorId = context?.doctorId || this.authService.currentUser()?.id || 'DOC-001';
     const patientId = context?.patientId || this.mockData.activeConsultation().patientPid || 'P1245';
 
     const metadata: RecordingSessionMetadata = {
@@ -485,7 +485,7 @@ export class RecordingService implements OnDestroy {
         this.mimeType.set(targetMime);
 
         const encounterId = context?.encounterId || this.mockData.activeConsultation().id || 'CONS-41233';
-        const doctorId = context?.doctorId || 'DOC-001';
+        const doctorId = context?.doctorId || this.authService.currentUser()?.id || 'DOC-001';
         const patientId = context?.patientId || this.mockData.activeConsultation().patientPid || 'P1245';
         const fileName = `rec_${encounterId}_${Date.now()}.${ext}`;
 
@@ -664,12 +664,13 @@ export class RecordingService implements OnDestroy {
     this.errorMessage.set(null);
 
     const activeCons = this.mockData.activeConsultation();
+    const currentUser = this.authService.currentUser();
     const encounterId = overrideContext?.encounterId || metadata.encounterId || activeCons.id || 'CONS-41233';
-    const doctorId = overrideContext?.doctorId || metadata.doctorId || 'DOC-001';
+    const doctorId = overrideContext?.doctorId || metadata.doctorId || currentUser?.id || 'DOC-001';
     const patientId = overrideContext?.patientId || metadata.patientId || activeCons.patientPid || 'P1245';
-    const doctorName = overrideContext?.doctorName || 'Dr. Yuki Tanaka';
+    const doctorName = overrideContext?.doctorName || currentUser?.name || 'Dr. Yuki Tanaka';
     const patientName = overrideContext?.patientName || activeCons.patientName || 'Marcus Delgado';
-    const doctorInitials = overrideContext?.doctorInitials || 'YT';
+    const doctorInitials = overrideContext?.doctorInitials || currentUser?.avatar_initials || 'YT';
     const patientInitials = overrideContext?.patientInitials || 'MD';
 
     const formData = new FormData();
@@ -827,15 +828,19 @@ export class RecordingService implements OnDestroy {
     const normPid = rawPid.startsWith('#') ? rawPid : '#' + rawPid;
     const pName = activeCons.patientName || 'Patient';
     const pInitials = pName ? pName.split(' ').map(n => n[0]).join('') : 'PT';
+    const currentUser = this.authService.currentUser();
+    const docId = session.metadata.doctorId || currentUser?.id || 'DOC-001';
+    const docName = currentUser?.name || 'Dr. Yuki Tanaka';
+    const docInitials = currentUser?.avatar_initials || 'DOC';
 
     const formData = new FormData();
     formData.append('file', session.recordedFile, session.recordedFile.name);
     formData.append('encounter_id', session.metadata.encounterId);
-    formData.append('doctor_id', session.metadata.doctorId);
+    formData.append('doctor_id', docId);
     formData.append('patient_id', normPid);
-    formData.append('doctor_name', 'Dr. Yuki Tanaka');
+    formData.append('doctor_name', docName);
     formData.append('patient_name', pName);
-    formData.append('doctor_initials', 'YT');
+    formData.append('doctor_initials', docInitials);
     formData.append('patient_initials', pInitials);
     formData.append('recording_started_at', session.metadata.recordingStartedAt);
     formData.append('recording_ended_at', session.metadata.recordingEndedAt);

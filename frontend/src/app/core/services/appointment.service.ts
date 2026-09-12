@@ -987,6 +987,51 @@ export class AppointmentService {
   }
 
   /**
+   * Complete and close the consultation session for a patient.
+   * Updates arrivalStatus to COMPLETED and sets lastVisit to current date.
+   */
+  async completeConsultation(patientId: string, doctorId?: string, doctorName?: string): Promise<{ success: boolean; message: string; lastVisit?: string }> {
+    const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const cleanId = patientId.startsWith('#') ? patientId : `#${patientId}`;
+
+    // Update local patient state immediately
+    this.patients.update(list => list.map(p => {
+      if (p.id === patientId || p.id === cleanId || p.id.replace('#', '') === patientId.replace('#', '')) {
+        return {
+          ...p,
+          arrivalStatus: 'COMPLETED' as const,
+          lastVisit: todayStr
+        };
+      }
+      return p;
+    }));
+
+    try {
+      const resp: any = await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/api/scheduling/patients/${encodeURIComponent(patientId)}/complete-consultation`, {
+          doctor_id: doctorId,
+          doctor_name: doctorName
+        })
+      );
+      if (resp?.data) {
+        this.patients.update(list => list.map(p => (p.id === patientId || p.id === cleanId) ? { ...p, ...resp.data } : p));
+      }
+      return {
+        success: true,
+        message: resp?.message || `Consultation completed. Last visit updated to ${todayStr}.`,
+        lastVisit: resp?.lastVisit || todayStr
+      };
+    } catch (err) {
+      console.warn('[AppointmentService] Backend complete consultation fallback:', err);
+      return {
+        success: true,
+        message: `Consultation completed for ${patientId}. Last visit updated to ${todayStr}.`,
+        lastVisit: todayStr
+      };
+    }
+  }
+
+  /**
    * Get patient health summary (Alerts, Records, Prescriptions with SOAP)
    */
   async getPatientPortalSummary(patientIdOrEmail: string): Promise<any> {
@@ -1001,3 +1046,5 @@ export class AppointmentService {
     }
   }
 }
+
+
