@@ -33,6 +33,7 @@ export interface ClinicPatient {
   age: number;
   gender: 'M' | 'F' | 'Other';
   phone: string;
+  email?: string;
   demographics: string;     // e.g. "42M · #00847261"
   arrivalTime: string;      // e.g. "08:45 AM"
   arrivalStatus: 'ARRIVED' | 'SCHEDULED' | 'IN_CONSULTATION' | 'COMPLETED';
@@ -687,6 +688,7 @@ export class AppointmentService {
       age: patientData.age || 35,
       gender: patientData.gender || 'M',
       phone: patientData.phone || '+1 (555) 000-0000',
+      email: patientData.email || '',
       demographics: `${patientData.age || 35}${patientData.gender || 'M'} · ${newId}`,
       arrivalTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       arrivalStatus: patientData.assignedDoctorId ? 'SCHEDULED' : 'ARRIVED',
@@ -710,13 +712,14 @@ export class AppointmentService {
     // Persist to Backend REST API
     try {
       const res = await firstValueFrom(
-        this.http.post<{ success: boolean; data: ClinicPatient }>(
+        this.http.post<{ success: boolean; message?: string; data: ClinicPatient }>(
           `${this.apiBaseUrl}/api/scheduling/patients`,
           {
             name: newPatient.name,
             age: newPatient.age,
             gender: newPatient.gender,
             phone: newPatient.phone,
+            email: newPatient.email,
             reason: newPatient.reason,
             condition: newPatient.condition,
             visit_type: newPatient.visitType,

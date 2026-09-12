@@ -148,9 +148,16 @@
         </button>
       </div>
 
-      <div class="search-box">
+      <!-- Search Box -->
+      <div class="search-box-wrap">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" [(ngModel)]="searchTerm" placeholder="Search by patient, MRN, complaint, doctor...">
+        <input 
+          type="text" 
+          class="search-input" 
+          [(ngModel)]="searchTerm" 
+          placeholder="Search by patient, MRN, email, complaint, doctor..."
+        >
+        <button *ngIf="searchTerm" (click)="searchTerm = ''" class="clear-search-btn">×</button>
       </div>
     </div>
 
@@ -169,7 +176,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let pat of filteredPatients" [class.unassigned-row]="!pat.assignedDoctorId">
+          <tr *ngFor="let pat of filteredPatients" [class.unassigned-row]="!pat.assignedDoctorId" [class.row-in-consult]="pat.arrivalStatus === 'IN_CONSULTATION'">
             <!-- Patient Profile & History Badges -->
             <td>
               <div class="patient-cell">
@@ -193,7 +200,10 @@
                       New Patient
                     </span>
                   </div>
-                  <span class="patient-demographics-text">{{ pat.demographics }} · {{ pat.phone }}</span>
+                  <span class="patient-demographics-text">
+                    {{ pat.demographics }} · {{ pat.phone }}
+                    <span class="email-subtext" *ngIf="pat.email"> · <i class="fa-regular fa-envelope"></i> {{ pat.email }}</span>
+                  </span>
                 </div>
               </div>
             </td>
@@ -624,9 +634,16 @@
 
         <div class="form-row-2col">
           <div class="form-group">
+            <label class="input-label">Patient Email Address (For Portal &amp; OTP Verification) <span class="req">*</span></label>
+            <input type="email" class="custom-input" [(ngModel)]="newPatient.email" placeholder="e.g. david.harrison@gmail.com">
+          </div>
+          <div class="form-group">
             <label class="input-label">Contact Phone Number</label>
             <input type="text" class="custom-input" [(ngModel)]="newPatient.phone" placeholder="+1 (555) 000-0000">
           </div>
+        </div>
+
+        <div class="form-row-2col">
           <div class="form-group">
             <label class="input-label">Visit Type</label>
             <select class="custom-select" [(ngModel)]="newPatient.visitType">
@@ -635,6 +652,15 @@
               <option value="Consultation">Consultation</option>
               <option value="Annual Check">Annual Check</option>
               <option value="Emergency">Emergency</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="input-label">Preferred Doctor (Optional)</label>
+            <select class="custom-select" [(ngModel)]="newPatient.preferredDoctorName">
+              <option value="">-- No Specific Preference --</option>
+              <option *ngFor="let doc of doctorsList" [value]="doc.name">
+                {{ doc.name }} ({{ doc.specialty || doc.department || 'General Physician' }}) · {{ doc.dutyStatus || 'On duty' }}
+              </option>
             </select>
           </div>
         </div>
@@ -649,20 +675,9 @@
           >
         </div>
 
-        <div class="form-row-2col">
-          <div class="form-group">
-            <label class="input-label">Preliminary Condition / Triage Diagnosis</label>
-            <input type="text" class="custom-input" [(ngModel)]="newPatient.condition" placeholder="e.g. Cardiovascular evaluation">
-          </div>
-          <div class="form-group">
-            <label class="input-label">Preferred Doctor (Optional)</label>
-            <select class="custom-select" [(ngModel)]="newPatient.preferredDoctorName">
-              <option value="">-- No Specific Preference --</option>
-              <option *ngFor="let doc of doctorsList" [value]="doc.name">
-                {{ doc.name }} ({{ doc.specialty || doc.department || 'General Physician' }}) · {{ doc.dutyStatus || 'On duty' }}
-              </option>
-            </select>
-          </div>
+        <div class="form-group">
+          <label class="input-label">Preliminary Condition / Triage Diagnosis</label>
+          <input type="text" class="custom-input" [(ngModel)]="newPatient.condition" placeholder="e.g. Cardiovascular evaluation">
         </div>
 
         <!-- Vitals Input Section -->

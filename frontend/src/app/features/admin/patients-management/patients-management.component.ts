@@ -69,6 +69,10 @@ export class PatientsManagementComponent implements OnInit {
     return this.patientsList.filter(p => (p.totalPastSessions && p.totalPastSessions > 0) || (p.lastVisit && p.lastVisit !== '—')).length;
   }
 
+  get inConsultationPatientsCount(): number {
+    return this.patientsList.filter(p => p.arrivalStatus === 'IN_CONSULTATION').length;
+  }
+
   get preferredRequestsCount(): number {
     return this.patientsList.filter(p => p.isPreferredDoctorChoice || p.preferredDoctorName).length;
   }
@@ -82,6 +86,7 @@ export class PatientsManagementComponent implements OnInit {
       const matchesSearch = 
         pat.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         pat.phone.includes(this.searchTerm) ||
+        (pat.email && pat.email.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
         pat.id.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         pat.reason.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         (pat.assignedDoctorName && pat.assignedDoctorName.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
@@ -245,6 +250,7 @@ export class PatientsManagementComponent implements OnInit {
     this.appointmentService.fetchDataFromBackend();
     this.newPatient = {
       name: '',
+      email: '',
       age: 38,
       gender: 'M',
       phone: '+1 (555) ',
@@ -267,6 +273,10 @@ export class PatientsManagementComponent implements OnInit {
       alert('Please enter patient full name.');
       return;
     }
+    if (!this.newPatient.email?.trim() || !this.newPatient.email.includes('@')) {
+      alert('Please enter a valid patient email address (Gmail / Email) for OTP verification and portal access.');
+      return;
+    }
     if (!this.newPatient.reason?.trim()) {
       alert('Please specify reason for visit / triage complaint.');
       return;
@@ -277,7 +287,7 @@ export class PatientsManagementComponent implements OnInit {
     }
 
     const created = await this.appointmentService.registerWalkinPatient(this.newPatient);
-    this.showToast(`✓ Registered ${created.name} (${created.id}). Ready for doctor allocation.`);
+    this.showToast(`✓ Registered ${created.name} (${created.id}). Verification OTP sent to ${this.newPatient.email}. Ready for doctor allocation.`);
     this.closeRegisterModal();
 
     // Automatically open doctor assignment modal for this newly registered patient
