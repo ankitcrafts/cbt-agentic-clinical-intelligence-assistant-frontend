@@ -80,6 +80,9 @@
 
           <div class="patient-subline">
             <span class="visit-type-pill">{{ p.visitType }}</span>
+            <span class="badge-choice-mini" *ngIf="p.isPreferredDoctorChoice" title="Patient specifically requested you as their preferred doctor">
+              <i class="fa-solid fa-star"></i> Patient Choice
+            </span>
             <span class="reason-text">{{ p.reason }}</span>
           </div>
         </div>
@@ -106,6 +109,14 @@
         </div>
       </div>
     </div>
+
+    <div class="empty-queue-banner" *ngIf="patientsQueue.length === 0" style="text-align: center; padding: 48px 24px; background: rgba(248, 250, 252, 0.8); border: 1px dashed #cbd5e1; border-radius: 12px; margin-top: 12px;">
+      <i class="fa-solid fa-calendar-check" style="font-size: 2.2rem; color: #94a3b8; margin-bottom: 12px; display: inline-block;"></i>
+      <h3 style="font-size: 1.1rem; color: #334155; margin: 0 0 6px 0; font-weight: 600;">No Scheduled Patients Yet Today</h3>
+      <p style="font-size: 0.88rem; color: #64748b; margin: 0; max-width: 440px; margin-inline: auto;">
+        Patients assigned to you by clinic reception or who selected your specialty as preferred physician will appear here in real time.
+      </p>
+    </div>
   </div>
 </div>
 
@@ -113,66 +124,60 @@
 <div class="cliniq-consultation-page" *ngIf="viewMode === 'consultation'">
   <!-- Title & Visit Header with Back Navigation and Live Session Indicator -->
   <div class="page-title-header">
-    <div class="title-left-group">
-      <div class="header-nav-row" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+    <div class="title-left-group">      <div class="header-nav-row">
         <button type="button" class="btn-back-queue" (click)="backToQueue()" title="Return to Patient Consultations Queue">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Patient Queue</span>
         </button>
-        <span style="color: var(--text-muted); font-size: 0.85rem;">/</span>
-        <span style="color: var(--accent-green); font-size: 0.85rem; font-weight: 600;">Active Consultation</span>
+        <span class="nav-separator">/</span>
+        <span class="nav-active-crumb">Active Consultation</span>
       </div>
       <h1 class="main-title serif-title">Consultation Support</h1>
-      <p class="subtitle">
-        Patient: {{ visitDetails.patientName }} · Visit {{ visitDetails.visitId }} · {{ visitDetails.visitType }} · {{ visitDetails.condition }}
-      </p>
+      <div class="subtitle-badge-row">
+        <span class="sub-chip patient-chip"><i class="fa-solid fa-user-injured"></i> {{ visitDetails.patientName }}</span>
+        <span class="sub-chip visit-chip"><i class="fa-solid fa-hashtag"></i> {{ visitDetails.visitId }}</span>
+        <span class="sub-chip type-chip"><i class="fa-solid fa-clipboard-check"></i> {{ visitDetails.visitType }}</span>
+        <span class="sub-chip condition-chip"><i class="fa-solid fa-heart-pulse"></i> {{ visitDetails.condition }}</span>
+      </div>
     </div>
     <div class="live-session-indicator" *ngIf="selectedSessionId === 'live'">
       <span class="live-pulse-dot"></span>
       <span class="live-label">Live session</span>
     </div>
-    <div class="live-session-indicator" *ngIf="selectedSessionId !== 'live'" style="background: rgba(45, 212, 191, 0.15); border-color: rgba(45, 212, 191, 0.4);">
-      <span class="live-pulse-dot" style="background: #2dd4bf; box-shadow: 0 0 8px #2dd4bf;"></span>
-      <span class="live-label" style="color: #2dd4bf;">Past Session Record</span>
+    <div class="live-session-indicator past-session-indicator" *ngIf="selectedSessionId !== 'live'">
+      <span class="past-pulse-dot"></span>
+      <span class="past-label">Past Session Record</span>
     </div>
   </div>
 
   <!-- Consultation Sessions Selector Bar -->
-  <div class="patient-sessions-bar" *ngIf="patientSessions.length > 0" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1.25rem; padding: 0.65rem 1rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;">
-    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-      <span style="font-size: 0.775rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem;">
-        <i class="fa-solid fa-clock-rotate-left" style="color: #2dd4bf;"></i> Patient Consultation History:
+  <div class="patient-sessions-bar" *ngIf="patientSessions.length > 0">
+    <div class="sessions-tabs-group">
+      <span class="sessions-bar-label">
+        <i class="fa-solid fa-clock-rotate-left"></i> Patient Consultation History:
       </span>
       <button 
         *ngFor="let s of patientSessions" 
         type="button" 
         class="session-tab-btn" 
         [class.active]="selectedSessionId === s.id"
-        (click)="selectSession(s)"
-        style="padding: 0.35rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-        [style.background]="selectedSessionId === s.id ? 'rgba(45, 212, 191, 0.25)' : 'rgba(255, 255, 255, 0.06)'"
-        [style.border]="selectedSessionId === s.id ? '1px solid #2dd4bf' : '1px solid rgba(255, 255, 255, 0.12)'"
-        [style.color]="selectedSessionId === s.id ? '#2dd4bf' : '#e2e8f0'">
-        <i class="fa-solid fa-file-waveform" style="margin-right: 0.35rem;"></i>
+        (click)="selectSession(s)">
+        <i class="fa-solid fa-file-waveform"></i>
         {{ s.sessionTitle }}
-        <span *ngIf="s.appointmentDate" style="font-size: 0.72rem; opacity: 0.75; margin-left: 0.3rem;">({{ s.appointmentDate | slice:0:10 }})</span>
+        <span *ngIf="s.appointmentDate" class="session-date-sub">({{ s.appointmentDate | slice:0:10 }})</span>
       </button>
 
       <button 
         type="button" 
-        class="session-tab-btn" 
+        class="session-tab-btn today-session-btn" 
         [class.active]="selectedSessionId === 'live'"
-        (click)="selectLiveSession()"
-        style="padding: 0.35rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-        [style.background]="selectedSessionId === 'live' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.06)'"
-        [style.border]="selectedSessionId === 'live' ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.12)'"
-        [style.color]="selectedSessionId === 'live' ? '#6ee7b7' : '#e2e8f0'">
-        <i class="fa-solid fa-microphone-lines" style="margin-right: 0.35rem;"></i>
+        (click)="selectLiveSession()">
+        <i class="fa-solid fa-microphone-lines"></i>
         + Today's Active Session
       </button>
     </div>
 
-    <div *ngIf="selectedSessionId !== 'live'" style="font-size: 0.75rem; color: #2dd4bf; display: flex; align-items: center; gap: 0.35rem;">
+    <div *ngIf="selectedSessionId !== 'live'" class="past-session-notice">
       <i class="fa-solid fa-circle-info"></i> Viewing previous session record
     </div>
   </div>
@@ -197,110 +202,90 @@
         </div>
 
         <!-- Consultation Channel Switcher (In-Person vs MS Teams vs Google Meet vs WhatsApp vs File Upload) -->
-        <div class="consultation-mode-selector-bar" style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 0.5rem 0.75rem;">
-          <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-            <span style="font-size: 0.725rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.25rem;">
-              <i class="fa-solid fa-headset" style="color: #2dd4bf; margin-right: 0.25rem;"></i> Channel:
+        <div class="consultation-mode-selector-bar">
+          <div class="mode-chips-wrapper">
+            <span class="channel-label">
+              <i class="fa-solid fa-headset"></i> Channel:
             </span>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-in-person" 
               [class.active]="recordingService.consultationMode() === 'IN_PERSON'"
               (click)="setConsultationMode('IN_PERSON')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'IN_PERSON' ? 'rgba(13, 148, 136, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'IN_PERSON' ? '#2dd4bf' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'IN_PERSON' ? '#2dd4bf' : '#cbd5e1'"
             >
-              <i class="fa-solid fa-user-doctor" style="margin-right: 0.25rem;"></i> In-Person
+              <i class="fa-solid fa-user-doctor"></i> In-Person
             </button>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-teams" 
               [class.active]="recordingService.consultationMode() === 'REMOTE_TEAMS'"
               (click)="setConsultationMode('REMOTE_TEAMS')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'rgba(99, 102, 241, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? '#818cf8' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'REMOTE_TEAMS' ? '#a5b4fc' : '#cbd5e1'"
             >
-              <i class="fa-brands fa-microsoft" style="margin-right: 0.25rem;"></i> MS Teams
+              <i class="fa-brands fa-microsoft"></i> MS Teams
             </button>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-meet" 
               [class.active]="recordingService.consultationMode() === 'REMOTE_MEET'"
               (click)="setConsultationMode('REMOTE_MEET')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'REMOTE_MEET' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'REMOTE_MEET' ? '#34d399' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'REMOTE_MEET' ? '#6ee7b7' : '#cbd5e1'"
             >
-              <i class="fa-brands fa-google" style="margin-right: 0.25rem;"></i> Google Meet
+              <i class="fa-brands fa-google"></i> Google Meet
             </button>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-whatsapp" 
               [class.active]="recordingService.consultationMode() === 'REMOTE_WHATSAPP'"
               (click)="setConsultationMode('REMOTE_WHATSAPP')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? 'rgba(34, 197, 94, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? '#4ade80' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'REMOTE_WHATSAPP' ? '#86efac' : '#cbd5e1'"
             >
-              <i class="fa-brands fa-whatsapp" style="margin-right: 0.25rem;"></i> WhatsApp
+              <i class="fa-brands fa-whatsapp"></i> WhatsApp
             </button>
             <button 
               type="button" 
-              class="mode-pill-btn" 
+              class="mode-pill-btn mode-upload" 
               [class.active]="recordingService.consultationMode() === 'FILE_UPLOAD'"
               (click)="setConsultationMode('FILE_UPLOAD')"
               [disabled]="currentState === 'RECORDING' || currentState === 'PAUSED' || currentState === 'UPLOADING'"
-              style="padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;"
-              [style.background]="recordingService.consultationMode() === 'FILE_UPLOAD' ? 'rgba(168, 85, 247, 0.35)' : 'rgba(255, 255, 255, 0.05)'"
-              [style.border-color]="recordingService.consultationMode() === 'FILE_UPLOAD' ? '#c084fc' : 'rgba(255, 255, 255, 0.1)'"
-              [style.color]="recordingService.consultationMode() === 'FILE_UPLOAD' ? '#d8b4fe' : '#cbd5e1'"
             >
-              <i class="fa-solid fa-file-arrow-up" style="margin-right: 0.25rem;"></i> Upload File
+              <i class="fa-solid fa-file-arrow-up"></i> Upload File
             </button>
           </div>
 
           <button 
             *ngIf="recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP'"
             type="button" 
+            class="teleconsult-help-link"
             (click)="openTeleconsultGuide()" 
-            style="background: none; border: none; color: #38bdf8; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; text-decoration: underline;"
           >
             <i class="fa-solid fa-circle-question"></i> How to share audio?
           </button>
         </div>
 
         <!-- Teleconsultation Helper Guidance Card -->
-        <div *ngIf="(recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP') && currentState !== 'RECORDING'" style="margin-bottom: 0.85rem; padding: 0.65rem 0.85rem; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 8px; font-size: 0.785rem; color: #bfdbfe; display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;">
-          <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-            <i class="fa-solid fa-sliders" style="color: #60a5fa; margin-top: 0.15rem; font-size: 0.9rem;"></i>
+        <div *ngIf="(recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP') && currentState !== 'RECORDING'" class="teleconsult-info-card">
+          <div class="teleconsult-info-content">
+            <i class="fa-solid fa-sliders teleconsult-icon"></i>
             <div>
               <strong>Dual-Stream Web Audio Mixer:</strong> Click <em>Start Recording</em>, select your {{ recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'MS Teams' : (recordingService.consultationMode() === 'REMOTE_MEET' ? 'Google Meet' : 'WhatsApp') }} tab/window, and ensure <strong>"Share audio"</strong> is checked. Both Doctor &amp; Patient audio will be mixed and diarized automatically.
             </div>
           </div>
-          <button type="button" (click)="openTeleconsultGuide()" style="white-space: nowrap; font-size: 0.72rem; padding: 0.25rem 0.55rem; background: rgba(59, 130, 246, 0.25); border: 1px solid rgba(96, 165, 250, 0.5); border-radius: 4px; color: #93c5fd; cursor: pointer;">
+          <button type="button" class="btn-view-setup" (click)="openTeleconsultGuide()">
             View Setup Guide
           </button>
         </div>
 
         <!-- Dual Audio Channel Live Status Badges -->
-        <div *ngIf="currentState === 'RECORDING' && (recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP')" style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-          <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+        <div *ngIf="currentState === 'RECORDING' && (recordingService.consultationMode() === 'REMOTE_TEAMS' || recordingService.consultationMode() === 'REMOTE_MEET' || recordingService.consultationMode() === 'REMOTE_WHATSAPP')" class="dual-channel-live-status-row">
+          <span class="live-mic-badge doc-mic">
             <i class="fa-solid fa-microphone"></i> Doctor Mic: Live
           </span>
-          <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <span class="live-mic-badge remote-mic">
             <i class="fa-solid fa-volume-high"></i> Remote {{ recordingService.consultationMode() === 'REMOTE_TEAMS' ? 'Teams' : (recordingService.consultationMode() === 'REMOTE_MEET' ? 'Meet' : 'WhatsApp') }} Audio: Live
           </span>
-          <span style="font-size: 0.72rem; color: #94a3b8;">
+          <span class="mix-tech-note">
             (Real-time Web Audio API Mix)
           </span>
         </div>
@@ -722,17 +707,8 @@
             <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
               <div class="intel-section">
                 <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
-                <div class="empty-diff-state animated-fade-in" *ngIf="currentDifferentialDiagnoses.length === 0">
-                  <div class="empty-glow-ring">
-                    <div class="empty-icon-circle">
-                      <i class="fa-solid fa-stethoscope"></i>
-                    </div>
-                  </div>
-                  <div class="empty-title">No Differential Diagnoses Generated</div>
-                  <div class="empty-sub">Record consultation audio for <strong>{{ visitDetails.patientName }}</strong> to generate AI-ranked differential diagnosis list.</div>
-                </div>
-
-                <div class="differential-ranking-list" *ngIf="currentDifferentialDiagnoses.length > 0">
+                
+                <div class="differential-ranking-list">
                   <div class="diff-diag-card" *ngFor="let diag of currentDifferentialDiagnoses">
                     <div class="diag-header-row">
                       <div class="diag-title-group">
@@ -742,6 +718,7 @@
                       </div>
                       <div class="diag-meta-right">
                         <span class="risk-pill" [class]="diag.risk">{{ diag.riskLabel }}</span>
+                        <span class="percentage-readout font-mono">{{ diag.percentage }}%</span>
                       </div>
                     </div>
 
@@ -749,10 +726,25 @@
                       <div class="progress-track">
                         <div class="progress-bar-fill" [style.width]="diag.percentage + '%'" [style.background]="diag.color"></div>
                       </div>
-                      <span class="percentage-readout font-mono">{{ diag.percentage }}%</span>
                     </div>
 
                     <p class="diag-desc">{{ diag.description }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CLINICAL RED FLAGS -->
+              <div class="intel-section" style="margin-top: 1.5rem;">
+                <span class="eyebrow-tag" style="color: #ef4444;">CLINICAL RED FLAGS</span>
+                <div class="red-flags-container">
+                  <div class="critical-red-flag-card" *ngFor="let flag of currentRedFlags">
+                    <div class="flag-badge-row">
+                      <span class="badge-critical">{{ flag.severity || 'CRITICAL' }}</span>
+                      <span class="flag-main-text">{{ flag.title }}</span>
+                    </div>
+                    <div class="flag-recommendation">
+                      <i class="fa-solid fa-arrow-right"></i> {{ flag.recommendation }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -765,17 +757,7 @@
                 <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
               </div>
 
-              <div class="empty-meds-state animated-fade-in" *ngIf="currentGuidelineMedicines.length === 0">
-                <div class="empty-glow-ring">
-                  <div class="empty-icon-circle">
-                    <i class="fa-solid fa-pills"></i>
-                  </div>
-                </div>
-                <div class="empty-title">No Guideline Medicines Extracted</div>
-                <div class="empty-sub">Relevant medications and guideline RAG recommendations will appear after consultation recording.</div>
-              </div>
-
-              <div class="medicines-list" *ngIf="currentGuidelineMedicines.length > 0">
+              <div class="medicines-list">
                 <div class="med-card" *ngFor="let med of currentGuidelineMedicines">
                   <div class="med-top-row">
                     <div class="med-name-group">
@@ -792,7 +774,7 @@
                   <p class="med-recommendation">{{ med.recommendation }}</p>
 
                   <div class="med-warning-box">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span class="warning-icon">⚠️</span>
                     <span>{{ med.warning }}</span>
                   </div>
                 </div>
@@ -801,64 +783,102 @@
 
             <!-- TAB 4: Confidence -->
             <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
-              <div class="confidence-overview-card">
-                <div class="score-circle">
-                  <span class="score-val">{{ currentConfidenceMetrics.overallScore }}%</span>
-                  <span class="score-lbl">AI Reliability</span>
-                </div>
-                <div class="overview-info">
-                  <h4>{{ currentConfidenceMetrics.overallLevel }}</h4>
-                  <p>Fully calibrated against peer-reviewed clinical knowledge bases and medical guideline vector embeddings.</p>
-                  <div class="confidence-badge-row">
-                    <span class="hallucination-pill">
-                      <i class="fa-solid fa-shield-halved"></i> Hallucination Risk: {{ currentConfidenceMetrics.hallucinationRisk }}
-                    </span>
-                    <span class="verified-pill">
-                      <i class="fa-solid fa-circle-check"></i> {{ currentConfidenceMetrics.guidelinesCited.length }} Guidelines Verified
-                    </span>
+              <!-- OVERALL DIAGNOSTIC CONFIDENCE -->
+              <div class="intel-section">
+                <span class="eyebrow-tag" style="text-align: center; display: block; margin-bottom: 1.25rem;">OVERALL DIAGNOSTIC CONFIDENCE</span>
+                
+                <div class="overall-confidence-gauge-card">
+                  <!-- Gauge Scale Graphic -->
+                  <div class="gauge-meter-wrapper">
+                    <div class="gauge-semi-arc">
+                      <div class="arc-seg arc-low"></div>
+                      <div class="arc-seg arc-med active-needle"></div>
+                      <div class="arc-seg arc-high"></div>
+                    </div>
+                    <div class="gauge-labels-row">
+                      <span class="gauge-lbl low-lbl">Low</span>
+                      <span class="gauge-lbl med-lbl">Medium</span>
+                      <span class="gauge-lbl high-lbl">High</span>
+                    </div>
                   </div>
+
+                  <div class="gauge-center-value font-mono">{{ currentConfidenceMetrics.overallScore }}%</div>
+                  <h4 class="gauge-status-title">{{ currentConfidenceMetrics.overallLevel }}</h4>
+                  <p class="gauge-subtext">{{ currentConfidenceMetrics.subtext }}</p>
                 </div>
               </div>
 
+              <!-- BREAKDOWN BY DOMAIN -->
               <div class="intel-section" style="margin-top: 1.5rem;">
-                <span class="eyebrow-tag">PIPELINE ACCURACY BREAKDOWN</span>
-                <div class="confidence-breakdown-list">
-                  <div class="breakdown-item" *ngFor="let p of currentConfidenceMetrics.pipeline">
-                    <div class="breakdown-item-header">
-                      <span class="item-name">{{ p.name }}</span>
-                      <span class="item-score font-mono">{{ p.score }}% <span class="status-tag">({{ p.status }})</span></span>
+                <span class="eyebrow-tag">BREAKDOWN BY DOMAIN</span>
+                
+                <div class="domains-breakdown-list">
+                  <div class="domain-metric-row" *ngFor="let dom of currentConfidenceMetrics.domains">
+                    <div class="domain-header-row">
+                      <span class="domain-name">{{ dom.name }}</span>
+                      <span class="domain-score font-mono">{{ dom.percentage }}%</span>
                     </div>
                     <div class="progress-track">
-                      <div class="progress-bar-fill" [style.width]="p.score + '%'"></div>
+                      <div class="progress-bar-fill" [style.width]="dom.percentage + '%'" [style.background]="dom.color"></div>
                     </div>
+                    <p class="domain-desc">{{ dom.description }}</p>
                   </div>
-                </div>
-              </div>
-
-              <div class="intel-section" style="margin-top: 1.5rem;">
-                <span class="eyebrow-tag">EVIDENCE CITATION REPOSITORY</span>
-                <div class="sources-tags-wrap">
-                  <span class="source-tag" *ngFor="let g of currentConfidenceMetrics.guidelinesCited">
-                    <i class="fa-solid fa-book-medical"></i> {{ g }}
-                  </span>
                 </div>
               </div>
             </div>
 
             <!-- TAB 5: Interactive SOAP Report -->
-            <div class="tab-pane animated-pane" *ngIf="activeTab === 'soap'">
-              <div class="soap-action-toolbar">
-                <div class="toolbar-info">
-                  <span class="badge-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Reframing & DB Persistence</span>
-                  <span class="status-msg" *ngIf="saveStatusMessage">{{ saveStatusMessage }}</span>
+            <div class="tab-pane animated-pane soap-printable-area" id="soap-printable-area" *ngIf="activeTab === 'soap'">
+              <!-- SOAP Note Header Bar -->
+              <div class="soap-note-top-header">
+                <div class="soap-title-group">
+                  <h3 class="soap-note-title">SOAP Note</h3>
+                  <span class="soap-note-meta">Aug 13, 2026 · 09:41 AM · Dr. Yuki Tanaka</span>
                 </div>
-                <div class="toolbar-buttons">
-                  <button class="btn-secondary" (click)="openPatientSummaryModal()">
-                    <i class="fa-solid fa-user-doctor"></i> Preview Patient Summary
+                <div class="soap-header-btn-group">
+                  <button 
+                    type="button" 
+                    class="btn-soap-header-action btn-share-patient" 
+                    [class.btn-shared-success]="isSoapShared"
+                    (click)="shareSoapWithPatient()" 
+                    [disabled]="isSharingSoap"
+                    [title]="isSoapShared ? 'SOAP Report shared with patient portal' : 'Share verified SOAP Report with patient portal'"
+                  >
+                    <i class="fa-solid" [class.fa-check-double]="isSoapShared" [class.fa-share-nodes]="!isSoapShared"></i>
+                    {{ isSharingSoap ? 'Sharing...' : (isSoapShared ? 'Shared with Patient ✓' : 'Share with Patient') }}
                   </button>
-                  <button class="btn-primary" (click)="saveFinalSOAPToDatabase()" [disabled]="isSavingFeedback">
-                    <i class="fa-solid fa-floppy-disk"></i> {{ isSavingFeedback ? 'Saving to DB...' : 'Finalize & Save to DB' }}
+                  <button type="button" class="btn-soap-header-action btn-print" (click)="printSoapNote()">
+                    <i class="fa-solid fa-print"></i> Print
                   </button>
+                  <button type="button" class="btn-soap-header-action btn-export-pdf" (click)="exportSoapPdf()">
+                    <i class="fa-solid fa-file-arrow-down"></i> Export PDF
+                  </button>
+                </div>
+              </div>
+
+              <!-- Shared Status Toast / Banner -->
+              <div class="soap-share-alert" *ngIf="soapShareMessage">
+                <div class="alert-content">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span>{{ soapShareMessage }}</span>
+                </div>
+                <button type="button" class="close-share-alert" (click)="soapShareMessage = null">×</button>
+              </div>
+
+              <!-- Patient Banner in SOAP Note -->
+              <div class="soap-patient-info-banner">
+                <div class="banner-left-info">
+                  <div class="patient-avatar-circle-dark">
+                    <span>{{ visitDetails.initials || 'MD' }}</span>
+                  </div>
+                  <div class="banner-names">
+                    <h4 class="patient-name-bold">{{ visitDetails.patientName || 'Marcus Delgado' }}</h4>
+                    <span class="patient-mrn-line">MRN #00847261 · DOB 1984-03-12</span>
+                  </div>
+                </div>
+                <div class="banner-right-meta">
+                  <span class="cliniq-soap-badge">CLINIQ SOAP</span>
+                  <span class="doctor-spec-line">Cardiology · Dr. Yuki Tanaka</span>
                 </div>
               </div>
 
@@ -867,13 +887,20 @@
                 <div class="soap-box subjective" [class.editing-active]="activeEditSection === 'subjective'">
                   <div class="soap-box-header">
                     <div class="header-left">
-                      <div class="letter-badge">S</div>
-                      <h4>Subjective</h4>
+                      <div class="letter-badge-circle">S</div>
+                      <div class="section-title-wrap">
+                        <span class="section-title-bold">Subjective</span>
+                        <span class="section-subtitle">Patient-reported symptoms, complaints, and history in their own words.</span>
+                      </div>
                     </div>
                     <div class="header-actions" *ngIf="activeEditSection !== 'subjective'">
-                      <button class="btn-icon" (click)="startEditSection('subjective')" title="Edit / AI Reframe Subjective Section">
-                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      <button class="btn-edit-soap" (click)="startEditSection('subjective')">
+                        <i class="fa-solid fa-pen"></i> Edit
                       </button>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection === 'subjective'">
+                      <button class="btn-edit-cancel" (click)="cancelEditSection()">Cancel</button>
+                      <button class="btn-edit-save" (click)="saveManualSectionEdit()">Save section</button>
                     </div>
                   </div>
 
@@ -882,23 +909,12 @@
                     <p style="white-space: pre-line;">{{ effectiveSoapReport.subjective }}</p>
                   </div>
 
-                  <!-- Edit / AI Reframe Mode -->
-                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'subjective'">
-                    <label class="edit-label">Manual Text Edit:</label>
-                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
-
-                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
-                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Reframe in formal clinical tone with hypertension staging...">
-
-                    <div class="edit-actions">
-                      <button class="btn-ai-reframe" (click)="triggerAIReframe('subjective')" [disabled]="isReframing">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
-                      </button>
-                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
-                        <i class="fa-solid fa-check"></i> Save Edit
-                      </button>
-                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                  <!-- Edit Mode -->
+                  <div class="soap-edit-box-wrapper" *ngIf="activeEditSection === 'subjective'">
+                    <div class="soap-textarea-container">
+                      <textarea class="soap-inline-textarea" [(ngModel)]="sectionEditText" rows="4"></textarea>
                     </div>
+                    <div class="character-count-label">{{ (sectionEditText || '').length }} characters</div>
                   </div>
                 </div>
 
@@ -906,13 +922,20 @@
                 <div class="soap-box objective" [class.editing-active]="activeEditSection === 'objective'">
                   <div class="soap-box-header">
                     <div class="header-left">
-                      <div class="letter-badge">O</div>
-                      <h4>Objective</h4>
+                      <div class="letter-badge-circle">O</div>
+                      <div class="section-title-wrap">
+                        <span class="section-title-bold">Objective</span>
+                        <span class="section-subtitle">Measurable data: vitals, exam findings, lab results, medications.</span>
+                      </div>
                     </div>
                     <div class="header-actions" *ngIf="activeEditSection !== 'objective'">
-                      <button class="btn-icon" (click)="startEditSection('objective')" title="Edit / AI Reframe Objective Section">
-                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      <button class="btn-edit-soap" (click)="startEditSection('objective')">
+                        <i class="fa-solid fa-pen"></i> Edit
                       </button>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection === 'objective'">
+                      <button class="btn-edit-cancel" (click)="cancelEditSection()">Cancel</button>
+                      <button class="btn-edit-save" (click)="saveManualSectionEdit()">Save section</button>
                     </div>
                   </div>
 
@@ -921,23 +944,12 @@
                     <p style="white-space: pre-line;">{{ effectiveSoapReport.objective }}</p>
                   </div>
 
-                  <!-- Edit / AI Reframe Mode -->
-                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'objective'">
-                    <label class="edit-label">Manual Text Edit:</label>
-                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
-
-                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
-                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Include specific BP readings and heart rate metrics...">
-
-                    <div class="edit-actions">
-                      <button class="btn-ai-reframe" (click)="triggerAIReframe('objective')" [disabled]="isReframing">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
-                      </button>
-                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
-                        <i class="fa-solid fa-check"></i> Save Edit
-                      </button>
-                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                  <!-- Edit Mode -->
+                  <div class="soap-edit-box-wrapper" *ngIf="activeEditSection === 'objective'">
+                    <div class="soap-textarea-container">
+                      <textarea class="soap-inline-textarea" [(ngModel)]="sectionEditText" rows="4"></textarea>
                     </div>
+                    <div class="character-count-label">{{ (sectionEditText || '').length }} characters</div>
                   </div>
                 </div>
 
@@ -945,13 +957,20 @@
                 <div class="soap-box assessment" [class.editing-active]="activeEditSection === 'assessment'">
                   <div class="soap-box-header">
                     <div class="header-left">
-                      <div class="letter-badge">A</div>
-                      <h4>Assessment</h4>
+                      <div class="letter-badge-circle">A</div>
+                      <div class="section-title-wrap">
+                        <span class="section-title-bold">Assessment</span>
+                        <span class="section-subtitle">Clinical interpretation: diagnoses, differential, risk stratification.</span>
+                      </div>
                     </div>
                     <div class="header-actions" *ngIf="activeEditSection !== 'assessment'">
-                      <button class="btn-icon" (click)="startEditSection('assessment')" title="Edit / AI Reframe Assessment Section">
-                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      <button class="btn-edit-soap" (click)="startEditSection('assessment')">
+                        <i class="fa-solid fa-pen"></i> Edit
                       </button>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection === 'assessment'">
+                      <button class="btn-edit-cancel" (click)="cancelEditSection()">Cancel</button>
+                      <button class="btn-edit-save" (click)="saveManualSectionEdit()">Save section</button>
                     </div>
                   </div>
 
@@ -960,23 +979,12 @@
                     <p style="white-space: pre-line;">{{ effectiveSoapReport.assessment }}</p>
                   </div>
 
-                  <!-- Edit / AI Reframe Mode -->
-                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'assessment'">
-                    <label class="edit-label">Manual Text Edit:</label>
-                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
-
-                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
-                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Add ICD-10 diagnosis code I10 for Essential Hypertension...">
-
-                    <div class="edit-actions">
-                      <button class="btn-ai-reframe" (click)="triggerAIReframe('assessment')" [disabled]="isReframing">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
-                      </button>
-                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
-                        <i class="fa-solid fa-check"></i> Save Edit
-                      </button>
-                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                  <!-- Edit Mode -->
+                  <div class="soap-edit-box-wrapper" *ngIf="activeEditSection === 'assessment'">
+                    <div class="soap-textarea-container">
+                      <textarea class="soap-inline-textarea" [(ngModel)]="sectionEditText" rows="4"></textarea>
                     </div>
+                    <div class="character-count-label">{{ (sectionEditText || '').length }} characters</div>
                   </div>
                 </div>
 
@@ -984,13 +992,20 @@
                 <div class="soap-box plan" [class.editing-active]="activeEditSection === 'plan'">
                   <div class="soap-box-header">
                     <div class="header-left">
-                      <div class="letter-badge">P</div>
-                      <h4>Plan</h4>
+                      <div class="letter-badge-circle">P</div>
+                      <div class="section-title-wrap">
+                        <span class="section-title-bold">Plan</span>
+                        <span class="section-subtitle">Treatment decisions, referrals, medications, follow-up instructions.</span>
+                      </div>
                     </div>
                     <div class="header-actions" *ngIf="activeEditSection !== 'plan'">
-                      <button class="btn-icon" (click)="startEditSection('plan')" title="Edit / AI Reframe Plan Section">
-                        <i class="fa-solid fa-pen-to-square"></i> Edit / Reframe
+                      <button class="btn-edit-soap" (click)="startEditSection('plan')">
+                        <i class="fa-solid fa-pen"></i> Edit
                       </button>
+                    </div>
+                    <div class="header-actions" *ngIf="activeEditSection === 'plan'">
+                      <button class="btn-edit-cancel" (click)="cancelEditSection()">Cancel</button>
+                      <button class="btn-edit-save" (click)="saveManualSectionEdit()">Save section</button>
                     </div>
                   </div>
 
@@ -999,25 +1014,20 @@
                     <p style="white-space: pre-line;">{{ effectiveSoapReport.plan }}</p>
                   </div>
 
-                  <!-- Edit / AI Reframe Mode -->
-                  <div class="soap-edit-panel" *ngIf="activeEditSection === 'plan'">
-                    <label class="edit-label">Manual Text Edit:</label>
-                    <textarea class="edit-textarea" [(ngModel)]="sectionEditText" rows="3"></textarea>
-
-                    <label class="edit-label mt-2">Doctor's AI Reframing Instruction / Rationale:</label>
-                    <input type="text" class="edit-input" [(ngModel)]="editReasonText" placeholder="e.g., Titrate Amlodipine to 10mg daily and schedule follow-up in 2 weeks...">
-
-                    <div class="edit-actions">
-                      <button class="btn-ai-reframe" (click)="triggerAIReframe('plan')" [disabled]="isReframing">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ isReframing ? 'Reframing with AI...' : 'Submit AI Reframe' }}
-                      </button>
-                      <button class="btn-save-edit" (click)="saveManualSectionEdit()">
-                        <i class="fa-solid fa-check"></i> Save Edit
-                      </button>
-                      <button class="btn-cancel" (click)="cancelEditSection()">Cancel</button>
+                  <!-- Edit Mode -->
+                  <div class="soap-edit-box-wrapper" *ngIf="activeEditSection === 'plan'">
+                    <div class="soap-textarea-container">
+                      <textarea class="soap-inline-textarea" [(ngModel)]="sectionEditText" rows="6"></textarea>
                     </div>
+                    <div class="character-count-label">{{ (sectionEditText || '').length }} characters</div>
                   </div>
                 </div>
+              </div>
+
+              <!-- Bottom Legal Footer Bar (Matching Image 2) -->
+              <div class="soap-footer-legal-bar">
+                <span class="footer-legal-text">Generated by ClinIQ AI · For clinical review only · Not a legal medical record</span>
+                <span class="footer-version-tag">v2.1.4</span>
               </div>
             </div>
           </div>

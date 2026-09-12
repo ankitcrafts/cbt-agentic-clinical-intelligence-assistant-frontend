@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { UserRole, UserProfile, SendOTPResponse, AuthResponse } from '../models/platform.model';
 import { environment } from '../../../environments/environment';
@@ -25,12 +25,18 @@ export class AuthService {
     role?: UserRole;
     department?: string;
     specialization?: string;
+    phone_number?: string;
     avatar_initials?: string;
+    is_profile_completed?: boolean;
   }>({
+    id: 'DOC-8492',
     name: 'Dr. Yuki Tanaka',
     email: 'doctor@cliniq.health',
     designation: 'Senior Cardiologist (Cardiology)',
-    role: 'DOCTOR'
+    department: 'Cardiology',
+    specialization: 'Senior Cardiologist',
+    role: 'DOCTOR',
+    is_profile_completed: true
   });
 
   // Auth operation state
@@ -40,6 +46,8 @@ export class AuthService {
   successMessage = signal<string | null>(null);
   devOtp = signal<string | null>(null);
   otpSent = signal<boolean>(false);
+  isNewUserPendingProfile = signal<boolean>(false);
+  showProfileModal = signal<boolean>(false);
 
   constructor() {
     this.applyTheme(this.isDarkMode());
@@ -58,6 +66,14 @@ export class AuthService {
     }
   }
 
+  openProfileModal() {
+    this.showProfileModal.set(true);
+  }
+
+  closeProfileModal() {
+    this.showProfileModal.set(false);
+  }
+
   setRole(role: UserRole) {
     this.currentRole.set(role);
     this.currentStep.set(1);
@@ -66,27 +82,37 @@ export class AuthService {
     this.successMessage.set(null);
     this.otpSent.set(false);
     this.devOtp.set(null);
+    this.isNewUserPendingProfile.set(false);
 
     if (role === 'ADMIN') {
       this.currentUser.set({
+        id: 'ADM-0102',
         name: 'Hospital Administrator',
         email: 'admin@cliniq.health',
         designation: 'System Administrator',
-        role: 'ADMIN'
+        department: 'Hospital Operations',
+        role: 'ADMIN',
+        is_profile_completed: true
       });
     } else if (role === 'DOCTOR') {
       this.currentUser.set({
+        id: 'DOC-8492',
         name: 'Dr. Yuki Tanaka',
         email: 'doctor@cliniq.health',
         designation: 'Senior Cardiologist (Cardiology)',
-        role: 'DOCTOR'
+        department: 'Cardiology',
+        specialization: 'Senior Cardiologist',
+        role: 'DOCTOR',
+        is_profile_completed: true
       });
     } else {
       this.currentUser.set({
+        id: 'PAT-1245',
         name: 'Marcus Delgado',
         email: 'patient@cliniq.health',
-        designation: 'Patient (ID: P-90823)',
-        role: 'PATIENT'
+        designation: 'Patient (ID: PAT-1245)',
+        role: 'PATIENT',
+        is_profile_completed: true
       });
     }
   }
@@ -96,6 +122,7 @@ export class AuthService {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.devOtp.set(null);
+    this.isNewUserPendingProfile.set(false);
 
     const cleanEmail = email.trim().toLowerCase();
 
@@ -157,7 +184,7 @@ export class AuthService {
     }
   }
 
-  async verifyOtp(email: string, otpCode: string, role: UserRole): Promise<boolean> {
+  async verifyOtp(email: string, otpCode: string, role: UserRole): Promise<{ success: boolean; isNewUser?: boolean; isProfileCompleted?: boolean }> {
     this.isLoading.set(true);
     this.errorMessage.set(null);
     const cleanEmail = email.trim().toLowerCase();
@@ -179,29 +206,43 @@ export class AuthService {
         // Security check: ensure received token matches active role
         if (mappedRole !== role) {
           this.errorMessage.set(`⛔ Access Denied: User is authorized for ${mappedRole}, not ${role}.`);
-          return false;
+          return { success: false };
         }
+
+        const isProfileDone = !!(user.full_name && user.full_name.trim());
+        const displayLabel = user.full_name || (
+          mappedRole === 'DOCTOR' ? `Doctor (${user.id})` :
+          mappedRole === 'PATIENT' ? `Patient (${user.id})` :
+          `Administrator (${user.id})`
+        );
         
         const designation = user.designation || (
           mappedRole === 'ADMIN' ? 'System Administrator' :
           mappedRole === 'DOCTOR' ? `${user.specialization || 'Attending Physician'} (${user.department || 'Cardiology'})` :
-          'Patient'
+          `Patient (ID: ${user.id})`
         );
 
         this.currentUser.set({
           id: user.id,
-          name: user.full_name || user.name || (cleanEmail.split('@')[0]),
+          name: displayLabel,
           email: user.email,
           role: mappedRole,
           designation: designation,
-          department: user.department,
+          department: user.department || (mappedRole === 'DOCTOR' ? 'General Medicine' : undefined),
           specialization: user.specialization,
-          avatar_initials: user.avatar_initials
+          phone_number: user.phone_number,
+          avatar_initials: user.avatar_initials || (displayLabel.slice(0, 2).toUpperCase()),
+          is_profile_completed: isProfileDone
         });
 
         this.currentRole.set(mappedRole);
         this.isLoggedIn.set(true);
         this.currentStep.set(1);
+
+        // If it's a new user without a completed profile name, flag it
+        if (!isProfileDone) {
+          this.isNewUserPendingProfile.set(true);
+        }
 
         // Save session in local storage
         this.saveSession({
@@ -209,24 +250,101 @@ export class AuthService {
           user: this.currentUser(),
           role: mappedRole
         });
-        return true;
+        return { success: true, isNewUser: response.is_new_user, isProfileCompleted: isProfileDone };
       }
-      return false;
+      return { success: false };
     } catch (err: any) {
       console.warn('Backend verify-otp error:', err);
       const detail = err.error?.detail || err.message;
       if (err.status === 403 || (detail && detail.includes('Access Denied'))) {
         this.errorMessage.set(`⛔ ${detail}`);
-        return false;
+        return { success: false };
       }
 
       // Fallback for offline demo mode if 123456 or devOtp
       if (otpCode.trim() === '123456' || (this.devOtp() && otpCode.trim() === this.devOtp())) {
         this.loginWithProfile(cleanEmail, role);
-        return true;
+        return { success: true, isNewUser: false, isProfileCompleted: true };
       }
       const msg = detail || 'Invalid or expired verification code. Please try again.';
       this.errorMessage.set(msg);
+      return { success: false };
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async updateProfile(data: {
+    full_name?: string;
+    department?: string;
+    specialization?: string;
+    designation?: string;
+    phone_number?: string;
+  }): Promise<boolean> {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+    try {
+      let headers = new HttpHeaders();
+      const token = this.accessToken();
+      if (token) {
+        headers = headers.set('Authorization', `Bearer ${token}`);
+      }
+
+      const updatedUser = await firstValueFrom(
+        this.http.put<UserProfile>(`${this.authApiUrl}/profile`, data, { headers })
+      );
+
+      if (updatedUser) {
+        const mappedRole = (updatedUser.role as UserRole) || this.currentRole();
+        const designation = updatedUser.designation || (
+          mappedRole === 'ADMIN' ? 'System Administrator' :
+          mappedRole === 'DOCTOR' ? `${updatedUser.specialization || 'Attending Physician'} (${updatedUser.department || 'Cardiology'})` :
+          `Patient (ID: ${updatedUser.id})`
+        );
+
+        this.currentUser.set({
+          id: updatedUser.id || this.currentUser().id,
+          name: updatedUser.full_name || updatedUser.name || this.currentUser().name,
+          email: updatedUser.email || this.currentUser().email,
+          role: mappedRole,
+          designation,
+          department: updatedUser.department,
+          specialization: updatedUser.specialization,
+          phone_number: updatedUser.phone_number,
+          avatar_initials: updatedUser.avatar_initials,
+          is_profile_completed: !!(updatedUser.full_name && updatedUser.full_name.trim())
+        });
+
+        this.isNewUserPendingProfile.set(false);
+
+        this.saveSession({
+          token: this.accessToken(),
+          user: this.currentUser(),
+          role: mappedRole
+        });
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      console.warn('Update profile API error, updating locally:', err);
+      if (data.full_name) {
+        const cur = this.currentUser();
+        this.currentUser.set({
+          ...cur,
+          name: data.full_name,
+          department: data.department || cur.department,
+          specialization: data.specialization || cur.specialization,
+          phone_number: data.phone_number || cur.phone_number,
+          is_profile_completed: true
+        });
+        this.isNewUserPendingProfile.set(false);
+        this.saveSession({
+          token: this.accessToken(),
+          user: this.currentUser(),
+          role: this.currentRole()
+        });
+        return true;
+      }
       return false;
     } finally {
       this.isLoading.set(false);
@@ -285,6 +403,7 @@ export class AuthService {
     if (typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem('cliniq_session', JSON.stringify(session));
+        window.dispatchEvent(new Event('cliniq_session_updated'));
       } catch (e) {
         console.error('Failed to save session:', e);
       }

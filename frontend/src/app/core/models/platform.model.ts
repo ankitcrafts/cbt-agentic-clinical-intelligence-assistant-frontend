@@ -12,6 +12,7 @@ export interface UserProfile {
   phone_number?: string;
   avatar_initials?: string;
   is_active?: boolean;
+  is_profile_completed?: boolean;
 }
 
 export interface SendOTPResponse {
@@ -30,6 +31,7 @@ export interface AuthResponse {
   token_type: string;
   user: UserProfile;
   target_dashboard_url: string;
+  is_new_user?: boolean;
 }
 
 export interface Doctor {

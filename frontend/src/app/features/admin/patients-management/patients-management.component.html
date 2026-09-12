@@ -1,57 +1,714 @@
 <div class="management-page">
+  <!-- Toast Notification Banner -->
+  <div class="toast-banner animated-fade-in" *ngIf="toastMessage">
+    <div class="toast-content">
+      <i class="fa-solid fa-circle-check"></i>
+      <span>{{ toastMessage }}</span>
+    </div>
+    <button type="button" class="toast-close" (click)="toastMessage = null"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+
+  <!-- Page Header -->
   <div class="page-header">
-    <div>
-      <h1>Patients Management</h1>
-      <p class="subtitle">Manage all patients in the platform</p>
+    <div class="header-left">
+      <div class="title-badge-row">
+        <h1 class="main-title serif-title">Patient Intake &amp; Doctor Scheduling Desk</h1>
+        <span class="live-sync-badge"><span class="pulse-dot"></span> Real-Time Live Sync</span>
+      </div>
+      <p class="subtitle">Distribute arriving hospital patients, allocate doctor timing slots, honor patient preferred physicians, and access returning clinical history.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="appointmentService.fetchDataFromBackend()">
+        <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="appointmentService.isLoading()"></i>
+        <span>Refresh</span>
+      </button>
+      <button class="btn btn-primary glow-btn" (click)="openRegisterModal()">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Register Arriving Patient</span>
+      </button>
     </div>
   </div>
 
-  <div class="card table-card">
-    <div class="filter-bar">
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" [(ngModel)]="searchTerm" placeholder="Search patients...">
+  <!-- Quick Overview KPI Cards -->
+  <div class="quick-kpi-grid">
+    <div class="cliniq-card kpi-card" [class.active-kpi]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'">
+      <div class="kpi-icon-wrap icon-blue">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">TOTAL PATIENTS</span>
+        <span class="kpi-num serif-title">{{ appointmentService.totalPatientsCount() }}</span>
       </div>
     </div>
 
+    <div class="cliniq-card kpi-card unassigned-card" [class.active-kpi]="statusFilter === 'UNASSIGNED'" (click)="statusFilter = 'UNASSIGNED'">
+      <div class="kpi-icon-wrap icon-amber">
+        <i class="fa-solid fa-user-clock"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">UNASSIGNED / ARRIVED</span>
+        <span class="kpi-num serif-title">{{ appointmentService.unassignedPatientsCount() }}</span>
+      </div>
+      <span class="kpi-badge-alert" *ngIf="appointmentService.unassignedPatientsCount() > 0">Needs Allocation</span>
+    </div>
+
+    <div class="cliniq-card kpi-card" [class.active-kpi]="statusFilter === 'SCHEDULED'" (click)="statusFilter = 'SCHEDULED'">
+      <div class="kpi-icon-wrap icon-teal">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">SCHEDULED SLOTS</span>
+        <span class="kpi-num serif-title">{{ appointmentService.scheduledPatientsCount() }}</span>
+      </div>
+    </div>
+
+    <div class="cliniq-card kpi-card" [class.active-kpi]="statusFilter === 'RETURNING'" (click)="statusFilter = 'RETURNING'">
+      <div class="kpi-icon-wrap icon-cyan">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">RETURNING PATIENTS</span>
+        <span class="kpi-num serif-title">{{ returningPatientsCount }}</span>
+      </div>
+    </div>
+
+    <div class="cliniq-card kpi-card" [class.active-kpi]="statusFilter === 'PREFERRED'" (click)="statusFilter = 'PREFERRED'">
+      <div class="kpi-icon-wrap icon-amber">
+        <i class="fa-solid fa-star"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">PREFERRED DOCTOR</span>
+        <span class="kpi-num serif-title">{{ preferredRequestsCount }}</span>
+      </div>
+    </div>
+
+    <div class="cliniq-card kpi-card">
+      <div class="kpi-icon-wrap icon-purple">
+        <i class="fa-solid fa-user-doctor"></i>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">DOCTORS ON DUTY</span>
+        <span class="kpi-num serif-title">{{ appointmentService.activeDoctorsOnDuty() }}/{{ doctorsList.length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="card table-card">
+    <div class="desk-toolbar">
+      <div class="filter-tabs-group">
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'ALL'"
+          (click)="statusFilter = 'ALL'"
+        >
+          All Patients ({{ patientsList.length }})
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'UNASSIGNED'"
+          (click)="statusFilter = 'UNASSIGNED'"
+        >
+          <span class="dot-amber" *ngIf="appointmentService.unassignedPatientsCount() > 0"></span>
+          Unassigned ({{ appointmentService.unassignedPatientsCount() }})
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'SCHEDULED'"
+          (click)="statusFilter = 'SCHEDULED'"
+        >
+          Scheduled ({{ appointmentService.scheduledPatientsCount() }})
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'IN_CONSULTATION'"
+          (click)="statusFilter = 'IN_CONSULTATION'"
+        >
+          In Consultation
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'RETURNING'"
+          (click)="statusFilter = 'RETURNING'"
+        >
+          <i class="fa-solid fa-clock-rotate-left"></i> Returning Patients ({{ returningPatientsCount }})
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="statusFilter === 'PREFERRED'"
+          (click)="statusFilter = 'PREFERRED'"
+        >
+          <i class="fa-solid fa-star"></i> Preferred Doctor ({{ preferredRequestsCount }})
+        </button>
+      </div>
+
+      <!-- Search Box -->
+      <div class="search-box-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input 
+          type="text" 
+          class="search-input" 
+          [(ngModel)]="searchTerm" 
+          placeholder="Search by patient, MRN, email, complaint, doctor..."
+        >
+        <button *ngIf="searchTerm" (click)="searchTerm = ''" class="clear-search-btn">×</button>
+      </div>
+    </div>
+
+    <!-- Patients Intake & Scheduling Table -->
     <div class="table-container">
-      <table class="custom-table">
+      <table class="custom-table cliniq-desk-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Age</th>
-            <th>Gender</th>
-            <th>Phone</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>PATIENT DETAILS &amp; HISTORY</th>
+            <th>ARRIVAL TIME</th>
+            <th>REASON / COMPLAINT</th>
+            <th>ASSIGNED PHYSICIAN</th>
+            <th>TIMING SLOT</th>
+            <th>DOCTOR PREFERENCE</th>
+            <th class="text-right">ALLOCATION &amp; ACTIONS</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let pat of filteredPatients">
-            <td class="font-bold">{{ pat.name }}</td>
-            <td>{{ pat.age }}</td>
-            <td>{{ pat.gender }}</td>
-            <td class="text-muted">{{ pat.phone }}</td>
+          <tr *ngFor="let pat of filteredPatients" [class.unassigned-row]="!pat.assignedDoctorId" [class.row-in-consult]="pat.arrivalStatus === 'IN_CONSULTATION'">
+            <!-- Patient Profile & History Badges -->
             <td>
-              <span class="badge" [class.badge-active]="pat.status === 'Active'" [class.badge-inactive]="pat.status === 'Inactive'">
-                <span class="badge-dot"></span> {{ pat.status }}
-              </span>
+              <div class="patient-cell">
+                <div class="patient-avatar-circle" [class.returning-avatar]="(pat.totalPastSessions && pat.totalPastSessions > 0) || (pat.lastVisit && pat.lastVisit !== '—')">
+                  <span>{{ pat.initials }}</span>
+                </div>
+                <div class="patient-info-wrap">
+                  <div class="name-badge-row">
+                    <span class="patient-name-text">{{ pat.name }}</span>
+                    <!-- Returning Patient Indicator -->
+                    <button 
+                      *ngIf="(pat.totalPastSessions && pat.totalPastSessions > 0) || (pat.lastVisit && pat.lastVisit !== '—')"
+                      type="button" 
+                      class="badge-returning-history"
+                      (click)="openHistoryModal(pat)"
+                      title="Click to view past clinical records & consultation notes"
+                    >
+                      <i class="fa-solid fa-clock-rotate-left"></i> Past Records ({{ pat.totalPastSessions || 1 }})
+                    </button>
+                    <span *ngIf="(!pat.totalPastSessions || pat.totalPastSessions === 0) && (!pat.lastVisit || pat.lastVisit === '—')" class="badge-new-patient">
+                      New Patient
+                    </span>
+                  </div>
+                  <span class="patient-demographics-text">
+                    {{ pat.demographics }} · {{ pat.phone }}
+                    <span class="email-subtext" *ngIf="pat.email"> · <i class="fa-regular fa-envelope"></i> {{ pat.email }}</span>
+                  </span>
+                </div>
+              </div>
             </td>
+
+            <!-- Arrival Time & Status -->
             <td>
-              <button class="action-icon-btn" title="View Patient Details"><i class="fa-regular fa-eye"></i></button>
+              <div class="arrival-cell">
+                <span class="time-text"><i class="fa-regular fa-clock"></i> {{ pat.arrivalTime }}</span>
+                <span class="status-pill" 
+                      [class.status-arrived]="pat.arrivalStatus === 'ARRIVED'"
+                      [class.status-scheduled]="pat.arrivalStatus === 'SCHEDULED'"
+                      [class.status-in-consult]="pat.arrivalStatus === 'IN_CONSULTATION'"
+                      [class.status-completed]="pat.arrivalStatus === 'COMPLETED'">
+                  {{ pat.arrivalStatus === 'ARRIVED' ? 'Arrived / Waiting' : (pat.arrivalStatus === 'IN_CONSULTATION' ? 'In Consultation' : (pat.arrivalStatus === 'COMPLETED' ? 'Completed' : 'Scheduled')) }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Reason / Complaint -->
+            <td>
+              <div class="reason-cell">
+                <span class="reason-primary">{{ pat.reason }}</span>
+                <div class="vitals-micro-row" *ngIf="pat.vitals">
+                  <span class="v-tag" *ngIf="pat.vitals.bp"><i class="fa-solid fa-heart-pulse"></i> {{ pat.vitals.bp }}</span>
+                  <span class="v-tag" *ngIf="pat.vitals.hr">{{ pat.vitals.hr }}</span>
+                  <span class="v-tag" *ngIf="pat.vitals.spo2">SpO2 {{ pat.vitals.spo2 }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Assigned Physician -->
+            <td>
+              <div class="doctor-assigned-cell" *ngIf="pat.assignedDoctorName; else unassignedDoc">
+                <div class="doc-icon-small">
+                  <i class="fa-solid fa-user-doctor"></i>
+                </div>
+                <div class="doc-text-meta">
+                  <span class="doc-name">{{ pat.assignedDoctorName }}</span>
+                  <span class="visit-type-tag">{{ pat.visitType }}</span>
+                </div>
+              </div>
+              <ng-template #unassignedDoc>
+                <div class="unassigned-placeholder">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span>Awaiting Doctor</span>
+                </div>
+              </ng-template>
+            </td>
+
+            <!-- Timing Slot -->
+            <td>
+              <div class="slot-cell" *ngIf="pat.assignedTimeSlot; else noSlot">
+                <span class="slot-badge"><i class="fa-solid fa-calendar-day"></i> {{ pat.assignedTimeSlot }}</span>
+                <span class="slot-duration">{{ pat.assignedDuration || '30 min' }}</span>
+              </div>
+              <ng-template #noSlot>
+                <span class="no-slot-text">— No Slot Set —</span>
+              </ng-template>
+            </td>
+
+            <!-- Doctor Preference -->
+            <td>
+              <div class="pref-cell">
+                <span class="pref-badge-patient" *ngIf="pat.isPreferredDoctorChoice || pat.preferredDoctorName">
+                  <i class="fa-solid fa-star"></i>
+                  <span>{{ pat.preferredDoctorName || 'Patient Choice' }}</span>
+                </span>
+                <span class="pref-badge-admin" *ngIf="!pat.isPreferredDoctorChoice && !pat.preferredDoctorName && pat.assignedDoctorName">
+                  <i class="fa-solid fa-sliders"></i> Admin Allocated
+                </span>
+                <span class="pref-badge-none" *ngIf="!pat.assignedDoctorName && !pat.isPreferredDoctorChoice && !pat.preferredDoctorName">
+                  No Preference
+                </span>
+              </div>
+            </td>
+
+            <!-- Actions -->
+            <td class="text-right">
+              <div class="action-buttons-group">
+                <button 
+                  type="button" 
+                  class="btn btn-action-assign" 
+                  [class.btn-action-primary]="!pat.assignedDoctorId"
+                  (click)="openAssignModal(pat)"
+                >
+                  <i class="fa-solid" [class.fa-user-check]="!pat.assignedDoctorId" [class.fa-calendar-pen]="!!pat.assignedDoctorId"></i>
+                  <span>{{ pat.assignedDoctorId ? 'Reschedule' : 'Assign Doctor' }}</span>
+                </button>
+
+                <button 
+                  *ngIf="(pat.totalPastSessions && pat.totalPastSessions > 0) || (pat.lastVisit && pat.lastVisit !== '—')"
+                  type="button"
+                  class="btn btn-action-history"
+                  (click)="openHistoryModal(pat)"
+                  title="View Past Medical Encounters"
+                >
+                  <i class="fa-solid fa-file-medical"></i>
+                </button>
+
+                <button 
+                  type="button" 
+                  class="btn btn-action-delete" 
+                  (click)="dischargePatient(pat)"
+                  title="Discharge / Remove"
+                >
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredPatients.length === 0">
+            <td colspan="7" class="empty-table-cell">
+              <div class="empty-state-wrap">
+                <i class="fa-solid fa-clipboard-question"></i>
+                <h3>No patients found</h3>
+                <p>Try adjusting your search criteria or register a new arriving patient.</p>
+                <button class="btn btn-primary" (click)="openRegisterModal()">
+                  <i class="fa-solid fa-user-plus"></i> Register Patient
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+  </div>
 
-    <div class="table-footer">
-      <span>Showing 1 to {{ filteredPatients.length }} of 1,245 patients</span>
-      <div class="pagination">
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <span>... 250</span>
+  <!-- ========================================================================= -->
+  <!-- MODAL: ASSIGN DOCTOR & TIMING SLOT                                       -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop animated-fade-in" *ngIf="showAssignModal && selectedPatient">
+    <div class="modal-dialog assign-modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+          <div>
+            <h2 class="serif-title modal-heading">Doctor Allocation &amp; Timing Slot Desk</h2>
+            <p class="modal-sub">Schedule consultation slot and honor patient preferred physician choices.</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" (click)="closeAssignModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Patient Summary Banner -->
+        <div class="patient-modal-banner">
+          <div class="patient-avatar-lg">
+            <span>{{ selectedPatient.initials }}</span>
+          </div>
+          <div class="patient-banner-meta">
+            <div class="banner-top">
+              <span class="patient-fullname">{{ selectedPatient.name }}</span>
+              <span class="patient-id-badge">{{ selectedPatient.id }}</span>
+              <span class="patient-visit-tag">{{ selectedVisitType }}</span>
+            </div>
+            <div class="banner-bottom">
+              <span><strong>Complaint:</strong> {{ selectedPatient.reason }}</span>
+              <span *ngIf="selectedPatient.vitals" class="banner-vitals">
+                <strong>Vitals:</strong> BP {{ selectedPatient.vitals.bp }} · HR {{ selectedPatient.vitals.hr }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preferred Doctor Choice Toggle -->
+        <div class="preference-toggle-card" [class.pref-enabled]="isPreferredChoice">
+          <div class="pref-left">
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="isPreferredChoice">
+              <span class="slider round"></span>
+            </label>
+            <div class="pref-info">
+              <span class="pref-title"><i class="fa-solid fa-star"></i> Patient-Preferred Physician Choice</span>
+              <span class="pref-desc">Check this if the patient specifically requested or prefers a particular specialist.</span>
+            </div>
+          </div>
+          <span class="pref-pill" *ngIf="isPreferredChoice">Priority Preference Active</span>
+        </div>
+
+        <!-- 1. Doctor Selection Dropdown -->
+        <div class="form-group-section">
+          <label class="section-label"><i class="fa-solid fa-user-doctor"></i> Select Attending Physician</label>
+          <div class="doctor-select-grid">
+            <div 
+              *ngFor="let doc of doctorsList" 
+              class="doc-option-card"
+              [class.selected]="doc.id === selectedDoctorId"
+              [class.disabled-doc]="!doc.available"
+              (click)="doc.available && onDoctorChange(doc.id)"
+            >
+              <div class="doc-card-header">
+                <div class="doc-card-avatar">
+                  <span>{{ doc.initials }}</span>
+                </div>
+                <div class="doc-card-details">
+                  <span class="doc-card-name">{{ doc.name }}</span>
+                  <span class="doc-card-spec">{{ doc.specialty }}</span>
+                </div>
+              </div>
+              <div class="doc-card-footer">
+                <span class="doc-duty-badge" [class.duty-on]="doc.dutyStatus === 'On duty'" [class.duty-off]="doc.dutyStatus === 'Off duty'">
+                  <span class="dot"></span> {{ doc.dutyStatus }}
+                </span>
+                <span class="slots-avail-tag">{{ getAvailableSlotsCount(doc) }} slots free</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Doctor Timing Slot Selection -->
+        <div class="form-group-section">
+          <div class="slot-section-header">
+            <label class="section-label"><i class="fa-solid fa-clock"></i> Available Timing Slots for {{ selectedDoctor?.name || 'Selected Doctor' }}</label>
+            <span class="slot-helper-text">Click an available slot to allocate</span>
+          </div>
+
+          <div class="slots-grid-picker">
+            <button 
+              type="button"
+              *ngFor="let slot of currentDoctorSlots"
+              class="slot-pick-btn"
+              [class.slot-available]="slot.status === 'AVAILABLE'"
+              [class.slot-booked]="slot.status === 'BOOKED' && slot.bookedPatientId !== selectedPatient.id"
+              [class.slot-selected]="slot.time === selectedSlotTime"
+              [class.slot-current-pat]="slot.bookedPatientId === selectedPatient.id"
+              [disabled]="slot.status === 'BOOKED' && slot.bookedPatientId !== selectedPatient.id"
+              (click)="selectSlot(slot)"
+            >
+              <div class="slot-time-text">{{ slot.time }}</div>
+              <div class="slot-meta-row">
+                <span class="slot-dur">{{ slot.duration }}</span>
+                <span class="slot-status-indicator" *ngIf="slot.status === 'AVAILABLE'">Available</span>
+                <span class="slot-status-indicator booked-label" *ngIf="slot.status === 'BOOKED' && slot.bookedPatientId !== selectedPatient.id">
+                  Booked
+                </span>
+                <span class="slot-status-indicator current-pat-label" *ngIf="slot.bookedPatientId === selectedPatient.id">
+                  Current
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Visit Type & Administrative Notes -->
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label class="input-label">Visit Type</label>
+            <select class="custom-select" [(ngModel)]="selectedVisitType">
+              <option value="New Patient">New Patient Presentation</option>
+              <option value="Follow-up">Scheduled Follow-up</option>
+              <option value="Consultation">Specialist Consultation</option>
+              <option value="Annual Check">Annual Check-up</option>
+              <option value="Emergency">Urgent Priority</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="input-label">Administrative Booking Notes</label>
+            <input 
+              type="text" 
+              class="custom-input" 
+              [(ngModel)]="bookingNotes" 
+              placeholder="e.g. Patient requested Dr. Tanaka for follow-up review."
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeAssignModal()">Cancel</button>
+        <button 
+          type="button" 
+          class="btn btn-primary glow-btn" 
+          [disabled]="!selectedSlotTime || isAssigning"
+          (click)="confirmAssignment()"
+        >
+          <i class="fa-solid fa-check" *ngIf="!isAssigning"></i>
+          <i class="fa-solid fa-circle-notch fa-spin" *ngIf="isAssigning"></i>
+          <span>Confirm Allocation &amp; Schedule</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: RETURNING PATIENT PAST MEDICAL RECORDS & SESSIONS                  -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop animated-fade-in" *ngIf="showHistoryModal && historyPatient">
+    <div class="modal-dialog history-modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge icon-cyan">
+            <i class="fa-solid fa-file-medical"></i>
+          </div>
+          <div>
+            <h2 class="serif-title modal-heading">Past Clinical Records &amp; Consultation History</h2>
+            <p class="modal-sub">Previous encounter records, diagnostic findings, and SOAP notes for returning patient.</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" (click)="closeHistoryModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body history-modal-body">
+        <!-- Patient Overview Banner -->
+        <div class="patient-modal-banner">
+          <div class="patient-avatar-lg">
+            <span>{{ historyPatient.initials }}</span>
+          </div>
+          <div class="patient-banner-meta">
+            <div class="banner-top">
+              <span class="patient-fullname">{{ historyPatient.name }}</span>
+              <span class="patient-id-badge">{{ historyPatient.id }}</span>
+              <span class="badge-returning-history">Returning Patient</span>
+            </div>
+            <div class="banner-bottom">
+              <span><strong>Known Condition:</strong> {{ historyPatient.condition }}</span>
+              <span><strong>Last Visit:</strong> {{ historyPatient.lastVisit || 'Prior Month' }}</span>
+              <span *ngIf="historyPatient.phone"><strong>Phone:</strong> {{ historyPatient.phone }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="history-loading-wrap" *ngIf="isLoadingHistory">
+          <i class="fa-solid fa-circle-notch fa-spin"></i>
+          <span>Retrieving chronological consultation sessions from database...</span>
+        </div>
+
+        <!-- Sessions List -->
+        <div class="history-timeline" *ngIf="!isLoadingHistory">
+          <div *ngIf="patientSessionsList.length === 0" class="no-history-state">
+            <i class="fa-solid fa-folder-open"></i>
+            <p>No recorded past digital sessions found for this patient in the database.</p>
+          </div>
+
+          <div class="history-session-card" *ngFor="let sess of patientSessionsList">
+            <div class="session-card-header">
+              <div class="session-title-wrap">
+                <span class="session-num-pill">Session {{ sess.sessionNumber || 1 }}</span>
+                <h3 class="session-title-text">{{ sess.sessionTitle || 'Clinical Consultation' }}</h3>
+              </div>
+              <div class="session-date-doc">
+                <span class="session-date"><i class="fa-regular fa-calendar"></i> {{ sess.appointmentDate | date:'mediumDate' }}</span>
+                <span class="session-doc"><i class="fa-solid fa-user-doctor"></i> {{ sess.doctorName || 'Dr. Yuki Tanaka' }}</span>
+              </div>
+            </div>
+
+            <!-- SOAP Note Section -->
+            <div class="session-soap-grid" *ngIf="sess.soapReport">
+              <div class="soap-block block-s">
+                <span class="soap-block-title">Subjective</span>
+                <p>{{ sess.soapReport.subjective || 'Patient presentation and history reviewed.' }}</p>
+              </div>
+              <div class="soap-block block-o">
+                <span class="soap-block-title">Objective</span>
+                <p>{{ sess.soapReport.objective || 'Vitals and physical examination recorded.' }}</p>
+              </div>
+              <div class="soap-block block-a">
+                <span class="soap-block-title">Assessment</span>
+                <p>{{ sess.soapReport.assessment || 'Differential assessment completed.' }}</p>
+              </div>
+              <div class="soap-block block-p">
+                <span class="soap-block-title">Plan</span>
+                <p>{{ sess.soapReport.plan || 'Treatment regimen and recommendations.' }}</p>
+              </div>
+            </div>
+
+            <!-- Transcript Excerpt -->
+            <div class="session-transcript-excerpt" *ngIf="sess.transcript">
+              <span class="excerpt-title"><i class="fa-solid fa-microphone-lines"></i> Consultation Audio Transcript:</span>
+              <p class="excerpt-text">"{{ sess.transcript }}"</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeHistoryModal()">Close Records</button>
+        <button type="button" class="btn btn-primary" (click)="closeHistoryModal(); openAssignModal(historyPatient)">
+          <i class="fa-solid fa-calendar-plus"></i> Allocate Next Doctor Slot
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: REGISTER ARRIVING WALK-IN PATIENT                                  -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop animated-fade-in" *ngIf="showRegisterModal">
+    <div class="modal-dialog register-modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge icon-purple">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <h2 class="serif-title modal-heading">Register Arriving Clinic Patient</h2>
+            <p class="modal-sub">Record walk-in triage information, complaint, vitals, and physician preference.</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" (click)="closeRegisterModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label class="input-label">Patient Full Name <span class="req">*</span></label>
+            <input type="text" class="custom-input" [(ngModel)]="newPatient.name" placeholder="e.g. David Harrison">
+          </div>
+          <div class="form-row-inner-2">
+            <div class="form-group">
+              <label class="input-label">Age</label>
+              <input type="number" class="custom-input" [(ngModel)]="newPatient.age" min="1" max="120">
+            </div>
+            <div class="form-group">
+              <label class="input-label">Gender</label>
+              <select class="custom-select" [(ngModel)]="newPatient.gender">
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label class="input-label">Patient Email Address (For Portal &amp; OTP Verification) <span class="req">*</span></label>
+            <input type="email" class="custom-input" [(ngModel)]="newPatient.email" placeholder="e.g. david.harrison@gmail.com">
+          </div>
+          <div class="form-group">
+            <label class="input-label">Contact Phone Number</label>
+            <input type="text" class="custom-input" [(ngModel)]="newPatient.phone" placeholder="+1 (555) 000-0000">
+          </div>
+        </div>
+
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label class="input-label">Visit Type</label>
+            <select class="custom-select" [(ngModel)]="newPatient.visitType">
+              <option value="New Patient">New Patient</option>
+              <option value="Follow-up">Follow-up</option>
+              <option value="Consultation">Consultation</option>
+              <option value="Annual Check">Annual Check</option>
+              <option value="Emergency">Emergency</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="input-label">Preferred Doctor (Optional)</label>
+            <select class="custom-select" [(ngModel)]="newPatient.preferredDoctorName">
+              <option value="">-- No Specific Preference --</option>
+              <option *ngFor="let doc of doctorsList" [value]="doc.name">
+                {{ doc.name }} ({{ doc.specialty || doc.department || 'General Physician' }}) · {{ doc.dutyStatus || 'On duty' }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="input-label">Chief Reason for Visit / Symptoms <span class="req">*</span></label>
+          <input 
+            type="text" 
+            class="custom-input" 
+            [(ngModel)]="newPatient.reason" 
+            placeholder="e.g. Acute chest discomfort, palpitation episodes during exertion"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="input-label">Preliminary Condition / Triage Diagnosis</label>
+          <input type="text" class="custom-input" [(ngModel)]="newPatient.condition" placeholder="e.g. Cardiovascular evaluation">
+        </div>
+
+        <!-- Vitals Input Section -->
+        <div class="vitals-input-section" *ngIf="newPatient.vitals">
+          <label class="section-label"><i class="fa-solid fa-heart-pulse"></i> Initial Triage Vitals</label>
+          <div class="vitals-inputs-grid">
+            <div class="v-input-wrap">
+              <span class="v-label">BP</span>
+              <input type="text" class="v-input" [(ngModel)]="newPatient.vitals.bp" placeholder="120/80 mmHg">
+            </div>
+            <div class="v-input-wrap">
+              <span class="v-label">Heart Rate</span>
+              <input type="text" class="v-input" [(ngModel)]="newPatient.vitals.hr" placeholder="72 bpm">
+            </div>
+            <div class="v-input-wrap">
+              <span class="v-label">SpO2</span>
+              <input type="text" class="v-input" [(ngModel)]="newPatient.vitals.spo2" placeholder="98%">
+            </div>
+            <div class="v-input-wrap">
+              <span class="v-label">Pain Score</span>
+              <input type="text" class="v-input" [(ngModel)]="newPatient.vitals.pain" placeholder="0/10">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeRegisterModal()">Cancel</button>
+        <button type="button" class="btn btn-primary glow-btn" (click)="saveNewPatient()">
+          <i class="fa-solid fa-user-check"></i> Register &amp; Allocate Doctor
+        </button>
       </div>
     </div>
   </div>

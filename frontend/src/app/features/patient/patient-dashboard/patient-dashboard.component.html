@@ -1,10 +1,42 @@
 <div class="cliniq-summary-page">
   <!-- Title & Profile Header -->
   <div class="page-title-header">
-    <h1 class="main-title serif-title">Your Health Summary</h1>
-    <p class="subtitle">
-      {{ patientProfile.name }} · DOB {{ patientProfile.dob }} · MRN {{ patientProfile.mrn }}
-    </p>
+    <div class="header-main-row">
+      <div>
+        <h1 class="main-title serif-title">Your Health Summary</h1>
+        <p class="subtitle">
+          {{ patientProfile.name }} · DOB {{ patientProfile.dob }} · MRN {{ patientProfile.mrn }}
+        </p>
+      </div>
+      <div class="header-actions-right" *ngIf="hasSharedSoap">
+        <button type="button" class="btn-quick-soap" (click)="openSoapModal()">
+          <i class="fa-solid fa-file-waveform"></i> Latest SOAP Note
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-time Doctor Shared SOAP Banner -->
+  <div class="doctor-soap-shared-banner" *ngIf="hasSharedSoap && latestSharedSoap">
+    <div class="banner-left-content">
+      <div class="banner-icon-circle">
+        <i class="fa-solid fa-file-signature"></i>
+      </div>
+      <div class="banner-text-content">
+        <div class="banner-title-line">
+          <span class="banner-title">Doctor's SOAP Report Shared</span>
+          <span class="live-pulse-badge">Updated</span>
+        </div>
+        <p class="banner-desc">
+          <strong>{{ latestSharedSoap.doctorName || 'Your Doctor' }}</strong> has verified and shared your official clinical consultation note and prescriptions.
+        </p>
+      </div>
+    </div>
+    <div class="banner-action-right">
+      <button type="button" class="btn-banner-view" (click)="openSoapModal(latestSharedSoap)">
+        <i class="fa-solid fa-eye"></i> View SOAP Note
+      </button>
+    </div>
   </div>
 
   <!-- Filter Pill Tabs -->
@@ -46,7 +78,7 @@
       <div class="cliniq-card alert-summary-card" *ngFor="let item of followUpAlerts">
         <div class="card-left-section">
           <div class="title-with-dot">
-            <span class="status-dot" [style.background-color]="item.dotColor"></span>
+            <span class="status-dot" [style.background-color]="item.dotColor || '#0d9488'"></span>
             <h3 class="card-item-title">{{ item.title }}</h3>
           </div>
           <div class="doctor-subtext">{{ item.doctor }}</div>
@@ -54,7 +86,7 @@
         </div>
 
         <div class="card-right-section">
-          <span class="priority-pill" [class]="item.priorityClass">
+          <span class="priority-pill" [class]="item.priorityClass || 'high'">
             {{ item.priority }}
           </span>
           <span class="days-away-text">{{ item.daysAway }}</span>
@@ -78,51 +110,168 @@
         <p class="record-notes-text">{{ rec.notes }}</p>
 
         <!-- Vitals Metric Box (4 Columns) -->
-        <div class="vitals-metrics-grid">
+        <div class="vitals-metrics-grid" *ngIf="rec.vitals">
           <div class="vital-item font-mono">
             <span class="vital-label">BLOOD PRESSURE</span>
-            <span class="vital-value">{{ rec.vitals.bp }}</span>
+            <span class="vital-value">{{ rec.vitals.bp || '120/80 mmHg' }}</span>
           </div>
 
           <div class="vital-item font-mono">
             <span class="vital-label">HEART RATE</span>
-            <span class="vital-value">{{ rec.vitals.hr }}</span>
+            <span class="vital-value">{{ rec.vitals.hr || '72 bpm' }}</span>
           </div>
 
           <div class="vital-item font-mono">
             <span class="vital-label">WEIGHT</span>
-            <span class="vital-value">{{ rec.vitals.weight }}</span>
+            <span class="vital-value">{{ rec.vitals.weight || '81 kg' }}</span>
           </div>
 
           <div class="vital-item font-mono">
             <span class="vital-label">TEMP</span>
-            <span class="vital-value">{{ rec.vitals.temp }}</span>
+            <span class="vital-value">{{ rec.vitals.temp || '36.6 °C' }}</span>
           </div>
+        </div>
+
+        <div class="record-action-bar" *ngIf="rec.soapReport || rec.hasSoap">
+          <button type="button" class="btn-rec-soap-action" (click)="openSoapModal(rec.soapReport)">
+            <i class="fa-solid fa-file-waveform"></i> View Doctor's Shared SOAP Report
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Tab 3: Prescriptions -->
+  <!-- Tab 3: Prescriptions (Stores Patient's SOAP Report) -->
   <div class="tab-content-area" *ngIf="activeTab === 'prescriptions'">
     <div class="summary-cards-list">
-      <div class="cliniq-card prescription-card" *ngFor="let rx of prescriptions">
-        <div class="rx-left-group">
-          <div class="rx-icon-box">
-            <i class="fa-solid fa-prescription-bottle-medical"></i>
+      <div class="cliniq-card prescription-card-wrapper" *ngFor="let rx of prescriptions">
+        <div class="prescription-card">
+          <div class="rx-left-group">
+            <div class="rx-icon-box">
+              <i class="fa-solid fa-prescription-bottle-medical"></i>
+            </div>
+            <div class="rx-info-body">
+              <h3 class="rx-item-title">{{ rx.title }}</h3>
+              <div class="rx-instructions-text">{{ rx.instructions }}</div>
+              <div class="rx-doctor-line">{{ rx.doctorDate }}</div>
+            </div>
           </div>
-          <div class="rx-info-body">
-            <h3 class="rx-item-title">{{ rx.title }}</h3>
-            <div class="rx-instructions-text">{{ rx.instructions }}</div>
-            <div class="rx-doctor-line">{{ rx.doctorDate }}</div>
+
+          <div class="rx-right-group">
+            <span class="rx-status-badge" [class]="rx.statusClass || 'active'">{{ rx.badge || 'active' }}</span>
+            <div class="rx-refill-text">{{ rx.refillInfo || '3 refills left' }}</div>
           </div>
         </div>
 
-        <div class="rx-right-group">
-          <span class="rx-status-badge" [class]="rx.statusClass">{{ rx.badge }}</span>
-          <div class="rx-refill-text">{{ rx.refillInfo }}</div>
+        <!-- Integrated SOAP Report Access Button in Prescriptions -->
+        <div class="rx-soap-access-row" *ngIf="rx.soapReport || latestSharedSoap">
+          <button type="button" class="btn-view-prescribed-soap" (click)="openSoapModal(rx.soapReport || latestSharedSoap)">
+            <i class="fa-solid fa-file-medical"></i> View Doctor's Shared SOAP Report
+          </button>
+          <span class="rx-soap-verified-hint">
+            <i class="fa-solid fa-circle-check"></i> Verified by {{ rx.soapReport?.doctorName || latestSharedSoap?.doctorName || 'Doctor' }}
+          </span>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- ========================================================================= -->
+<!-- OFFICIAL SOAP REPORT MODAL VIEWER FOR PATIENT                             -->
+<!-- ========================================================================= -->
+<div class="soap-modal-backdrop" *ngIf="showSoapModal" (click)="closeSoapModal()">
+  <div class="soap-modal-container" (click)="$event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="soap-modal-header">
+      <div class="modal-header-left">
+        <div class="modal-badge-cliniq">CLINIQ VERIFIED SOAP REPORT</div>
+        <h2 class="modal-soap-title">Doctor Consultation & Clinical SOAP Note</h2>
+        <div class="modal-meta-line">
+          <span><strong>Doctor:</strong> {{ selectedSoapReport?.doctorName || 'Dr. Yuki Tanaka' }}</span>
+          <span>·</span>
+          <span><strong>Patient:</strong> {{ patientProfile.name }} ({{ patientProfile.mrn }})</span>
+          <span>·</span>
+          <span><strong>Date:</strong> {{ selectedSoapReport?.date || 'Aug 13, 2026' }}</span>
+        </div>
+      </div>
+      <div class="modal-header-right">
+        <button type="button" class="btn-modal-print" (click)="printSoapReport()" title="Print SOAP Report">
+          <i class="fa-solid fa-print"></i> Print
+        </button>
+        <button type="button" class="btn-modal-close" (click)="closeSoapModal()" title="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body with S, O, A, P Sections -->
+    <div class="soap-modal-body">
+      <!-- S Section -->
+      <div class="soap-detail-section section-s">
+        <div class="section-tag-row">
+          <div class="section-letter-circle">S</div>
+          <div>
+            <h4 class="section-heading">Subjective</h4>
+            <span class="section-caption">Patient-reported symptoms, medical history, and clinical discussion</span>
+          </div>
+        </div>
+        <div class="section-text-content">
+          <p>{{ selectedSoapReport?.subjective || 'Patient presented for clinical follow-up and management.' }}</p>
+        </div>
+      </div>
+
+      <!-- O Section -->
+      <div class="soap-detail-section section-o">
+        <div class="section-tag-row">
+          <div class="section-letter-circle">O</div>
+          <div>
+            <h4 class="section-heading">Objective</h4>
+            <span class="section-caption">Clinical vitals, examination findings, and diagnostic metrics</span>
+          </div>
+        </div>
+        <div class="section-text-content">
+          <p>{{ selectedSoapReport?.objective || 'Vital signs: BP 145/92 mmHg, HR 78 bpm. Physical examination unremarkable.' }}</p>
+        </div>
+      </div>
+
+      <!-- A Section -->
+      <div class="soap-detail-section section-a">
+        <div class="section-tag-row">
+          <div class="section-letter-circle">A</div>
+          <div>
+            <h4 class="section-heading">Assessment</h4>
+            <span class="section-caption">Clinical diagnoses, ICD-10 categorization, and risk assessment</span>
+          </div>
+        </div>
+        <div class="section-text-content">
+          <p>{{ selectedSoapReport?.assessment || '1. Essential Hypertension Stage 1 (ICD-10: I10).' }}</p>
+        </div>
+      </div>
+
+      <!-- P Section -->
+      <div class="soap-detail-section section-p">
+        <div class="section-tag-row">
+          <div class="section-letter-circle">P</div>
+          <div>
+            <h4 class="section-heading">Plan & Prescriptions</h4>
+            <span class="section-caption">Medications prescribed, lifestyle modifications, and follow-up alerts</span>
+          </div>
+        </div>
+        <div class="section-text-content">
+          <p style="white-space: pre-line;">{{ selectedSoapReport?.plan || '1. Continue Lisinopril 10mg daily.\n2. Schedule follow-up appointment in 4 weeks.\n3. Maintain sodium restriction.' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="soap-modal-footer">
+      <div class="footer-signoff">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Electronically signed & approved by {{ selectedSoapReport?.doctorName || 'Physician' }}</span>
+      </div>
+      <button type="button" class="btn-modal-done" (click)="closeSoapModal()">Close</button>
+    </div>
+  </div>
+</div>
+

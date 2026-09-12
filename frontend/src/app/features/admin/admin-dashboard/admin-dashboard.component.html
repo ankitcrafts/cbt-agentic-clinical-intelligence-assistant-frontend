@@ -1,8 +1,14 @@
 <div class="cliniq-dashboard-page">
-  <!-- Title Header -->
+  <!-- Title Header & Quick Action -->
   <div class="dashboard-title-header">
-    <h1 class="main-title serif-title">Hospital Overview</h1>
-    <p class="subtitle">Real-time staffing and patient load — {{ todayDate }}</p>
+    <div>
+      <h1 class="main-title serif-title">Hospital Administration Overview</h1>
+      <p class="subtitle">Real-time clinician staffing, slot distribution, and arriving patient load — {{ todayDate }}</p>
+    </div>
+    <button class="btn btn-primary" (click)="goToPatientDesk()" style="padding: 0.55rem 1.15rem; background: #0d9488; border: 1px solid #0d9488; color: #ffffff; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem;">
+      <i class="fa-solid fa-user-clock"></i>
+      <span>Open Patient Intake &amp; Slot Desk</span>
+    </button>
   </div>
 
   <!-- Top KPI Cards (4 Cards Grid) -->
@@ -10,41 +16,44 @@
     <div class="cliniq-card kpi-card">
       <span class="kpi-label">PHYSICIANS ON DUTY</span>
       <div class="kpi-val-group">
-        <span class="kpi-value serif-title">4/6</span>
+        <span class="kpi-value serif-title">{{ activeDoctorsCount }}/{{ doctors.length }}</span>
       </div>
-      <span class="kpi-sub">Available today</span>
+      <span class="kpi-sub">Available for consultation today</span>
+    </div>
+
+    <div class="cliniq-card kpi-card" (click)="goToPatientDesk()" style="cursor: pointer;">
+      <span class="kpi-label">ARRIVING / UNASSIGNED</span>
+      <div class="kpi-val-group">
+        <span class="kpi-value serif-title" [style.color]="unassignedCount > 0 ? '#d97706' : '#0d9488'">{{ unassignedCount }}</span>
+      </div>
+      <span class="kpi-sub">{{ unassignedCount > 0 ? 'Patients awaiting doctor allocation' : 'All arriving patients allocated' }}</span>
     </div>
 
     <div class="cliniq-card kpi-card">
-      <span class="kpi-label">TOTAL PATIENTS</span>
+      <span class="kpi-label">TOTAL CLINIC PATIENTS</span>
       <div class="kpi-val-group">
-        <span class="kpi-value serif-title">109</span>
+        <span class="kpi-value serif-title">{{ totalPatients }}</span>
       </div>
-      <span class="kpi-sub">Across all departments</span>
+      <span class="kpi-sub">{{ scheduledCount }} booked consultation slots</span>
     </div>
 
     <div class="cliniq-card kpi-card">
-      <span class="kpi-label">AVG LOAD PER DR</span>
+      <span class="kpi-label">CONSULTATION ROOMS</span>
       <div class="kpi-val-group">
-        <span class="kpi-value serif-title">18</span>
+        <span class="kpi-value serif-title">6/8</span>
       </div>
-      <span class="kpi-sub">Patients</span>
-    </div>
-
-    <div class="cliniq-card kpi-card">
-      <span class="kpi-label">BEDS AVAILABLE</span>
-      <div class="kpi-val-group">
-        <span class="kpi-value serif-title">47</span>
-      </div>
-      <span class="kpi-sub">Out of 120 total</span>
+      <span class="kpi-sub">Active medical suites</span>
     </div>
   </div>
 
-  <!-- Clinician Availability Section -->
+  <!-- Clinician Availability & Slot Occupancy Section -->
   <div class="section-block">
-    <h3 class="section-eyebrow">CLINICIAN AVAILABILITY</h3>
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem;">
+      <h3 class="section-eyebrow" style="margin: 0;">PHYSICIAN AVAILABILITY &amp; SCHEDULE OCCUPANCY</h3>
+      <span style="font-size: 0.78rem; color: #0d9488; font-weight: 600;">Real-time appointment slot tracker</span>
+    </div>
     <div class="clinicians-grid">
-      <div class="cliniq-card clinician-card" *ngFor="let dr of clinicians">
+      <div class="cliniq-card clinician-card" *ngFor="let dr of doctors">
         <div class="card-top-row">
           <div class="dr-profile">
             <div class="avatar-circle">{{ dr.initials }}</div>
@@ -55,25 +64,25 @@
           </div>
           <div class="status-pill" [class.available]="dr.available" [class.unavailable]="!dr.available">
             <span class="dot"></span>
-            <span>{{ dr.available ? 'Available' : 'Unavailable' }}</span>
+            <span>{{ dr.dutyStatus }}</span>
           </div>
         </div>
 
         <div class="card-bottom-row">
           <div class="patients-count">
-            <span class="count-num serif-title">{{ dr.patients }}</span>
-            <span class="count-label">patients assigned</span>
+            <span class="count-num serif-title">{{ getDoctorPatientsCount(dr.id) }}</span>
+            <span class="count-label">patients scheduled</span>
           </div>
           <div class="load-bar-group">
             <div class="load-text">
-              <span class="label">Load</span>
-              <span class="pct">{{ dr.loadPct }}%</span>
+              <span class="label">Slot Load</span>
+              <span class="pct">{{ getDoctorLoadPct(dr) }}%</span>
             </div>
             <div class="progress-track">
               <div 
                 class="progress-fill" 
-                [style.width.%]="dr.loadPct"
-                [style.background-color]="dr.loadColor"
+                [style.width.%]="getDoctorLoadPct(dr)"
+                [style.background-color]="getDoctorLoadColor(getDoctorLoadPct(dr))"
               ></div>
             </div>
           </div>
@@ -84,36 +93,38 @@
 
   <!-- Department Load Section -->
   <div class="section-block">
-    <h3 class="section-eyebrow">DEPARTMENT LOAD</h3>
+    <h3 class="section-eyebrow">DEPARTMENT ROSTER &amp; TIMING SLOTS</h3>
     <div class="table-container cliniq-card p-0">
       <table class="cliniq-table">
         <thead>
           <tr>
             <th>CLINICIAN</th>
-            <th>SPECIALTY</th>
-            <th>STATUS</th>
-            <th class="text-right">PATIENTS</th>
+            <th>SPECIALTY &amp; DEPARTMENT</th>
+            <th>DUTY STATUS</th>
+            <th>AVAILABLE SLOTS</th>
+            <th class="text-right">PATIENTS ASSIGNED</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let dr of clinicians">
+          <tr *ngFor="let dr of doctors">
             <td>
-              <div class="dr-table-user">
-                <div class="table-avatar">{{ dr.initials }}</div>
-                <span class="table-dr-name">{{ dr.name }}</span>
+              <div class="table-dr-cell">
+                <div class="avatar-mini">{{ dr.initials }}</div>
+                <span class="font-bold">{{ dr.name }}</span>
               </div>
             </td>
+            <td>{{ dr.specialty }} · {{ dr.department }}</td>
             <td>
-              <span class="table-text-muted">{{ dr.specialty }}</span>
+              <span class="table-status-pill" [class.on-duty]="dr.available" [class.off-duty]="!dr.available">
+                {{ dr.dutyStatus }}
+              </span>
             </td>
             <td>
-              <div class="status-pill" [class.on-duty]="dr.status === 'On duty'" [class.off-duty]="dr.status === 'Off duty'">
-                <span>{{ dr.status }}</span>
-              </div>
+              <span style="font-weight: 600; color: #0f766e;">
+                {{ getDoctorAvailableSlotsCount(dr) }} open slots (of {{ dr.slots.length }})
+              </span>
             </td>
-            <td class="text-right">
-              <span class="patient-num font-mono">{{ dr.patients }}</span>
-            </td>
+            <td class="text-right font-bold">{{ getDoctorPatientsCount(dr.id) }}</td>
           </tr>
         </tbody>
       </table>

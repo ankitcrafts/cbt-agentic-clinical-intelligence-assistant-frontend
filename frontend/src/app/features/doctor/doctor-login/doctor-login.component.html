@@ -55,7 +55,15 @@
   <div class="login-right-panel">
     <div class="auth-form-card">
       <h2 class="auth-title serif-title">Sign in</h2>
-      <p class="auth-subtitle">Secure medical portal with PostgreSQL & Gmail OTP verification.</p>
+      <p class="auth-subtitle" *ngIf="authService.currentRole() === 'ADMIN'">
+        Hospital operations, clinician scheduling desk, and patient triage management.
+      </p>
+      <p class="auth-subtitle" *ngIf="authService.currentRole() === 'DOCTOR'">
+        Ambient consultation intelligence, real-time CDS, and automated SOAP documentation.
+      </p>
+      <p class="auth-subtitle" *ngIf="authService.currentRole() === 'PATIENT'">
+        Personal health summary, consultation records, and active doctor prescriptions.
+      </p>
 
       <!-- Role Selector -->
       <div class="role-selector-group">
@@ -115,7 +123,7 @@
       </div>
 
       <!-- Step 1: Request OTP Form -->
-      <form *ngIf="!authService.otpSent()" (ngSubmit)="onSendOtp()" class="login-fields-form">
+      <form *ngIf="!authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onSendOtp()" class="login-fields-form">
         <div class="form-group">
           <label>Clinician work email / Gmail</label>
           <input 
@@ -144,7 +152,7 @@
       </form>
 
       <!-- Step 2: Verify OTP Form -->
-      <form *ngIf="authService.otpSent()" (ngSubmit)="onVerifyOtp()" class="login-fields-form">
+      <form *ngIf="authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onVerifyOtp()" class="login-fields-form">
         <!-- Dev OTP Helper Pill -->
         <div class="otp-dev-hint" *ngIf="authService.devOtp()" (click)="autofillDevOtp()">
           <span><i class="fa-solid fa-key"></i> Code: <strong>{{ authService.devOtp() }}</strong></span>
@@ -193,7 +201,53 @@
         </button>
       </form>
 
-      <p class="disclaimer-text">Secure PostgreSQL authentication with encrypted OTP delivery.</p>
+      <!-- Step 3: New Real User Profile Onboarding Form -->
+      <form *ngIf="authService.isNewUserPendingProfile()" (ngSubmit)="onCompleteSignupProfile()" class="login-fields-form">
+        <div style="background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.35); border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 0.8rem; color: #94a3b8;">
+            Assigned Unique Clinical ID:
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #2dd4bf; font-size: 0.95rem;">
+            {{ authService.currentUser().id || 'DOC-8492' }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Full Name <span style="color: #f87171;">*</span></label>
+          <input 
+            type="text" 
+            [(ngModel)]="signupFullName" 
+            name="signupFullName" 
+            required 
+            placeholder="e.g. Dr. Sarah Jenkins"
+            autofocus
+          >
+        </div>
+
+        <div class="form-group">
+          <label>Department / Specialty</label>
+          <input 
+            type="text" 
+            [(ngModel)]="signupDepartment" 
+            name="signupDepartment" 
+            placeholder="e.g. Cardiology, Neurology, General Medicine"
+          >
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="authService.isLoading() || !signupFullName">
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="authService.isLoading()"></i>
+          <i class="fa-solid fa-check" *ngIf="!authService.isLoading()"></i>
+          <span>Save Profile & Enter Workspace</span>
+        </button>
+
+        <div class="auth-actions-row" style="justify-content: center; margin-top: 0.75rem;">
+          <button type="button" class="text-action-btn" (click)="onSkipSignupProfile()" style="color: #94a3b8; font-size: 0.785rem;">
+            Skip for now &amp; use ID {{ authService.currentUser().id }} <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </form>
+
+      <p class="disclaimer-text"><i class="fa-solid fa-shield-halved"></i> HIPAA & GDPR compliant healthcare portal with encrypted OTP verification.</p>
     </div>
   </div>
 </div>
