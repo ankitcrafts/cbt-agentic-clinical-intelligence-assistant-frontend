@@ -943,8 +943,8 @@ export class AppointmentService {
       const cleanId = patientId.replace(/^#/, '');
       const payload = {
         encounter_id: encounterId || `CONS-${cleanId}-1`,
-        doctor_id: doctorId || 'DOC-001',
-        doctor_name: doctorName || 'Dr. Yuki Tanaka',
+        doctor_id: doctorId || 'DOC-ATTENDING',
+        doctor_name: doctorName || 'Attending Physician',
         soap_report: soapReport,
         patient_summary: soapReport?.plan || ''
       };
@@ -959,7 +959,7 @@ export class AppointmentService {
         const sharedPayload = {
           patientId,
           soapReport,
-          doctorName: doctorName || 'Dr. Yuki Tanaka',
+          doctorName: doctorName || 'Attending Physician',
           timestamp: new Date().toISOString()
         };
         localStorage.setItem(`cliniq_shared_soap_${patientId}`, JSON.stringify(sharedPayload));
@@ -976,7 +976,7 @@ export class AppointmentService {
       const fallbackPayload = {
         patientId,
         soapReport,
-        doctorName: doctorName || 'Dr. Yuki Tanaka',
+        doctorName: doctorName || 'Attending Physician',
         timestamp: new Date().toISOString()
       };
       localStorage.setItem(`cliniq_shared_soap_${patientId}`, JSON.stringify(fallbackPayload));

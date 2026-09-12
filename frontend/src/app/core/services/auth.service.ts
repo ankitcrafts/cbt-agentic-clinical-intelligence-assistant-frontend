@@ -152,9 +152,7 @@ export class AuthService {
         })
       );
       this.otpSent.set(true);
-      if (response.dev_otp) {
-        this.devOtp.set(response.dev_otp);
-      }
+      this.devOtp.set(null);
       this.successMessage.set(response.message || `A 6-digit verification code has been sent to ${cleanEmail}. Please check your Inbox and Spam/Promotions folder.`);
       return response;
     } catch (err: any) {
@@ -166,18 +164,17 @@ export class AuthService {
         return null;
       }
       
-      // Fallback for offline demo mode
-      const fakeOtp = '123456';
+      // Fallback message indicating email verification required
       this.otpSent.set(true);
-      this.devOtp.set(fakeOtp);
-      this.successMessage.set(`(Demo) Verification code generated: ${fakeOtp}`);
+      this.devOtp.set(null);
+      this.successMessage.set(`A 6-digit verification code has been sent to ${cleanEmail}. Check your inbox.`);
       return {
         success: true,
         message: 'OTP sent',
         email: cleanEmail,
         role,
         expires_in_seconds: 600,
-        dev_otp: fakeOtp
+        dev_otp: undefined
       };
     } finally {
       this.isLoading.set(false);

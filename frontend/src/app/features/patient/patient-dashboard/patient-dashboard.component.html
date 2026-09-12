@@ -453,8 +453,8 @@
 </div>
 
 <!-- EDIT PATIENT PROFILE MODAL -->
-<div class="modal-backdrop" *ngIf="showEditProfileModal">
-  <div class="modal-card edit-profile-card">
+<div class="modal-backdrop" *ngIf="showEditProfileModal" (click)="closeEditProfileModal()">
+  <div class="modal-card edit-profile-card" (click)="$event.stopPropagation()">
     <div class="modal-header-edit">
       <div class="modal-header-left">
         <div class="modal-icon-badge">

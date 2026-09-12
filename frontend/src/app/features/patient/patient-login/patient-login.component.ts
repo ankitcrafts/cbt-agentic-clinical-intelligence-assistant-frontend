@@ -46,12 +46,11 @@ export class PatientLoginComponent implements OnInit, OnDestroy {
 
   async onSendOtp() {
     if (!this.email) return;
+    this.otpCode = '';
     const res = await this.authService.sendOtp(this.email, this.authService.currentRole());
     if (res && res.success) {
       this.startResendTimer();
-      if (res.dev_otp) {
-        this.otpCode = res.dev_otp;
-      }
+      this.otpCode = '';
     }
   }
 
@@ -93,12 +92,6 @@ export class PatientLoginComponent implements OnInit, OnDestroy {
 
   onQuickDemoLogin() {
     this.authService.quickDemoLogin(this.authService.currentRole());
-  }
-
-  autofillDevOtp() {
-    if (this.authService.devOtp()) {
-      this.otpCode = this.authService.devOtp()!;
-    }
   }
 
   private startResendTimer() {

@@ -153,12 +153,6 @@
 
       <!-- Step 2: Verify OTP Form -->
       <form *ngIf="authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onVerifyOtp()" class="login-fields-form">
-        <!-- Dev OTP Helper Pill -->
-        <div class="otp-dev-hint" *ngIf="authService.devOtp()" (click)="autofillDevOtp()">
-          <span><i class="fa-solid fa-key"></i> Code: <strong>{{ authService.devOtp() }}</strong></span>
-          <button type="button" class="autofill-btn">Autofill</button>
-        </div>
-
         <div class="form-group">
           <label>Enter 6-digit OTP Code sent to <strong>{{ email }}</strong></label>
           <input 
@@ -169,7 +163,7 @@
             required 
             maxlength="6"
             placeholder="••••••"
-            autocomplete="one-time-code"
+            autocomplete="off"
             autofocus
           >
         </div>

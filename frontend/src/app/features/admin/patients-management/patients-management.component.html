@@ -149,15 +149,23 @@
       </div>
 
       <!-- Search Box -->
-      <div class="search-box-wrap">
+      <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
         <input 
           type="text" 
-          class="search-input" 
+          class="search-input"
           [(ngModel)]="searchTerm" 
           placeholder="Search by patient, MRN, email, complaint, doctor..."
         >
-        <button *ngIf="searchTerm" (click)="searchTerm = ''" class="clear-search-btn">×</button>
+        <button 
+          type="button" 
+          *ngIf="searchTerm" 
+          (click)="searchTerm = ''" 
+          class="clear-search-btn" 
+          title="Clear search"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
     </div>
 
