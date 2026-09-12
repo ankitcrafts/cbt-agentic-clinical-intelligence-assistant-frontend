@@ -50,7 +50,7 @@ export class PatientsManagementComponent implements OnInit {
   toastMessage: string | null = null;
 
   ngOnInit(): void {
-    // Default doctor selection if doctors exist
+    this.appointmentService.fetchDataFromBackend();
     const docs = this.appointmentService.doctors();
     if (docs.length > 0) {
       this.selectedDoctorId = docs[0].id;
@@ -127,9 +127,11 @@ export class PatientsManagementComponent implements OnInit {
     if (patient.assignedDoctorId) {
       this.selectedDoctorId = patient.assignedDoctorId;
     } else if (patient.preferredDoctorName) {
+      const cleanPref = patient.preferredDoctorName.replace(/^Dr\.\s*/i, '').trim().toLowerCase();
       const match = this.doctorsList.find(d => 
-        d.name.toLowerCase().includes(patient.preferredDoctorName!.toLowerCase()) ||
-        patient.preferredDoctorName!.toLowerCase().includes(d.name.toLowerCase())
+        d.name.toLowerCase().includes(cleanPref) ||
+        cleanPref.includes(d.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()) ||
+        d.id.toLowerCase() === cleanPref
       );
       if (match) {
         this.selectedDoctorId = match.id;
@@ -240,6 +242,7 @@ export class PatientsManagementComponent implements OnInit {
 
   // Register Walk-in Patient Modal
   openRegisterModal(): void {
+    this.appointmentService.fetchDataFromBackend();
     this.newPatient = {
       name: '',
       age: 38,
@@ -267,6 +270,10 @@ export class PatientsManagementComponent implements OnInit {
     if (!this.newPatient.reason?.trim()) {
       alert('Please specify reason for visit / triage complaint.');
       return;
+    }
+
+    if (this.newPatient.preferredDoctorName && this.newPatient.preferredDoctorName.trim()) {
+      this.newPatient.isPreferredDoctorChoice = true;
     }
 
     const created = await this.appointmentService.registerWalkinPatient(this.newPatient);

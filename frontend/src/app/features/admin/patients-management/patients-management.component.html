@@ -658,7 +658,9 @@
             <label class="input-label">Preferred Doctor (Optional)</label>
             <select class="custom-select" [(ngModel)]="newPatient.preferredDoctorName">
               <option value="">-- No Specific Preference --</option>
-              <option *ngFor="let doc of doctorsList" [value]="doc.name">{{ doc.name }} ({{ doc.specialty }})</option>
+              <option *ngFor="let doc of doctorsList" [value]="doc.name">
+                {{ doc.name }} ({{ doc.specialty || doc.department || 'General Physician' }}) · {{ doc.dutyStatus || 'On duty' }}
+              </option>
             </select>
           </div>
         </div>

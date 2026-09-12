@@ -403,6 +403,7 @@ export class AuthService {
     if (typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem('cliniq_session', JSON.stringify(session));
+        window.dispatchEvent(new Event('cliniq_session_updated'));
       } catch (e) {
         console.error('Failed to save session:', e);
       }

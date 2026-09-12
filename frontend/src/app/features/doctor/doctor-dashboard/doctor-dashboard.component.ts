@@ -23,7 +23,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
 
   // View state: 'queue' (Schedule & Patient List) | 'consultation' (Active Consultation View)
-  viewMode: 'queue' | 'consultation' = 'queue';
+  viewMode: 'queue' | 'consultation' | string = 'queue';
 
   // Right column state in Consultation view:
   // 'suggestions' -> Image 4 (Patient Card + AI Suggestions + Run Clinical Analysis button)
@@ -64,7 +64,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   get patientsQueue() {
     const user = this.authService.currentUser();
     const docName = user?.name || 'Dr. Yuki Tanaka';
-    const queue = this.appointmentService.getDoctorQueue(docName);
+    const docId = user?.id;
+    const queue = this.appointmentService.getDoctorQueue(docName, docId);
     
     return queue.map(p => ({
       id: p.id,
@@ -127,7 +128,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   patientSessions: any[] = [];
   selectedSessionId: string = 'live';
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.appointmentService.fetchDataFromBackend();
+  }
 
   ngOnDestroy(): void {
     if (this.recordingService.state() === 'RECORDING' || this.recordingService.state() === 'PAUSED') {

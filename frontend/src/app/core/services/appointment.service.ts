@@ -382,17 +382,124 @@ export class AppointmentService {
 
   constructor() {
     this.fetchDataFromBackend();
+    this.syncFromLocalStorage();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', () => {
+        this.syncFromLocalStorage();
+        this.fetchDataFromBackend();
+      });
+      window.addEventListener('cliniq_session_updated', () => {
+        this.syncFromLocalStorage();
+        this.fetchDataFromBackend();
+      });
+    }
   }
 
   /**
-   * Fetch initial live patients & doctors from Backend API
+   * Immediately sync current doctor from localStorage session if present
+   */
+  syncFromLocalStorage(): void {
+    try {
+      const stored = localStorage.getItem('cliniq_session') || localStorage.getItem('cliniq_auth_session');
+      if (stored) {
+        const session = JSON.parse(stored);
+        if (session?.user && (session.user.role === 'DOCTOR' || session.role === 'DOCTOR')) {
+          this.syncCurrentDoctor(session.user);
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  /**
+   * Ensure a specific or current logged-in doctor is dynamically registered and marked active in the doctors signal
+   */
+  syncCurrentDoctor(user?: any): void {
+    if (!user) {
+      try {
+        const stored = localStorage.getItem('cliniq_session') || localStorage.getItem('cliniq_auth_session');
+        if (stored) {
+          const session = JSON.parse(stored);
+          if (session?.user && (session.user.role === 'DOCTOR' || session.role === 'DOCTOR')) {
+            user = session.user;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!user) return;
+
+    const rawName = (user.name || user.full_name || '').trim();
+    if (!rawName) return;
+
+    const cleanName = rawName.startsWith('Dr.') ? rawName : `Dr. ${rawName}`;
+    const docId = user.id || 'DOC-CURRENT';
+    const email = user.email || '';
+    const specialty = user.specialization || user.specialty || user.department || 'Senior Cardiologist';
+    const department = user.department || 'Cardiology';
+    const initials = user.avatar_initials || cleanName.replace('Dr.', '').trim().slice(0, 2).toUpperCase() || 'DA';
+
+    const standardSlots: DoctorSlot[] = [
+      { id: `${docId}-s1`, time: '09:00 AM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s2`, time: '09:45 AM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s3`, time: '10:30 AM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s4`, time: '11:15 AM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s5`, time: '02:00 PM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s6`, time: '02:45 PM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s7`, time: '03:30 PM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s8`, time: '04:15 PM', duration: '30 min', status: 'AVAILABLE' },
+    ];
+
+    this.doctors.update(docs => {
+      const existingIdx = docs.findIndex(d => 
+        (docId && d.id.toLowerCase() === docId.toLowerCase()) || 
+        (email && d.email.toLowerCase() === email.toLowerCase()) ||
+        d.name.toLowerCase() === cleanName.toLowerCase()
+      );
+
+      if (existingIdx >= 0) {
+        const updated = [...docs];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          name: cleanName,
+          specialty: specialty,
+          department: department,
+          available: true,
+          dutyStatus: 'On duty',
+          slots: updated[existingIdx].slots.length > 0 ? updated[existingIdx].slots : standardSlots
+        };
+        return updated;
+      } else {
+        return [
+          {
+            id: docId,
+            name: cleanName,
+            initials: initials,
+            specialty: specialty,
+            department: department,
+            email: email,
+            available: true,
+            dutyStatus: 'On duty',
+            slots: standardSlots
+          },
+          ...docs
+        ];
+      }
+    });
+  }
+
+  /**
+   * Fetch live patients & doctors from Backend API, merging PostgreSQL registered users
    */
   async fetchDataFromBackend(): Promise<void> {
     try {
       this.isLoading.set(true);
-      const [patientsRes, doctorsRes] = await Promise.allSettled([
+      const [patientsRes, doctorsRes, usersRes] = await Promise.allSettled([
         firstValueFrom(this.http.get<{ success: boolean; data: ClinicPatient[] }>(`${this.apiBaseUrl}/api/scheduling/patients`)),
-        firstValueFrom(this.http.get<{ success: boolean; data: DoctorProfile[] }>(`${this.apiBaseUrl}/api/scheduling/doctors`))
+        firstValueFrom(this.http.get<{ success: boolean; data: DoctorProfile[] }>(`${this.apiBaseUrl}/api/scheduling/doctors`)),
+        firstValueFrom(this.http.get<any[]>(`${this.apiBaseUrl}/api/auth/users?role=DOCTOR`))
       ]);
 
       if (patientsRes.status === 'fulfilled' && patientsRes.value?.data && Array.isArray(patientsRes.value.data)) {
@@ -401,13 +508,55 @@ export class AppointmentService {
         }
       }
 
+      let combinedDoctors: DoctorProfile[] = [];
       if (doctorsRes.status === 'fulfilled' && doctorsRes.value?.data && Array.isArray(doctorsRes.value.data)) {
-        if (doctorsRes.value.data.length > 0) {
-          this.doctors.set(doctorsRes.value.data);
+        combinedDoctors = [...doctorsRes.value.data];
+      }
+
+      // Merge users from Auth table
+      if (usersRes.status === 'fulfilled' && Array.isArray(usersRes.value)) {
+        for (const u of usersRes.value) {
+          const uName = (u.full_name || u.email.split('@')[0]).trim();
+          const formattedName = uName.toLowerCase().startsWith('dr.') ? uName : `Dr. ${uName}`;
+          const exists = combinedDoctors.some(d => 
+            d.id.toLowerCase() === u.id.toLowerCase() || 
+            d.email.toLowerCase() === u.email.toLowerCase() ||
+            d.name.toLowerCase() === formattedName.toLowerCase()
+          );
+          if (!exists) {
+            combinedDoctors.unshift({
+              id: u.id,
+              name: formattedName,
+              initials: u.avatar_initials || formattedName.replace('Dr.', '').trim().slice(0, 2).toUpperCase() || 'DR',
+              specialty: u.specialization || u.department || 'Senior Cardiologist',
+              department: u.department || 'Cardiology',
+              email: u.email,
+              available: true,
+              dutyStatus: 'On duty',
+              slots: [
+                { id: `${u.id}-s1`, time: '09:00 AM', duration: '30 min', status: 'AVAILABLE' },
+                { id: `${u.id}-s2`, time: '09:45 AM', duration: '30 min', status: 'AVAILABLE' },
+                { id: `${u.id}-s3`, time: '10:30 AM', duration: '30 min', status: 'AVAILABLE' },
+                { id: `${u.id}-s4`, time: '11:15 AM', duration: '30 min', status: 'AVAILABLE' },
+                { id: `${u.id}-s5`, time: '02:00 PM', duration: '30 min', status: 'AVAILABLE' },
+                { id: `${u.id}-s6`, time: '02:45 PM', duration: '30 min', status: 'AVAILABLE' },
+                { id: `${u.id}-s7`, time: '03:30 PM', duration: '30 min', status: 'AVAILABLE' },
+                { id: `${u.id}-s8`, time: '04:15 PM', duration: '30 min', status: 'AVAILABLE' },
+              ]
+            });
+          }
         }
       }
+
+      if (combinedDoctors.length > 0) {
+        this.doctors.set(combinedDoctors);
+      }
+
+      // Sync current logged in doctor
+      this.syncCurrentDoctor();
     } catch (err) {
-      console.warn('[AppointmentService] Backend API not reachable yet, using local state.', err);
+      console.warn('[AppointmentService] Backend API warning, using local state.', err);
+      this.syncCurrentDoctor();
     } finally {
       this.isLoading.set(false);
     }
@@ -728,17 +877,45 @@ export class AppointmentService {
   }
 
   /**
-   * Get dynamic Queue for a specific Doctor
+   * Get dynamic Queue for a specific Doctor (matches doctor ID, name, or preferred choice)
    */
-  getDoctorQueue(doctorName: string): ClinicPatient[] {
+  getDoctorQueue(doctorName: string, doctorId?: string): ClinicPatient[] {
+    const cleanName = doctorName.replace(/^Dr\.\s*/i, '').trim().toLowerCase();
+    const cleanFull = doctorName.trim().toLowerCase();
+    const cleanId = doctorId?.trim().toLowerCase();
+
     const matchedDoctor = this.doctors().find(d => 
-      d.name.toLowerCase().includes(doctorName.toLowerCase()) || 
-      doctorName.toLowerCase().includes(d.name.toLowerCase()) ||
-      d.id.toLowerCase() === doctorName.toLowerCase()
+      (cleanId && d.id.toLowerCase() === cleanId) ||
+      d.name.toLowerCase().includes(cleanName) || 
+      cleanFull.includes(d.name.toLowerCase()) ||
+      d.id.toLowerCase() === cleanFull
     );
 
-    const docId = matchedDoctor?.id || 'DOC-001';
-    return this.patients().filter(p => p.assignedDoctorId === docId);
+    const docId = matchedDoctor?.id || doctorId;
+    const docName = matchedDoctor?.name || doctorName;
+    const docCleanName = docName.replace(/^Dr\.\s*/i, '').trim().toLowerCase();
+
+    return this.patients().filter(p => {
+      // 1. Direct doctor ID match
+      if (docId && p.assignedDoctorId && p.assignedDoctorId.toLowerCase() === docId.toLowerCase()) {
+        return true;
+      }
+      // 2. Assigned doctor name match
+      if (p.assignedDoctorName) {
+        const pDocName = p.assignedDoctorName.replace(/^Dr\.\s*/i, '').trim().toLowerCase();
+        if (pDocName === docCleanName || pDocName.includes(cleanName) || cleanName.includes(pDocName)) {
+          return true;
+        }
+      }
+      // 3. Preferred doctor match if assigned or requested
+      if (p.preferredDoctorName && p.isPreferredDoctorChoice) {
+        const pPrefName = p.preferredDoctorName.replace(/^Dr\.\s*/i, '').trim().toLowerCase();
+        if (pPrefName === docCleanName || pPrefName.includes(cleanName) || cleanName.includes(pPrefName)) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   /**
