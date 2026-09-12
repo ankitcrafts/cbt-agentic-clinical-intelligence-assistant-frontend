@@ -155,7 +155,7 @@ export class AuthService {
       if (response.dev_otp) {
         this.devOtp.set(response.dev_otp);
       }
-      this.successMessage.set(`A 6-digit verification code has been sent to ${cleanEmail}`);
+      this.successMessage.set(response.message || `A 6-digit verification code has been sent to ${cleanEmail}. Please check your Inbox and Spam/Promotions folder.`);
       return response;
     } catch (err: any) {
       console.warn('Backend send-otp error:', err);
@@ -237,10 +237,10 @@ export class AuthService {
 
         this.currentRole.set(mappedRole);
         this.isLoggedIn.set(true);
-        this.currentStep.set(1);
-
-        // If it's a new user without a completed profile name, flag it
-        if (!isProfileDone) {
+        // For Patient role, proceed directly into the patient landing page
+        if (mappedRole === 'PATIENT') {
+          this.isNewUserPendingProfile.set(false);
+        } else if (!isProfileDone) {
           this.isNewUserPendingProfile.set(true);
         }
 

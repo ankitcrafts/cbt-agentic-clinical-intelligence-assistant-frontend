@@ -1,12 +1,13 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { AppointmentService } from '../../../core/services/appointment.service';
 
 @Component({
   selector: 'app-patient-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './patient-dashboard.component.html',
   styleUrls: ['./patient-dashboard.component.scss']
 })
@@ -21,14 +22,33 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
   showSoapModal: boolean = false;
   selectedSoapReport: any = null;
 
-  patientProfile = {
+  patientProfile: any = {
     name: 'Marcus Delgado',
     dob: '1984-03-12',
     mrn: '#00847261',
     age: 42,
     gender: 'M',
     phone: '+1 (555) 234-5678',
+    email: '',
+    reason: 'Hypertension review',
     condition: 'Essential Hypertension'
+  };
+
+  // Profile Edit Modal State
+  showEditProfileModal: boolean = false;
+  isSavingProfile: boolean = false;
+  profileSaveMessage: string | null = null;
+  profileSaveError: string | null = null;
+
+  editForm = {
+    name: '',
+    age: 35,
+    gender: 'M',
+    dob: '1991-05-18',
+    phone: '',
+    email: '',
+    reason: '',
+    condition: ''
   };
 
   followUpAlerts: any[] = [
@@ -248,5 +268,87 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
 
   printSoapReport(): void {
     window.print();
+  }
+
+  openEditProfileModal(): void {
+    this.profileSaveMessage = null;
+    this.profileSaveError = null;
+    const currentUser = this.authService.currentUser();
+    this.editForm = {
+      name: this.patientProfile.name || currentUser?.name || '',
+      age: this.patientProfile.age || 35,
+      gender: this.patientProfile.gender || 'M',
+      dob: this.patientProfile.dob || '1991-05-18',
+      phone: this.patientProfile.phone || currentUser?.phone_number || '',
+      email: this.patientProfile.email || currentUser?.email || '',
+      reason: this.patientProfile.reason || 'General Health Consultation',
+      condition: this.patientProfile.condition || 'Triage Review'
+    };
+    this.showEditProfileModal = true;
+  }
+
+  closeEditProfileModal(): void {
+    this.showEditProfileModal = false;
+    this.profileSaveMessage = null;
+    this.profileSaveError = null;
+  }
+
+  async saveProfileChanges(): Promise<void> {
+    if (!this.editForm.name.trim()) {
+      this.profileSaveError = 'Please enter your full name.';
+      return;
+    }
+
+    this.isSavingProfile = true;
+    this.profileSaveMessage = null;
+    this.profileSaveError = null;
+
+    const targetId = this.patientProfile.mrn || this.patientProfile.email || this.authService.currentUser()?.id || '#00847261';
+
+    try {
+      // 1. Update in PostgreSQL database (PatientModel)
+      await this.appointmentService.updatePatient(targetId, {
+        name: this.editForm.name.trim(),
+        age: Number(this.editForm.age) || 35,
+        gender: this.editForm.gender as any,
+        phone: this.editForm.phone.trim(),
+        email: this.editForm.email.trim(),
+        reason: this.editForm.reason.trim(),
+        condition: this.editForm.condition.trim()
+      });
+
+      // 2. Update User account record via AuthService
+      await this.authService.updateProfile({
+        full_name: this.editForm.name.trim(),
+        phone_number: this.editForm.phone.trim()
+      });
+
+      // 3. Update component state immediately
+      this.patientProfile = {
+        ...this.patientProfile,
+        name: this.editForm.name.trim(),
+        age: Number(this.editForm.age) || 35,
+        gender: this.editForm.gender,
+        dob: this.editForm.dob,
+        phone: this.editForm.phone.trim(),
+        email: this.editForm.email.trim(),
+        reason: this.editForm.reason.trim(),
+        condition: this.editForm.condition.trim()
+      };
+
+      // Broadcast update event to active tabs
+      window.dispatchEvent(new CustomEvent('cliniq_patient_data_updated', { detail: this.patientProfile }));
+
+      this.isSavingProfile = false;
+      this.profileSaveMessage = '✓ Profile details saved and updated in PostgreSQL database successfully!';
+
+      setTimeout(() => {
+        this.closeEditProfileModal();
+      }, 1200);
+    } catch (err: any) {
+      this.isSavingProfile = false;
+      console.error('Error saving patient profile:', err);
+      this.profileSaveError = 'Failed to update profile. Please try again.';
+    }
   }
 }

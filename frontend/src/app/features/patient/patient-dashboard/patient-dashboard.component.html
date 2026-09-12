@@ -8,12 +8,34 @@
           {{ patientProfile.name }} · DOB {{ patientProfile.dob }} · MRN {{ patientProfile.mrn }}
         </p>
       </div>
-      <div class="header-actions-right" *ngIf="hasSharedSoap">
-        <button type="button" class="btn-quick-soap" (click)="openSoapModal()">
+      <div class="header-actions-right">
+        <button type="button" class="btn-edit-profile" (click)="openEditProfileModal()">
+          <i class="fa-solid fa-user-pen"></i> Edit My Details
+        </button>
+        <button type="button" class="btn-quick-soap" *ngIf="hasSharedSoap" (click)="openSoapModal()">
           <i class="fa-solid fa-file-waveform"></i> Latest SOAP Note
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- Patient Details & Demographics Summary Banner -->
+  <div class="patient-demographics-banner">
+    <span class="demo-chip" *ngIf="patientProfile.phone">
+      <i class="fa-solid fa-phone"></i> {{ patientProfile.phone }}
+    </span>
+    <span class="demo-chip" *ngIf="patientProfile.email">
+      <i class="fa-solid fa-envelope"></i> {{ patientProfile.email }}
+    </span>
+    <span class="demo-chip" *ngIf="patientProfile.gender">
+      <i class="fa-solid fa-venus-mars"></i> {{ patientProfile.gender === 'F' ? 'Female' : (patientProfile.gender === 'M' ? 'Male' : patientProfile.gender) }} · {{ patientProfile.age }} yrs
+    </span>
+    <span class="demo-chip condition-chip" *ngIf="patientProfile.condition">
+      <i class="fa-solid fa-heart-pulse"></i> {{ patientProfile.condition }}
+    </span>
+    <span class="demo-chip reason-chip" *ngIf="patientProfile.reason">
+      <i class="fa-solid fa-notes-medical"></i> {{ patientProfile.reason }}
+    </span>
   </div>
 
   <!-- Real-time Doctor Shared SOAP Banner -->
@@ -272,6 +294,90 @@
       </div>
       <button type="button" class="btn-modal-done" (click)="closeSoapModal()">Close</button>
     </div>
+  </div>
+</div>
+
+<!-- EDIT PATIENT PROFILE MODAL -->
+<div class="modal-backdrop" *ngIf="showEditProfileModal">
+  <div class="modal-card edit-profile-card">
+    <div class="modal-header-edit">
+      <div class="modal-header-left">
+        <div class="modal-icon-badge">
+          <i class="fa-solid fa-user-pen"></i>
+        </div>
+        <div>
+          <h3 class="modal-title-edit">Edit Personal & Health Details</h3>
+          <p class="modal-sub-edit">Update your information registered in the hospital database</p>
+        </div>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="closeEditProfileModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Alerts -->
+    <div class="modal-alert-box success" *ngIf="profileSaveMessage">
+      <i class="fa-solid fa-circle-check"></i>
+      <span>{{ profileSaveMessage }}</span>
+    </div>
+    <div class="modal-alert-box error" *ngIf="profileSaveError">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <span>{{ profileSaveError }}</span>
+    </div>
+
+    <form (ngSubmit)="saveProfileChanges()" class="edit-profile-form">
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="editForm.name" name="name" required placeholder="e.g. Ranjana Kumari">
+        </div>
+
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" [(ngModel)]="editForm.phone" name="phone" placeholder="e.g. +1 (555) 234-5678">
+        </div>
+      </div>
+
+      <div class="form-grid-3">
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" [(ngModel)]="editForm.age" name="age" min="1" max="120">
+        </div>
+
+        <div class="form-group">
+          <label>Gender</label>
+          <select [(ngModel)]="editForm.gender" name="gender">
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date of Birth</label>
+          <input type="date" [(ngModel)]="editForm.dob" name="dob">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Primary Reason / Chief Complaint</label>
+        <input type="text" [(ngModel)]="editForm.reason" name="reason" placeholder="e.g. Regular health checkup, hypertension consultation">
+      </div>
+
+      <div class="form-group">
+        <label>Medical Condition / Notes</label>
+        <input type="text" [(ngModel)]="editForm.condition" name="condition" placeholder="e.g. Essential Hypertension, Triage Assessment">
+      </div>
+
+      <div class="modal-actions-row">
+        <button type="button" class="btn-cancel" (click)="closeEditProfileModal()" [disabled]="isSavingProfile">Cancel</button>
+        <button type="submit" class="btn-save-profile" [disabled]="isSavingProfile || !editForm.name">
+          <i class="fa-solid fa-spinner fa-spin" *ngIf="isSavingProfile"></i>
+          <i class="fa-solid fa-cloud-arrow-up" *ngIf="!isSavingProfile"></i>
+          <span>{{ isSavingProfile ? 'Saving...' : 'Save & Update Database' }}</span>
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
