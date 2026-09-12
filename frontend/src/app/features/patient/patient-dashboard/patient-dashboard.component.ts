@@ -15,12 +15,102 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   appointmentService = inject(AppointmentService);
 
-  activeTab: 'alerts' | 'records' | 'prescriptions' = 'alerts';
+  activeTab: 'alerts' | 'records' | 'prescriptions' | 'consultations' = 'alerts';
   isLoading: boolean = false;
   hasSharedSoap: boolean = false;
   latestSharedSoap: any = null;
   showSoapModal: boolean = false;
   selectedSoapReport: any = null;
+
+  // Consultations Screen & Transcript Modal State
+  consultations: any[] = [
+    {
+      id: 'sess-base-2',
+      sessionNumber: 2,
+      sessionTitle: 'Cardiology Review & Medication Titration',
+      doctorName: 'Dr. Yuki Tanaka',
+      doctorId: 'DOC-001',
+      doctorSpecialty: 'Senior Cardiologist',
+      date: '2026-07-14',
+      consultationMode: 'In-Person Consultation',
+      status: 'COMPLETED',
+      isShared: true,
+      summary: 'Follow-up consultation for Stage 1 Hypertension. Reviewed patient daily BP logs showing marked stabilization with Lisinopril 10mg. Patient reports tension headaches have resolved. Sodium restriction and aerobic walking routine verified.',
+      assessment: 'Essential Hypertension Stage 1 (ICD-10: I10), well controlled under current regimen.',
+      plan: '1. Continue Lisinopril 10mg once daily in morning.\n2. Maintain low-sodium DASH dietary regimen.\n3. Schedule repeat lipid profile & BP recheck in 6 weeks.',
+      subjective: 'Marcus reports feeling much better with no morning headaches. Complies with Lisinopril 10mg daily. Has reduced dietary sodium and begun brisk walking 20 mins daily.',
+      objective: 'BP: 138/88 mmHg, HR: 72 bpm, Weight: 81 kg, Temp: 36.6 °C. Heart sounds S1/S2 normal, no murmurs. Lungs clear.',
+      vitals: {
+        bp: '138/88 mmHg',
+        hr: '72 bpm',
+        weight: '81 kg',
+        temp: '36.6 °C'
+      },
+      conversation: [
+        { speaker: 'Doctor', role: 'doctor', text: 'Good morning Marcus, how have you been feeling since starting the Lisinopril medication?', time: '00:05' },
+        { speaker: 'Patient', role: 'patient', text: 'Good morning Doctor. The morning headaches have stopped and my home BP monitor shows lower numbers.', time: '00:15' },
+        { speaker: 'Doctor', role: 'doctor', text: 'That is wonderful progress. Your reading today is 138/88 mmHg. We will continue this dosage, keep up the sodium reduction, and follow up in 6 weeks.', time: '00:30' }
+      ],
+      transcript: 'Doctor: Good morning Marcus, how have you been feeling since starting the Lisinopril medication?\nPatient: Good morning Doctor. The morning headaches have stopped and my home BP monitor shows lower numbers.\nDoctor: That is wonderful progress. Your reading today is 138/88 mmHg. We will continue this dosage, keep up the sodium reduction, and follow up in 6 weeks.',
+      soapReport: {
+        subjective: 'Marcus reports feeling much better with no morning headaches. Complies with Lisinopril 10mg daily. Has reduced dietary sodium and begun brisk walking 20 mins daily.',
+        objective: 'BP: 138/88 mmHg, HR: 72 bpm, Weight: 81 kg, Temp: 36.6 °C. Heart sounds S1/S2 normal, no murmurs. Lungs clear.',
+        assessment: 'Essential Hypertension Stage 1 (ICD-10: I10), well controlled under current regimen.',
+        plan: '1. Continue Lisinopril 10mg once daily in morning.\n2. Maintain low-sodium DASH dietary regimen.\n3. Schedule repeat lipid profile & BP recheck in 6 weeks.',
+        doctorName: 'Dr. Yuki Tanaka',
+        date: '2026-07-14',
+        sessionTitle: 'Cardiology Review & Medication Titration',
+        encounterId: 'ENC-00847261-02',
+        patientName: 'Marcus Delgado',
+        mrn: '#00847261'
+      }
+    },
+    {
+      id: 'sess-base-1',
+      sessionNumber: 1,
+      sessionTitle: 'Initial Hypertension Intake & Clinical Assessment',
+      doctorName: 'Dr. Amara Osei',
+      doctorId: 'DOC-003',
+      doctorSpecialty: 'Internal Medicine Specialist',
+      date: '2026-04-03',
+      consultationMode: 'In-Person Consultation',
+      status: 'COMPLETED',
+      isShared: false,
+      summary: 'Initial intake consultation for persistently elevated blood pressure readings (>150 mmHg). Conducted comprehensive cardiovascular evaluation, ordered resting ECG and basic metabolic panel. Initiated first-line ACE inhibitor Lisinopril 10mg.',
+      assessment: 'Newly diagnosed Essential Hypertension (Moderate). ICD-10: I10.',
+      plan: '1. Initiated Lisinopril 10mg daily.\n2. Lifestyle modification: DASH diet with sodium < 2g/day.\n3. Follow-up consultation in 3 months with home blood pressure logs.',
+      subjective: 'Patient presented with elevated home blood pressure readings over the past 3 weeks. Reports occasional tension headaches and fatigue.',
+      objective: 'BP: 155/96 mmHg, HR: 78 bpm, Weight: 83 kg, Temp: 36.8 °C. ECG: Normal sinus rhythm without ischemic changes.',
+      vitals: {
+        bp: '155/96 mmHg',
+        hr: '78 bpm',
+        weight: '83 kg',
+        temp: '36.8 °C'
+      },
+      conversation: [
+        { speaker: 'Doctor', role: 'doctor', text: 'Hello Marcus, I see your home BP readings have been consistently elevated. Have you had any chest tightness or shortness of breath?', time: '00:04' },
+        { speaker: 'Patient', role: 'patient', text: 'No chest tightness, but I get occasional tension headaches in the morning.', time: '00:18' },
+        { speaker: 'Doctor', role: 'doctor', text: 'Your clinic BP today is 155/96 mmHg. We will start you on a low dose of Lisinopril 10mg to protect your heart and kidneys, along with dietary adjustments.', time: '00:40' }
+      ],
+      transcript: 'Doctor: Hello Marcus, I see your home BP readings have been consistently elevated. Have you had any chest tightness or shortness of breath?\nPatient: No chest tightness, but I get occasional tension headaches in the morning.\nDoctor: Your clinic BP today is 155/96 mmHg. We will start you on a low dose of Lisinopril 10mg to protect your heart and kidneys, along with dietary adjustments.',
+      soapReport: {
+        subjective: 'Patient presented with elevated home blood pressure readings over the past 3 weeks. Reports occasional tension headaches and fatigue.',
+        objective: 'BP: 155/96 mmHg, HR: 78 bpm, Weight: 83 kg, Temp: 36.8 °C. ECG: Normal sinus rhythm without ischemic changes.',
+        assessment: 'Newly diagnosed Essential Hypertension (Moderate). ICD-10: I10.',
+        plan: '1. Initiated Lisinopril 10mg daily.\n2. Lifestyle modification: DASH diet with sodium < 2g/day.\n3. Follow-up consultation in 3 months with home blood pressure logs.',
+        doctorName: 'Dr. Amara Osei',
+        date: '2026-04-03',
+        sessionTitle: 'Initial Hypertension Intake & Clinical Assessment',
+        encounterId: 'ENC-00847261-01',
+        patientName: 'Marcus Delgado',
+        mrn: '#00847261'
+      }
+    }
+  ];
+
+  lastConsultation: any = this.consultations[0];
+  showTranscriptModal: boolean = false;
+  selectedTranscriptSession: any = null;
 
   patientProfile: any = {
     name: 'Marcus Delgado',
@@ -210,12 +300,18 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
           this.prescriptions = summary.prescriptions;
         }
 
+        if (summary.consultations && summary.consultations.length > 0) {
+          this.consultations = summary.consultations;
+          this.lastConsultation = summary.lastConsultation || summary.consultations[0];
+        }
+
         this.hasSharedSoap = !!summary.hasSharedSoap;
 
-        // Find the latest shared SOAP report from prescriptions or records
+        // Find the latest shared SOAP report from prescriptions, records, or consultations
+        const consultWithSoap = this.consultations.find(c => c.soapReport);
         const recordWithSoap = this.medicalRecords.find(r => r.soapReport);
         const rxWithSoap = this.prescriptions.find(p => p.soapReport);
-        this.latestSharedSoap = recordWithSoap?.soapReport || rxWithSoap?.soapReport || null;
+        this.latestSharedSoap = consultWithSoap?.soapReport || recordWithSoap?.soapReport || rxWithSoap?.soapReport || null;
       }
     } catch (err) {
       console.warn('Could not load dynamic summary from backend, checking local storage:', err);
@@ -243,18 +339,18 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  selectTab(tab: 'alerts' | 'records' | 'prescriptions'): void {
+  selectTab(tab: 'alerts' | 'records' | 'prescriptions' | 'consultations'): void {
     this.activeTab = tab;
   }
 
   openSoapModal(soapReport?: any): void {
-    this.selectedSoapReport = soapReport || this.latestSharedSoap || {
+    this.selectedSoapReport = soapReport || this.latestSharedSoap || (this.lastConsultation?.soapReport) || {
       subjective: 'Patient Marcus Delgado presented for consultation.',
       objective: 'BP: 145/92 mmHg, HR: 78 bpm.',
       assessment: '1. Essential Hypertension Stage 1.',
       plan: '1. Continue Lisinopril 10mg. 2. Follow-up in 4 weeks.',
-      doctorName: 'Dr. Yuki Tanaka',
-      date: '2026-08-13',
+      doctorName: this.lastConsultation?.doctorName || 'Dr. Yuki Tanaka',
+      date: this.lastConsultation?.date || '2026-08-13',
       patientName: this.patientProfile.name,
       mrn: this.patientProfile.mrn
     };
@@ -264,6 +360,16 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
   closeSoapModal(): void {
     this.showSoapModal = false;
     this.selectedSoapReport = null;
+  }
+
+  openTranscriptModal(session: any): void {
+    this.selectedTranscriptSession = session || this.lastConsultation;
+    this.showTranscriptModal = true;
+  }
+
+  closeTranscriptModal(): void {
+    this.showTranscriptModal = false;
+    this.selectedTranscriptSession = null;
   }
 
   printSoapReport(): void {

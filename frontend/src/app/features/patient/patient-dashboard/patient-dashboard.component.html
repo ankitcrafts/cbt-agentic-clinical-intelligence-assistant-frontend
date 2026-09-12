@@ -92,6 +92,16 @@
       <span>Prescriptions</span>
       <span class="count-badge">{{ prescriptions.length }}</span>
     </button>
+
+    <button 
+      type="button" 
+      class="tab-pill" 
+      [class.active]="activeTab === 'consultations'" 
+      (click)="selectTab('consultations')"
+    >
+      <span><i class="fa-solid fa-user-doctor"></i> Doctor Consultations</span>
+      <span class="count-badge">{{ consultations.length }}</span>
+    </button>
   </div>
 
   <!-- Tab 1: Follow-up Alerts -->
@@ -193,6 +203,151 @@
           <span class="rx-soap-verified-hint">
             <i class="fa-solid fa-circle-check"></i> Verified by {{ rx.soapReport?.doctorName || latestSharedSoap?.doctorName || 'Doctor' }}
           </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 4: Doctor Consultations History & Record -->
+  <div class="tab-content-area" *ngIf="activeTab === 'consultations'">
+    <!-- Top Hero Card: Latest Consultation Overview -->
+    <div class="cliniq-card latest-consultation-hero-card" *ngIf="lastConsultation">
+      <div class="hero-header-banner">
+        <div class="hero-doc-badge">
+          <div class="doc-avatar-circle">
+            <i class="fa-solid fa-user-doctor"></i>
+          </div>
+          <div class="doc-info-meta">
+            <div class="doc-name-row">
+              <h3 class="doc-full-name">{{ lastConsultation.doctorName }}</h3>
+              <span class="doc-id-tag">{{ lastConsultation.doctorId || 'DOC-ATTENDING' }}</span>
+              <span class="doc-specialty-pill">{{ lastConsultation.doctorSpecialty || 'Attending Physician' }}</span>
+            </div>
+            <div class="consultation-meta-row">
+              <span><i class="fa-regular fa-calendar-check"></i> <strong>Last Consultation:</strong> {{ lastConsultation.date }}</span>
+              <span class="meta-dot">·</span>
+              <span><i class="fa-solid fa-hospital-user"></i> {{ lastConsultation.consultationMode }}</span>
+              <span class="meta-dot">·</span>
+              <span class="session-pill-tag">{{ lastConsultation.sessionTitle }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-action-buttons">
+          <button type="button" class="btn-hero-soap" *ngIf="lastConsultation.soapReport" (click)="openSoapModal(lastConsultation.soapReport)">
+            <i class="fa-solid fa-file-waveform"></i> View Official SOAP Note
+          </button>
+          <button type="button" class="btn-hero-transcript" (click)="openTranscriptModal(lastConsultation)">
+            <i class="fa-solid fa-comments"></i> View Consultation Dialogue
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-body-content">
+        <div class="clinical-outcome-section">
+          <div class="outcome-label">
+            <i class="fa-solid fa-stethoscope"></i>
+            <span>WHAT HAPPENED IN LAST CONSULTATION</span>
+          </div>
+          <p class="outcome-summary-text">{{ lastConsultation.summary }}</p>
+        </div>
+
+        <div class="hero-grid-2col">
+          <div class="hero-grid-box assessment-box">
+            <div class="box-title"><i class="fa-solid fa-notes-medical"></i> Clinical Diagnosis & Assessment</div>
+            <p class="box-desc">{{ lastConsultation.assessment }}</p>
+          </div>
+
+          <div class="hero-grid-box plan-box">
+            <div class="box-title"><i class="fa-solid fa-clipboard-check"></i> Doctor's Prescribed Plan & Advice</div>
+            <p class="box-desc" style="white-space: pre-line;">{{ lastConsultation.plan }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Consultations List Section -->
+    <div class="consultations-history-section">
+      <div class="section-title-row">
+        <h3 class="section-heading-text">All Doctor Consultations & Recorded Encounters</h3>
+        <span class="history-count-badge">{{ consultations.length }} sessions recorded</span>
+      </div>
+
+      <div class="summary-cards-list">
+        <div class="cliniq-card consultation-history-card" *ngFor="let item of consultations">
+          <div class="consultation-card-header">
+            <div class="consult-doc-left">
+              <div class="consult-doc-avatar">
+                <i class="fa-solid fa-user-doctor"></i>
+              </div>
+              <div class="consult-doc-details">
+                <div class="consult-doc-name-line">
+                  <h4 class="consult-doc-name">{{ item.doctorName }}</h4>
+                  <span class="consult-doc-id">{{ item.doctorId }}</span>
+                  <span class="consult-status-badge" [class.verified]="item.isShared || item.soapReport">
+                    <i class="fa-solid fa-circle-check" *ngIf="item.isShared || item.soapReport"></i>
+                    {{ (item.isShared || item.soapReport) ? 'Verified Consultation' : 'Completed' }}
+                  </span>
+                </div>
+                <div class="consult-subtitle-line">
+                  <span class="session-name">{{ item.sessionTitle }}</span>
+                  <span class="dot-sep">·</span>
+                  <span class="consult-date"><i class="fa-regular fa-calendar"></i> {{ item.date }}</span>
+                  <span class="dot-sep">·</span>
+                  <span class="consult-mode"><i class="fa-solid fa-hospital-user"></i> {{ item.consultationMode }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="consult-card-actions">
+              <button type="button" class="btn-card-soap" *ngIf="item.soapReport" (click)="openSoapModal(item.soapReport)">
+                <i class="fa-solid fa-file-waveform"></i> SOAP Note
+              </button>
+              <button type="button" class="btn-card-transcript" (click)="openTranscriptModal(item)">
+                <i class="fa-solid fa-comments"></i> Transcript
+              </button>
+            </div>
+          </div>
+
+          <div class="consultation-card-body">
+            <!-- Discussion / What Happened -->
+            <div class="consult-info-block">
+              <span class="info-block-label">Summary & Consultation Outcome</span>
+              <p class="info-block-text">{{ item.summary }}</p>
+            </div>
+
+            <!-- Diagnosis & Plan Grid -->
+            <div class="consult-subgrid">
+              <div class="subgrid-col">
+                <span class="subgrid-label">Assessment / Diagnosis</span>
+                <p class="subgrid-text">{{ item.assessment }}</p>
+              </div>
+              <div class="subgrid-col">
+                <span class="subgrid-label">Plan & Prescriptions</span>
+                <p class="subgrid-text" style="white-space: pre-line;">{{ item.plan }}</p>
+              </div>
+            </div>
+
+            <!-- Vitals metrics if available -->
+            <div class="consult-vitals-row" *ngIf="item.vitals">
+              <div class="c-vital-item">
+                <span class="c-vital-lbl">BP</span>
+                <span class="c-vital-val">{{ item.vitals.bp || '120/80' }}</span>
+              </div>
+              <div class="c-vital-item">
+                <span class="c-vital-lbl">HR</span>
+                <span class="c-vital-val">{{ item.vitals.hr || '72 bpm' }}</span>
+              </div>
+              <div class="c-vital-item">
+                <span class="c-vital-lbl">WEIGHT</span>
+                <span class="c-vital-val">{{ item.vitals.weight || '81 kg' }}</span>
+              </div>
+              <div class="c-vital-item">
+                <span class="c-vital-lbl">TEMP</span>
+                <span class="c-vital-val">{{ item.vitals.temp || '36.6 °C' }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -380,4 +535,71 @@
     </form>
   </div>
 </div>
+
+<!-- ========================================================================= -->
+<!-- CONSULTATION TRANSCRIPT & DIALOGUE MODAL VIEWER                           -->
+<!-- ========================================================================= -->
+<div class="transcript-modal-backdrop" *ngIf="showTranscriptModal" (click)="closeTranscriptModal()">
+  <div class="transcript-modal-container" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="transcript-modal-header">
+      <div class="modal-header-left">
+        <div class="modal-badge-cliniq">CLINICAL TRANSCRIPT & CONSULTATION DIALOGUE</div>
+        <h2 class="modal-transcript-title">{{ selectedTranscriptSession?.sessionTitle || 'Consultation Transcript' }}</h2>
+        <div class="modal-meta-line">
+          <span><strong>Doctor:</strong> {{ selectedTranscriptSession?.doctorName || 'Attending Doctor' }}</span>
+          <span>·</span>
+          <span><strong>Patient:</strong> {{ patientProfile.name }}</span>
+          <span>·</span>
+          <span><strong>Date:</strong> {{ selectedTranscriptSession?.date }}</span>
+          <span>·</span>
+          <span><strong>Mode:</strong> {{ selectedTranscriptSession?.consultationMode || 'In-Person' }}</span>
+        </div>
+      </div>
+      <button type="button" class="btn-modal-close" (click)="closeTranscriptModal()" title="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="transcript-modal-body">
+      <!-- If conversation exchanges array exists -->
+      <div class="dialogue-exchanges-list" *ngIf="selectedTranscriptSession?.conversation && selectedTranscriptSession.conversation.length > 0; else plainTranscriptView">
+        <div 
+          class="dialogue-bubble-row" 
+          *ngFor="let msg of selectedTranscriptSession.conversation"
+          [class.is-doctor]="msg.role === 'doctor' || msg.speaker?.toLowerCase()?.includes('doc')"
+          [class.is-patient]="msg.role === 'patient' || msg.speaker?.toLowerCase()?.includes('pat')"
+        >
+          <div class="speaker-avatar">
+            <i class="fa-solid fa-user-doctor" *ngIf="msg.role === 'doctor' || msg.speaker?.toLowerCase()?.includes('doc')"></i>
+            <i class="fa-solid fa-user" *ngIf="!(msg.role === 'doctor' || msg.speaker?.toLowerCase()?.includes('doc'))"></i>
+          </div>
+          <div class="dialogue-bubble">
+            <div class="bubble-header">
+              <span class="speaker-name">{{ msg.speaker || (msg.role === 'doctor' ? 'Doctor' : 'Patient') }}</span>
+              <span class="speaker-time" *ngIf="msg.time">{{ msg.time }}</span>
+            </div>
+            <p class="bubble-text">{{ msg.text }}</p>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #plainTranscriptView>
+        <div class="plain-transcript-box">
+          <p class="transcript-plain-text" style="white-space: pre-line;">{{ selectedTranscriptSession?.transcript || 'No verbal dialogue transcript recorded for this session.' }}</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Footer -->
+    <div class="transcript-modal-footer">
+      <button type="button" class="btn-soap-from-transcript" *ngIf="selectedTranscriptSession?.soapReport" (click)="closeTranscriptModal(); openSoapModal(selectedTranscriptSession.soapReport)">
+        <i class="fa-solid fa-file-waveform"></i> View Associated SOAP Report
+      </button>
+      <button type="button" class="btn-modal-done" (click)="closeTranscriptModal()">Done</button>
+    </div>
+  </div>
+</div>
+
 
