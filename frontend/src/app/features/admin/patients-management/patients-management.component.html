@@ -12,12 +12,19 @@
   <div class="page-header">
     <div class="header-left">
       <div class="title-badge-row">
+        <button class="back-icon-btn" (click)="goBackToDashboard()" title="Back to Admin Dashboard">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
         <h1 class="main-title serif-title">Patient Intake &amp; Doctor Scheduling Desk</h1>
         <span class="live-sync-badge"><span class="pulse-dot"></span> Real-Time Live Sync</span>
       </div>
       <p class="subtitle">Distribute arriving hospital patients, allocate doctor timing slots, honor patient preferred physicians, and access returning clinical history.</p>
     </div>
     <div class="header-actions">
+      <button class="btn btn-outline btn-back" (click)="goBackToDashboard()" title="Return to Admin Dashboard Overview">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Back to Dashboard</span>
+      </button>
       <button class="btn btn-outline" (click)="appointmentService.fetchDataFromBackend()">
         <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="appointmentService.isLoading()"></i>
         <span>Refresh</span>

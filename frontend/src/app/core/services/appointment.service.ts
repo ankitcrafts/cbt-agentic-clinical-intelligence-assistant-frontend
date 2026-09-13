@@ -19,6 +19,12 @@ export interface DoctorProfile {
   specialty: string;
   department: string;
   email: string;
+  phone?: string;
+  room?: string;
+  experience?: string;
+  qualification?: string;
+  isNewUpcoming?: boolean;
+  shiftTiming?: string;
   available: boolean;
   dutyStatus: 'On duty' | 'In consultation' | 'Off duty';
   queueCount?: number;
@@ -74,6 +80,12 @@ export class AppointmentService {
       specialty: 'Senior Cardiologist',
       department: 'Cardiology',
       email: 'yuki.tanaka@stmercy.org',
+      phone: '+1 (555) 201-4401',
+      room: 'Suite 204',
+      experience: 'Senior Consultant',
+      qualification: 'MD, FACC, FSCAI',
+      isNewUpcoming: false,
+      shiftTiming: '09:00 AM - 05:00 PM',
       available: true,
       dutyStatus: 'On duty',
       queueCount: 4,
@@ -95,6 +107,12 @@ export class AppointmentService {
       specialty: 'Interventional Cardiologist',
       department: 'Cardiology',
       email: 'rahul.sharma@stmercy.org',
+      phone: '+1 (555) 201-4402',
+      room: 'Suite 206',
+      experience: 'Attending Specialist',
+      qualification: 'MD, DM Cardiology',
+      isNewUpcoming: false,
+      shiftTiming: '09:30 AM - 04:30 PM',
       available: true,
       dutyStatus: 'On duty',
       queueCount: 1,
@@ -114,6 +132,12 @@ export class AppointmentService {
       specialty: 'Neurologist',
       department: 'Neurology',
       email: 'neha.verma@stmercy.org',
+      phone: '+1 (555) 201-4403',
+      room: 'Suite 310',
+      experience: 'Senior Consultant',
+      qualification: 'MD, DM Neurology',
+      isNewUpcoming: false,
+      shiftTiming: '09:00 AM - 04:00 PM',
       available: true,
       dutyStatus: 'On duty',
       queueCount: 1,
@@ -133,6 +157,12 @@ export class AppointmentService {
       specialty: 'Orthopedic Surgeon',
       department: 'Orthopedics',
       email: 'amit.patel@stmercy.org',
+      phone: '+1 (555) 201-4404',
+      room: 'Suite 108',
+      experience: 'Attending Surgeon',
+      qualification: 'MS Orthopedics, FRCS',
+      isNewUpcoming: false,
+      shiftTiming: '09:30 AM - 03:00 PM',
       available: true,
       dutyStatus: 'On duty',
       queueCount: 0,
@@ -150,11 +180,19 @@ export class AppointmentService {
       specialty: 'Pediatrician',
       department: 'Pediatrics',
       email: 'sneha.iyer@stmercy.org',
+      phone: '+1 (555) 201-4405',
+      room: 'Exam Room 2B',
+      experience: 'Upcoming Fellow Specialist',
+      qualification: 'MD Pediatrics',
+      isNewUpcoming: true,
+      shiftTiming: '09:00 AM - 01:00 PM',
       available: false,
       dutyStatus: 'Off duty',
       queueCount: 0,
       slots: [
-        { id: 's40', time: '09:00 AM', duration: '30 min', status: 'AVAILABLE' }
+        { id: 's40', time: '09:00 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's41', time: '09:45 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 's42', time: '10:30 AM', duration: '30 min', status: 'AVAILABLE' }
       ]
     },
     {
@@ -164,6 +202,12 @@ export class AppointmentService {
       specialty: 'General Physician',
       department: 'Internal Medicine',
       email: 'vikram.singh@stmercy.org',
+      phone: '+1 (555) 201-4406',
+      room: 'Suite 102',
+      experience: 'Attending Physician',
+      qualification: 'MBBS, MD Internal Medicine',
+      isNewUpcoming: false,
+      shiftTiming: '09:00 AM - 03:00 PM',
       available: true,
       dutyStatus: 'On duty',
       queueCount: 0,
@@ -173,6 +217,29 @@ export class AppointmentService {
         { id: 's52', time: '10:30 AM', duration: '30 min', status: 'AVAILABLE' },
         { id: 's53', time: '11:15 AM', duration: '30 min', status: 'AVAILABLE' },
         { id: 's54', time: '02:00 PM', duration: '30 min', status: 'AVAILABLE' }
+      ]
+    },
+    {
+      id: 'DOC-007',
+      name: 'Dr. Maya Lin',
+      initials: 'ML',
+      specialty: 'Clinical Psychologist',
+      department: 'Psychiatry',
+      email: 'maya.lin@stmercy.org',
+      phone: '+1 (555) 201-4407',
+      room: 'Suite 405',
+      experience: 'New Upcoming Specialist',
+      qualification: 'PsyD, CBT Certified',
+      isNewUpcoming: true,
+      shiftTiming: '10:00 AM - 04:00 PM',
+      available: true,
+      dutyStatus: 'On duty',
+      queueCount: 0,
+      slots: [
+        { id: 's70', time: '10:00 AM', duration: '45 min', status: 'AVAILABLE' },
+        { id: 's71', time: '11:00 AM', duration: '45 min', status: 'AVAILABLE' },
+        { id: 's72', time: '02:00 PM', duration: '45 min', status: 'AVAILABLE' },
+        { id: 's73', time: '03:00 PM', duration: '45 min', status: 'AVAILABLE' }
       ]
     }
   ]);
@@ -561,6 +628,227 @@ export class AppointmentService {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  /**
+   * Register a new upcoming or attending doctor with auto-generated timing slots
+   */
+  async registerDoctor(doctorData: Partial<DoctorProfile>): Promise<{ success: boolean; message: string; doctor?: DoctorProfile }> {
+    const rawName = (doctorData.name || 'New Specialist').trim();
+    const cleanName = rawName.startsWith('Dr.') ? rawName : `Dr. ${rawName}`;
+    const initials = cleanName.replace('Dr.', '').trim().slice(0, 2).toUpperCase() || 'DR';
+    const docId = `DOC-${Math.floor(100 + Math.random() * 900)}`;
+
+    const standardSlots: DoctorSlot[] = [
+      { id: `${docId}-s1`, time: '09:00 AM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s2`, time: '09:45 AM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s3`, time: '10:30 AM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s4`, time: '11:15 AM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s5`, time: '02:00 PM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s6`, time: '02:45 PM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s7`, time: '03:30 PM', duration: '30 min', status: 'AVAILABLE' },
+      { id: `${docId}-s8`, time: '04:15 PM', duration: '30 min', status: 'AVAILABLE' },
+    ];
+
+    const newDoc: DoctorProfile = {
+      id: docId,
+      name: cleanName,
+      initials: initials,
+      specialty: doctorData.specialty || 'General Physician',
+      department: doctorData.department || 'Internal Medicine',
+      email: doctorData.email || `${cleanName.toLowerCase().replace(/[^a-z]/g, '')}@stmercy.org`,
+      phone: doctorData.phone || '+1 (555) 000-0000',
+      room: doctorData.room || 'Suite 101',
+      experience: doctorData.experience || (doctorData.isNewUpcoming ? 'New Upcoming Specialist' : 'Attending Specialist'),
+      qualification: doctorData.qualification || 'MD, MBBS',
+      isNewUpcoming: !!doctorData.isNewUpcoming,
+      shiftTiming: doctorData.shiftTiming || '09:00 AM - 05:00 PM',
+      available: doctorData.dutyStatus !== 'Off duty',
+      dutyStatus: doctorData.dutyStatus || 'On duty',
+      queueCount: 0,
+      slots: standardSlots
+    };
+
+    // Update local reactive signal
+    this.doctors.update(list => [newDoc, ...list]);
+
+    // Persist to Backend API
+    try {
+      const resp = await firstValueFrom(
+        this.http.post<{ success: boolean; message: string; data: DoctorProfile }>(
+          `${this.apiBaseUrl}/api/scheduling/doctors`,
+          {
+            name: newDoc.name,
+            email: newDoc.email,
+            specialty: newDoc.specialty,
+            department: newDoc.department,
+            phone: newDoc.phone,
+            room: newDoc.room,
+            experience: newDoc.experience,
+            qualification: newDoc.qualification,
+            is_new_upcoming: newDoc.isNewUpcoming,
+            duty_status: newDoc.dutyStatus,
+            shift_timing: newDoc.shiftTiming,
+            slot_duration: '30 min'
+          }
+        )
+      );
+      if (resp?.data) {
+        this.doctors.update(list => list.map(d => d.id === newDoc.id ? { ...d, ...resp.data } : d));
+      }
+    } catch (err) {
+      console.warn('[AppointmentService] Backend register doctor API warning:', err);
+    }
+
+    return {
+      success: true,
+      message: `✓ Registered ${newDoc.name} (${newDoc.specialty}) with standard consultation slots.`,
+      doctor: newDoc
+    };
+  }
+
+  /**
+   * Update an existing doctor profile, room, shift timing, duty status, or specialization
+   */
+  async updateDoctor(doctorId: string, updates: Partial<DoctorProfile>): Promise<{ success: boolean; message: string }> {
+    this.doctors.update(list => list.map(d => {
+      if (d.id === doctorId) {
+        const updated = { ...d, ...updates };
+        if (updates.dutyStatus) {
+          updated.available = updates.dutyStatus !== 'Off duty';
+        }
+        return updated;
+      }
+      return d;
+    }));
+
+    try {
+      await firstValueFrom(
+        this.http.put(`${this.apiBaseUrl}/api/scheduling/doctors/${encodeURIComponent(doctorId)}`, {
+          name: updates.name,
+          email: updates.email,
+          specialty: updates.specialty,
+          department: updates.department,
+          phone: updates.phone,
+          room: updates.room,
+          experience: updates.experience,
+          qualification: updates.qualification,
+          is_new_upcoming: updates.isNewUpcoming,
+          duty_status: updates.dutyStatus,
+          available: updates.available,
+          shift_timing: updates.shiftTiming
+        })
+      );
+    } catch (err) {
+      console.warn('[AppointmentService] Backend update doctor API warning:', err);
+    }
+
+    return { success: true, message: `Doctor ${doctorId} profile updated successfully.` };
+  }
+
+  /**
+   * Quick toggle doctor On/Off Duty status
+   */
+  async toggleDoctorDuty(doctorId: string): Promise<{ success: boolean; newStatus: string }> {
+    let newStatus = 'On duty';
+    this.doctors.update(list => list.map(d => {
+      if (d.id === doctorId) {
+        const toggled = d.dutyStatus === 'On duty' ? 'Off duty' : 'On duty';
+        newStatus = toggled;
+        return {
+          ...d,
+          dutyStatus: toggled as any,
+          available: toggled === 'On duty'
+        };
+      }
+      return d;
+    }));
+
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/api/scheduling/doctors/${encodeURIComponent(doctorId)}/toggle-duty`, {})
+      );
+    } catch (err) {
+      console.warn('[AppointmentService] Backend toggle duty API warning:', err);
+    }
+
+    return { success: true, newStatus };
+  }
+
+  /**
+   * Add a custom timing slot to a doctor's schedule
+   */
+  async addDoctorSlot(doctorId: string, time: string, duration: string = '30 min'): Promise<{ success: boolean; message: string }> {
+    const slotId = `${doctorId}-${time.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const newSlot: DoctorSlot = {
+      id: slotId,
+      time: time,
+      duration: duration,
+      status: 'AVAILABLE'
+    };
+
+    this.doctors.update(list => list.map(d => {
+      if (d.id === doctorId) {
+        if (d.slots.some(s => s.time === time)) {
+          return d;
+        }
+        return { ...d, slots: [...d.slots, newSlot] };
+      }
+      return d;
+    }));
+
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/api/scheduling/doctors/${encodeURIComponent(doctorId)}/slots`, {
+          time_slot: time,
+          duration: duration,
+          status: 'AVAILABLE'
+        })
+      );
+    } catch (err) {
+      console.warn('[AppointmentService] Backend add slot API warning:', err);
+    }
+
+    return { success: true, message: `Timing slot ${time} added successfully.` };
+  }
+
+  /**
+   * Delete a timing slot from a doctor
+   */
+  async deleteDoctorSlot(doctorId: string, slotId: string): Promise<{ success: boolean; message: string }> {
+    this.doctors.update(list => list.map(d => {
+      if (d.id === doctorId) {
+        return { ...d, slots: d.slots.filter(s => s.id !== slotId) };
+      }
+      return d;
+    }));
+
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiBaseUrl}/api/scheduling/doctors/${encodeURIComponent(doctorId)}/slots/${encodeURIComponent(slotId)}`)
+      );
+    } catch (err) {
+      console.warn('[AppointmentService] Backend delete slot API warning:', err);
+    }
+
+    return { success: true, message: `Slot deleted successfully.` };
+  }
+
+  /**
+   * Remove doctor from roster
+   */
+  async deleteDoctor(doctorId: string): Promise<{ success: boolean; message: string }> {
+    this.doctors.update(list => list.filter(d => d.id !== doctorId));
+
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.apiBaseUrl}/api/scheduling/doctors/${encodeURIComponent(doctorId)}`)
+      );
+    } catch (err) {
+      console.warn('[AppointmentService] Backend delete doctor API warning:', err);
+    }
+
+    return { success: true, message: `Doctor profile removed from roster.` };
   }
 
   /**
