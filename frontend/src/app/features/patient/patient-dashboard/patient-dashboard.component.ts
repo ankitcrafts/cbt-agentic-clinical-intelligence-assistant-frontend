@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { AppointmentService } from '../../../core/services/appointment.service';
+import { PdfExportService } from '../../../core/services/pdf-export.service';
 
 @Component({
   selector: 'app-patient-dashboard',
@@ -14,6 +15,7 @@ import { AppointmentService } from '../../../core/services/appointment.service';
 export class PatientDashboardComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   appointmentService = inject(AppointmentService);
+  pdfExportService = inject(PdfExportService);
 
   activeTab: 'alerts' | 'records' | 'prescriptions' | 'consultations' = 'alerts';
   isLoading: boolean = false;
@@ -311,6 +313,32 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
 
   printSoapReport(): void {
     window.print();
+  }
+
+  downloadSoapPdf(): void {
+    if (!this.selectedSoapReport) return;
+    const report = this.selectedSoapReport;
+    this.pdfExportService.exportSoapNotePdf({
+      patientName: this.patientProfile.name || 'Patient',
+      patientId: this.patientProfile.mrn || '#00847261',
+      demographics: `${this.patientProfile.age || 35}${this.patientProfile.gender || 'M'} · ${this.patientProfile.mrn || ''}`,
+      age: this.patientProfile.age,
+      gender: this.patientProfile.gender,
+      doctorName: report.doctorName || 'Dr. Yuki Tanaka',
+      doctorId: report.doctorId || 'DOC-001',
+      doctorSpecialty: 'Attending Physician / Specialist',
+      encounterId: report.encounterId || `ENC-${Date.now().toString().slice(-4)}`,
+      consultationDate: report.date || new Date().toISOString().split('T')[0],
+      reason: this.patientProfile.reason || 'General Health Consultation',
+      condition: this.patientProfile.condition || 'Clinical Review',
+      vitals: report.vitals || { bp: '120/80 mmHg', hr: '72 bpm', temp: '36.6 °C', weight: '75 kg', spo2: '98%' },
+      soap: {
+        subjective: report.subjective || '',
+        objective: report.objective || '',
+        assessment: report.assessment || '',
+        plan: report.plan || ''
+      }
+    });
   }
 
   openEditProfileModal(): void {

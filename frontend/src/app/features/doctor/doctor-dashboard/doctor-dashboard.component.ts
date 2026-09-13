@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { RecordingService } from '../../../core/services/recording.service';
 import { AppointmentService } from '../../../core/services/appointment.service';
+import { PdfExportService } from '../../../core/services/pdf-export.service';
 import { RecordedSessionItem } from '../../../core/models/recording.model';
 
 @Component({
@@ -19,6 +20,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   mockData = inject(MockDataService);
   recordingService = inject(RecordingService);
   appointmentService = inject(AppointmentService);
+  pdfExportService = inject(PdfExportService);
 
   @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
 
@@ -685,9 +687,29 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   exportSoapPdf(): void {
     this.activeTab = 'soap';
-    setTimeout(() => {
-      window.print();
-    }, 50);
+    const p = this.visitDetails;
+    const docUser = this.authService.currentUser();
+    const docName = docUser?.name || 'Dr. Yuki Tanaka';
+    const docId = docUser?.id || 'DOC-001';
+    const dept = docUser?.department || 'Cardiology';
+    const patId = p?.visitId || '#00847261';
+
+    this.pdfExportService.exportSoapNotePdf({
+      patientName: p?.patientName || 'Ranjana Kumari',
+      patientId: patId,
+      demographics: p?.demographics || '42F',
+      age: p?.age || 42,
+      gender: p?.gender || 'Female',
+      doctorName: docName,
+      doctorId: docId,
+      doctorSpecialty: `${dept} / Specialist`,
+      encounterId: `ENC-${patId.replace('#', '')}-${Date.now().toString().slice(-4)}`,
+      consultationDate: p?.date || new Date().toISOString().split('T')[0],
+      reason: p?.reason || 'Clinical Consultation',
+      condition: p?.condition || 'Under Evaluation',
+      vitals: p?.vitals || { bp: '120/80 mmHg', hr: '72 bpm', temp: '36.6 °C', weight: '75 kg', spo2: '98%' },
+      soap: this.effectiveSoapReport
+    });
   }
 
   printSoapNote(): void {
