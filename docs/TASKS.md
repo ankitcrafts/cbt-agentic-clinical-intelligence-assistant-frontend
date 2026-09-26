@@ -33,6 +33,7 @@ gantt
 - [x] **TSK-FE-05:** Build Admin Dashboard with doctor availability grid and clinic management controls.
 - [x] **TSK-FE-06:** Implement `AuthService` and `AuthInterceptor` supporting Bearer token injection and role-based guards (`RoleGuard`).
 - [x] **TSK-FE-07:** Implement Interactive Flow Navigator for demonstrating full patient-to-doctor lifecycle.
+- [x] **TSK-FE-08:** Set role-specific demo email addresses as clean input placeholders across Doctor, Administrator, and Patient sign-in screens.
 
 ### 2.2 Active Sprint Tasks (In Progress)
 - [ ] **TSK-FE-08:** Refine real-time differential diagnosis card animations and interactive citation tooltips linking to NICE guidelines.

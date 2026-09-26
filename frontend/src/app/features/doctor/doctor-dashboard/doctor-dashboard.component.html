@@ -517,7 +517,7 @@
             [class.patient-row]="!ex.isDoctor"
           >
             <div class="avatar-bubble" [class.doctor-avatar]="ex.isDoctor" [class.patient-avatar]="!ex.isDoctor">
-              {{ ex.isDoctor ? 'YT' : (visitDetails.initials || 'AK') }}
+              {{ ex.isDoctor ? (ex.speaker || doctorInitials || 'DOC') : (ex.speaker || visitDetails.initials || 'PT') }}
             </div>
             <div class="bubble-content">
               <p class="bubble-text">{{ ex.text }}</p>

@@ -14,7 +14,7 @@ import { UserRole } from '../../../core/models/platform.model';
 export class AdminLoginComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
 
-  email = 'admin@cliniq.health';
+  email = '';
   otpCode = '';
   countdown = 0;
   private timerInterval: any = null;
@@ -25,7 +25,7 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
   signupPhone = '';
 
   ngOnInit() {
-    this.syncRoleEmail(this.authService.currentRole());
+    this.email = '';
   }
 
   ngOnDestroy() {
@@ -34,15 +34,9 @@ export class AdminLoginComponent implements OnInit, OnDestroy {
 
   selectRole(role: UserRole) {
     this.authService.setRole(role);
-    this.syncRoleEmail(role);
+    this.email = '';
     this.otpCode = '';
     this.clearTimer();
-  }
-
-  private syncRoleEmail(role: UserRole) {
-    if (role === 'ADMIN') this.email = 'admin@cliniq.health';
-    else if (role === 'DOCTOR') this.email = 'doctor@cliniq.health';
-    else this.email = 'patient@cliniq.health';
   }
 
   async onSendOtp() {

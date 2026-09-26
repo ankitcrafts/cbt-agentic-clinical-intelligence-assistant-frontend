@@ -79,7 +79,7 @@ export class AppointmentService {
       initials: 'YT',
       specialty: 'Senior Cardiologist',
       department: 'Cardiology',
-      email: 'yuki.tanaka@stmercy.org',
+      email: 'doctor@cliniq.health',
       phone: '+1 (555) 201-4401',
       room: 'Suite 204',
       experience: 'Senior Consultant',
@@ -586,16 +586,20 @@ export class AppointmentService {
         for (const u of usersRes.value) {
           const uName = (u.full_name || u.email.split('@')[0]).trim();
           const formattedName = uName.toLowerCase().startsWith('dr.') ? uName : `Dr. ${uName}`;
-          const exists = combinedDoctors.some(d => 
-            d.id.toLowerCase() === u.id.toLowerCase() || 
-            d.email.toLowerCase() === u.email.toLowerCase() ||
-            d.name.toLowerCase() === formattedName.toLowerCase()
-          );
+          const cleanUName = formattedName.toLowerCase().replace(/^dr\.?\s*/, '').replace(/\s+/g, '');
+          const exists = combinedDoctors.some(d => {
+            const cleanDName = (d.name || '').toLowerCase().replace(/^dr\.?\s*/, '').replace(/\s+/g, '');
+            return (
+              (d.id && u.id && d.id.toLowerCase() === u.id.toLowerCase()) || 
+              (d.email && u.email && d.email.toLowerCase() === u.email.toLowerCase()) ||
+              cleanDName === cleanUName
+            );
+          });
           if (!exists) {
             combinedDoctors.unshift({
               id: u.id,
               name: formattedName,
-              initials: u.avatar_initials || formattedName.replace('Dr.', '').trim().slice(0, 2).toUpperCase() || 'DR',
+              initials: u.avatar_initials || formattedName.replace(/^Dr\.?\s*/, '').trim().slice(0, 2).toUpperCase() || 'DR',
               specialty: u.specialization || u.department || 'Senior Cardiologist',
               department: u.department || 'Cardiology',
               email: u.email,
@@ -616,8 +620,23 @@ export class AppointmentService {
         }
       }
 
-      if (combinedDoctors.length > 0) {
-        this.doctors.set(combinedDoctors);
+      // Final strict unique filtering of combinedDoctors list
+      const uniqueDocs: DoctorProfile[] = [];
+      const seenKeys = new Set<string>();
+      for (const d of combinedDoctors) {
+        const cleanName = (d.name || '').toLowerCase().replace(/^dr\.?\s*/, '').replace(/\s+/g, '');
+        const emailKey = (d.email || '').toLowerCase().trim();
+        const idKey = (d.id || '').toLowerCase().trim();
+        if (!seenKeys.has(cleanName) && (!emailKey || !seenKeys.has(emailKey)) && (!idKey || !seenKeys.has(idKey))) {
+          seenKeys.add(cleanName);
+          if (emailKey) seenKeys.add(emailKey);
+          if (idKey) seenKeys.add(idKey);
+          uniqueDocs.push(d);
+        }
+      }
+
+      if (uniqueDocs.length > 0) {
+        this.doctors.set(uniqueDocs);
       }
 
       // Sync current logged in doctor

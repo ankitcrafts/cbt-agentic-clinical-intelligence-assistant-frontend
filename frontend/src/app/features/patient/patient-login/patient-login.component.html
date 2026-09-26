@@ -116,7 +116,7 @@
         class="login-fields-form">
         <div class="form-group">
           <label>Patient email / Gmail</label>
-          <input type="email" [(ngModel)]="email" name="email" required placeholder="e.g. patient@cliniq.health">
+          <input type="email" [(ngModel)]="email" name="email" required placeholder="patient@cliniq.health">
         </div>
 
         <button type="submit" class="submit-btn" [disabled]="authService.isLoading() || !email">
