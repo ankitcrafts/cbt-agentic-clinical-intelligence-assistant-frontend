@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, delay, tap } from 'rxjs/operators';
+import { catchError, delay, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 import { MockDataService } from './mock-data.service';
@@ -1203,15 +1203,35 @@ export class RecordingService implements OnDestroy {
   getPatientConsultationSessions(patientId: string): Observable<any[]> {
     const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
     const cleanPid = patientId.startsWith('#') ? patientId : '#' + patientId;
-    return this.http.get<any[]>(`${baseUrl}/api/v1/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+    return this.http.get<any>(`${baseUrl}/api/v1/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+      map((res: any) => Array.isArray(res) ? res : (res?.data || [])),
       catchError(() => {
-        return this.http.get<any[]>(`${baseUrl}/patients/${encodeURIComponent(cleanPid)}/sessions`);
+        return this.http.get<any>(`${baseUrl}/api/scheduling/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+          map((res: any) => Array.isArray(res) ? res : (res?.data || []))
+        );
+      }),
+      catchError(() => {
+        return this.http.get<any>(`${baseUrl}/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+          map((res: any) => Array.isArray(res) ? res : (res?.data || []))
+        );
       }),
       catchError(err => {
         console.warn('Failed to fetch patient consultation sessions from backend:', err);
         return of([]);
       })
     );
+  }
+
+  /**
+   * Clears any active unclosed recording draft for a specific patient upon consultation closure.
+   */
+  clearPatientLiveDraft(patientId: string): void {
+    if (!patientId) return;
+    const normPid = patientId.startsWith('#') ? patientId : '#' + patientId;
+    const rawPid = patientId.replace('#', '');
+    this.patientSessionsMap.delete(normPid);
+    this.patientSessionsMap.delete(rawPid);
+    this.patientSessionsMap.delete(patientId);
   }
 
   /**

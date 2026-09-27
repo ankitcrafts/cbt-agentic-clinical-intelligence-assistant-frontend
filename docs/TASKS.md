@@ -33,7 +33,10 @@ gantt
 - [x] **TSK-FE-05:** Build Admin Dashboard with doctor availability grid and clinic management controls.
 - [x] **TSK-FE-06:** Implement `AuthService` and `AuthInterceptor` supporting Bearer token injection and role-based guards (`RoleGuard`).
 - [x] **TSK-FE-07:** Implement Interactive Flow Navigator for demonstrating full patient-to-doctor lifecycle.
-- [x] **TSK-FE-08:** Set role-specific demo email addresses as clean input placeholders across Doctor, Administrator, and Patient sign-in screens.
+- [x] **TSK-FE-10:** Dynamic Follow-Up Questions Extraction & Extensible Architecture: bound dashboard follow-up cards directly to live backend analysis outputs with condition-adaptive fallbacks and extensible interfaces for upcoming graph-based follow-up processes.
+- [x] **TSK-FE-11:** Live Doctor Verbal In-Session Audio Probing & Dedicated "Automate" Mode: implemented continuous microphone recording workflow for verbal doctor inquiries along with a dedicated "Automate" button on the follow-up questions card that auto-simulates multi-turn dialogue, updates all 5 CDS tabs, and elevates confidence to ≥70%.
+- [x] **TSK-FE-12:** Multi-Appointment Sequential Session Lifecycle: ensured that a consultation only completes as Session 1 upon clicking "Close Consultation"; re-opening the patient for subsequent appointments automatically initializes Session 2 (and Session N+1) while preserving all historical completed session records in the history tabs.
+- [x] **TSK-FE-13:** Premium Clinical Protocol Inquiry Card Redesign: redesigned the Guideline Follow-Up Questions section with clinical grade card tiles, straight vertical priority color strips (High/Moderate/Routine), smooth hover lifts, live audio wave animation boxes, addressed finding snippet cards, and a dynamic progress bar tracker.
 
 ### 2.2 Active Sprint Tasks (In Progress)
 - [ ] **TSK-FE-08:** Refine real-time differential diagnosis card animations and interactive citation tooltips linking to NICE guidelines.

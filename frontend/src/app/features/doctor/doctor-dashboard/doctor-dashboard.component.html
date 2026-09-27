@@ -176,13 +176,13 @@
         <i class="fa-solid fa-clock-rotate-left"></i> Patient Consultation History:
       </span>
       <button 
-        *ngFor="let s of patientSessions" 
+        *ngFor="let s of patientSessions; let i = index" 
         type="button" 
         class="session-tab-btn" 
         [class.active]="selectedSessionId === s.id"
         (click)="selectSession(s)">
         <i class="fa-solid fa-file-waveform"></i>
-        {{ s.sessionTitle }}
+        {{ s.sessionTitle || ('Session ' + (s.sessionNumber || (i + 1)) + ': Completed') }}
         <span *ngIf="s.appointmentDate" class="session-date-sub">({{ s.appointmentDate | slice:0:10 }})</span>
       </button>
 
@@ -192,12 +192,15 @@
         [class.active]="selectedSessionId === 'live'"
         (click)="selectLiveSession()">
         <i class="fa-solid fa-microphone-lines"></i>
-        + Today's Active Session
+        + Today's Active Session (Session {{ activeSessionNumber }})
       </button>
     </div>
 
     <div *ngIf="selectedSessionId !== 'live'" class="past-session-notice">
       <i class="fa-solid fa-circle-info"></i> Viewing previous session record
+    </div>
+    <div *ngIf="selectedSessionId === 'live'" class="live-session-notice" style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: #2dd4bf; font-weight: 600;">
+      <i class="fa-solid fa-circle-dot"></i> Active Appointment: Session {{ activeSessionNumber }}
     </div>
   </div>
 
@@ -209,7 +212,7 @@
       <div class="session-recording-box">
         <div class="recording-top-row">
           <div class="recording-meta">
-            <h3 class="box-title">{{ recordingService.sessionTitle() || 'Session 1' }}</h3>
+            <h3 class="box-title">{{ currentSessionTitle }}</h3>
             <span class="box-sub">{{ visitDetails.date }} · {{ visitDetails.time }} · Max: 20 min</span>
           </div>
           <div class="live-pill" [class.paused]="currentState === 'PAUSED'" [class.stopped]="currentState === 'READY_TO_UPLOAD' || currentState === 'UPLOADED'">
@@ -640,7 +643,20 @@
               <i class="fa-solid fa-arrow-left"></i>
               <span>Patient Details &amp; AI Suggestions</span>
             </button>
-            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Clinical Intelligence Engine</span>
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span class="status-pill" [class.pending]="isConfidenceBelowThreshold" [class.completed]="!isConfidenceBelowThreshold" style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px;">
+                {{ isConfidenceBelowThreshold ? 'Confidence: ' + currentConfidenceMetrics.overallScore + '% (< 70%)' : '✓ Confirmed: ' + currentConfidenceMetrics.overallScore + '% (≥ 70%)' }}
+              </span>
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Clinical Intelligence Engine</span>
+            </div>
+          </div>
+
+          <!-- Active follow-up live notice -->
+          <div *ngIf="activeFollowUpNotice" style="background: rgba(13, 148, 136, 0.15); border-bottom: 1px solid rgba(13, 148, 136, 0.35); padding: 0.5rem 1.5rem; font-size: 0.78rem; color: #2dd4bf; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>{{ activeFollowUpNotice }}</span>
+            </div>
           </div>
 
           <!-- Tab Navigation Bar (Matching Image 3) -->
@@ -724,6 +740,23 @@
 
             <!-- TAB 2: Clinical Decision -->
             <div class="tab-pane animated-pane" *ngIf="activeTab === 'clinical'">
+              <!-- Confidence Threshold Warning or Success Banner -->
+              <div class="confidence-alert-card warning-below-threshold" *ngIf="isConfidenceBelowThreshold">
+                <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+                <div class="alert-content">
+                  <h4>Diagnostic Confidence is {{ currentConfidenceMetrics.overallScore }}% (< 70% threshold)</h4>
+                  <p>Incomplete symptom topography, uncharacterized lifestyle factors, and pending neurological red flags detected. Ask the guideline-based follow-up questions below to reach ≥ 70% diagnostic certainty.</p>
+                </div>
+              </div>
+
+              <div class="confidence-alert-card success-above-threshold" *ngIf="!isConfidenceBelowThreshold">
+                <i class="fa-solid fa-circle-check alert-icon"></i>
+                <div class="alert-content">
+                  <h4>✓ High Diagnostic Confidence: {{ currentConfidenceMetrics.overallScore }}% (Target ≥ 70% Achieved)</h4>
+                  <p>Multi-turn follow-up inquiries completed in the same session. Tension-Type Headache confirmed as primary diagnosis with red flags excluded. All 5 tabs and merged SOAP report updated.</p>
+                </div>
+              </div>
+
               <div class="intel-section">
                 <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
                 
@@ -764,6 +797,172 @@
                     <div class="flag-recommendation">
                       <i class="fa-solid fa-arrow-right"></i> {{ flag.recommendation }}
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- GUIDELINE-BASED FOLLOW-UP QUESTIONS (Premium Clinical Protocol Panel) -->
+              <div class="guideline-followup-card" [class.all-completed]="!isConfidenceBelowThreshold">
+                <!-- Card Header -->
+                <div class="guideline-header-row">
+                  <div class="guideline-header-left">
+                    <div class="guideline-title-group">
+                      <div class="eyebrow-badge">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                        <span>NICE Clinical Guidelines</span>
+                      </div>
+                      <h4 class="guideline-main-heading">Targeted Clinical Protocol Inquiries</h4>
+                    </div>
+                    <div class="header-status-tags">
+                      <span class="status-pill" [class.pending]="isConfidenceBelowThreshold" [class.completed]="!isConfidenceBelowThreshold">
+                        <span class="status-dot"></span>
+                        {{ isConfidenceBelowThreshold ? (currentGuidelineFollowUpQuestions.length - answeredQuestionsCount) + ' Inquiries Pending' : 'Protocol Criteria Satisfied' }}
+                      </span>
+                      <span class="progress-pill">
+                        {{ answeredQuestionsCount }}/{{ currentGuidelineFollowUpQuestions.length }} Addressed
+                      </span>
+                    </div>
+                  </div>
+                  <!-- Dedicated Automate Button in Card Header -->
+                  <button type="button" class="btn-automate-header" (click)="triggerFollowUpQuestionsFlow()" [disabled]="isFollowUpLoading" title="Simulate multi-turn follow-up dialogue, update CDS criteria, and elevate confidence to ≥70%">
+                    <i class="fa-solid fa-spinner fa-spin" *ngIf="isFollowUpLoading"></i>
+                    <span>{{ isFollowUpLoading ? 'Processing...' : 'Automate Protocol' }}</span>
+                  </button>
+                </div>
+
+                <!-- Live Verbal Inquiry Prompt Banner (When doctor clicks Ask) -->
+                <div class="live-inquiry-banner" *ngIf="activeInquiryQuestion">
+                  <div class="inquiry-banner-left">
+                    <div class="mic-wave-box">
+                      <span class="sound-wave-bar bar1"></span>
+                      <span class="sound-wave-bar bar2"></span>
+                      <span class="sound-wave-bar bar3"></span>
+                      <i class="fa-solid fa-microphone-lines"></i>
+                    </div>
+                    <div class="inquiry-text-group">
+                      <div class="inquiry-meta-row">
+                        <span class="inquiry-label">Physician Verbal Script</span>
+                        <span class="inquiry-live-chip">● Live Ambient Channel</span>
+                      </div>
+                      <p class="inquiry-question-text">"{{ activeInquiryQuestion.question }}"</p>
+                      <span class="inquiry-subtext">Ambient speech from doctor and patient is recorded directly into the session transcript.</span>
+                    </div>
+                  </div>
+                  <div class="inquiry-banner-actions">
+                    <button type="button" class="btn-inquiry-complete" (click)="completeSingleInquiry(activeInquiryQuestion)" title="Mark question answered in session">
+                      <i class="fa-solid fa-circle-check"></i>
+                      <span>Mark Addressed</span>
+                    </button>
+                    <button type="button" class="btn-inquiry-cancel" (click)="cancelSingleInquiry()" title="Dismiss prompt">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Protocol Questions Grid List -->
+                <div class="followup-questions-list">
+                  <div class="protocol-question-card" 
+                       *ngFor="let q of currentGuidelineFollowUpQuestions; let idx = index" 
+                       [class.is-answered]="q.answered" 
+                       [class.is-active-inquiry]="activeInquiryQuestion?.id === q.id"
+                       [class.priority-high-border]="q.priority === 'HIGH'"
+                       [class.priority-medium-border]="q.priority === 'MEDIUM'"
+                       [class.priority-low-border]="q.priority === 'LOW'">
+                    
+                    <!-- Left Color Accent Pillar -->
+                    <div class="card-accent-pillar" [class]="'priority-' + q.priority.toLowerCase()"></div>
+
+                    <div class="card-main-body">
+                      <!-- Top meta row: Number + Priority Tag -->
+                      <div class="question-meta-row">
+                        <div class="meta-left">
+                          <span class="question-number">INQUIRY {{ idx < 9 ? '0' + (idx + 1) : (idx + 1) }}</span>
+                          <span class="priority-badge-pill" [class]="'priority-' + q.priority.toLowerCase()">
+                            <span class="priority-dot"></span>
+                            {{ q.priority === 'HIGH' ? 'HIGH PRIORITY' : (q.priority === 'MEDIUM' ? 'MODERATE' : 'ROUTINE') }}
+                          </span>
+                        </div>
+                        <div class="meta-right">
+                          <span class="answered-badge-pill" *ngIf="q.answered">
+                            <i class="fa-solid fa-circle-check"></i> Addressed in Session
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Question text -->
+                      <div class="question-content-row">
+                        <p class="question-text-heading">{{ q.question }}</p>
+                      </div>
+
+                      <!-- Answered findings snippet if addressed -->
+                      <div class="answered-finding-snippet" *ngIf="q.answered && q.patientSnippet">
+                        <div class="snippet-icon"><i class="fa-solid fa-comment-medical"></i></div>
+                        <div class="snippet-body">
+                          <span class="snippet-speaker">Recorded Patient Response:</span>
+                          <span class="snippet-text">"{{ q.patientSnippet }}"</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Right Action Controls -->
+                    <div class="card-action-col">
+                      <button type="button" 
+                              class="btn-card-ask" 
+                              *ngIf="!q.answered && activeInquiryQuestion?.id !== q.id" 
+                              (click)="askSingleFollowUpQuestion(q)" 
+                              [disabled]="isFollowUpLoading" 
+                              title="Start verbal inquiry via microphone in current session">
+                        <i class="fa-solid fa-microphone"></i>
+                        <span>Ask Verbally</span>
+                      </button>
+
+                      <button type="button" 
+                              class="btn-card-done active-speaking-btn" 
+                              *ngIf="activeInquiryQuestion?.id === q.id" 
+                              (click)="completeSingleInquiry(q)"
+                              title="Complete and capture response">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Done</span>
+                      </button>
+
+                      <div class="answered-check-container" *ngIf="q.answered">
+                        <div class="checkmark-circle">
+                          <i class="fa-solid fa-check"></i>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Footer Summary & Actions -->
+                <div class="followup-master-actions">
+                  <div class="footer-left-info">
+                    <div class="protocol-progress-wrapper">
+                      <div class="progress-bar-track">
+                        <div class="progress-bar-fill" [style.width.%]="followUpProgressPercentage"></div>
+                      </div>
+                      <span class="progress-label-text">{{ followUpProgressPercentage }}% Protocol Addressed</span>
+                    </div>
+                    <p class="action-prompt-text">
+                      <span *ngIf="isConfidenceBelowThreshold">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Inquire verbally during the consultation or use <strong>Automate Protocol</strong> to simulate protocol inquiries &amp; elevate confidence to ≥ 70%.
+                      </span>
+                      <span *ngIf="!isConfidenceBelowThreshold" class="text-success-status">
+                        <i class="fa-solid fa-circle-check"></i>
+                        All guideline inquiry criteria satisfied. Diagnostic certainty elevated to <strong>{{ currentConfidenceMetrics.overallScore }}%</strong>.
+                      </span>
+                    </p>
+                  </div>
+                  <div class="action-btns-group">
+                    <button type="button" class="btn-followup-primary" (click)="triggerFollowUpQuestionsFlow()" [disabled]="isFollowUpLoading">
+                      <i class="fa-solid fa-spinner fa-spin" *ngIf="isFollowUpLoading"></i>
+                      <span>{{ isFollowUpCompleted ? 'Re-Automate Protocol (≥70%)' : 'Automate Protocol Inquiries (≥70%)' }}</span>
+                    </button>
+                    <button type="button" class="btn-followup-secondary" *ngIf="isFollowUpCompleted" (click)="resetConsultationRound()" title="Reset back to initial triage state">
+                      <i class="fa-solid fa-arrow-rotate-left"></i>
+                      <span>Reset</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -827,6 +1026,29 @@
                 </div>
               </div>
 
+              <!-- Action Card for Low/Moderate Confidence (<70%) -->
+              <div class="confidence-alert-card warning-below-threshold" style="margin-top: 1.25rem;" *ngIf="isConfidenceBelowThreshold">
+                <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+                <div class="alert-content" style="flex: 1;">
+                  <h4>Target Threshold: ≥ 70% Confidence Required</h4>
+                  <p style="margin-bottom: 0.65rem;">Current confidence is 58%. Ask the recommended follow-up questions to clarify symptom topography and lifestyle factors in the same session.</p>
+                  <button type="button" class="btn-followup-primary" (click)="triggerFollowUpQuestionsFlow()" [disabled]="isFollowUpLoading" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; border-radius: 6px; background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%); color: #fff; border: none; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <i class="fa-solid fa-comments"></i> Ask Follow-Up &amp; Boost to 86%
+                  </button>
+                </div>
+              </div>
+
+              <div class="confidence-alert-card success-above-threshold" style="margin-top: 1.25rem;" *ngIf="!isConfidenceBelowThreshold">
+                <i class="fa-solid fa-circle-check alert-icon"></i>
+                <div class="alert-content" style="flex: 1;">
+                  <h4>✓ Diagnostic Certainty Achieved: 86%</h4>
+                  <p style="margin-bottom: 0.65rem;">Symptom completeness (88%), medical history (92%), lifestyle context (84%), and DDx alignment (91%) all meet clinical verification benchmarks.</p>
+                  <button type="button" (click)="resetConsultationRound()" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 4px; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;">
+                    <i class="fa-solid fa-rotate-left"></i> Reset to Initial Round (58%)
+                  </button>
+                </div>
+              </div>
+
               <!-- BREAKDOWN BY DOMAIN -->
               <div class="intel-section" style="margin-top: 1.5rem;">
                 <span class="eyebrow-tag">BREAKDOWN BY DOMAIN</span>
@@ -851,7 +1073,15 @@
               <!-- SOAP Note Header Bar -->
               <div class="soap-note-top-header">
                 <div class="soap-title-group">
-                  <h3 class="soap-note-title">SOAP Note</h3>
+                  <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                    <h3 class="soap-note-title">SOAP Note</h3>
+                    <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px; background: rgba(13, 148, 136, 0.18); color: #2dd4bf; border: 1px solid rgba(13, 148, 136, 0.35);" *ngIf="isFollowUpCompleted">
+                      <i class="fa-solid fa-circle-check"></i> Merged Multi-Turn Record (86% Confidence)
+                    </span>
+                    <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px; background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);" *ngIf="!isFollowUpCompleted">
+                      <i class="fa-solid fa-clock"></i> Initial Assessment (58% Confidence)
+                    </span>
+                  </div>
                   <span class="soap-note-meta">Aug 13, 2026 · 09:41 AM · Dr. Yuki Tanaka</span>
                 </div>
                 <div class="soap-header-btn-group">

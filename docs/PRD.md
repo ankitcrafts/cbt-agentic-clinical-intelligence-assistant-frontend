@@ -58,6 +58,12 @@ sequenceDiagram
 1. Patient visits the ClinIQ Portal.
 2. Selects specialty, doctor, date, and available time slot.
 3. Enters email address to receive a secure 6-digit one-time password (OTP).
+
+### 4.3 Multi-Turn Follow-Up & Dynamic Confidence Escalation Workflow
+1. **Initial Assessment & Confidence Evaluation (< 70% threshold):** When consultation dialogue yields diagnostic confidence below 70% (e.g., 58%), the system flags incomplete symptom topography, unexplored lifestyle factors, or unexcluded red flags.
+2. **Guideline-Based Follow-Up Questions:** Surfaced prominently in the Clinical Decision and Confidence tabs with priority tags (`HIGH`, `MEDIUM`, `LOW`).
+3. **Continuous Session Recording:** The clinician continues the active audio recording within the **same session**, asking targeted follow-up inquiries.
+4. **Dynamic Re-Analysis & Merging (≥ 70% Target Reached):** Upon capturing follow-up answers, diagnostic confidence escalates to 86%+, and all 5 CDS tabs (Analysis & Summary, Clinical Decision, Medicines, Confidence, and SOAP Report) dynamically update and merge new clinical data into a unified comprehensive record.
 4. Verifies OTP to confirm identity and book the consultation.
 5. Receives email confirmation and calendar invite.
 6. Accesses historical visits, lab instructions, and aftercare summaries post-visit.
