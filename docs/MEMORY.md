@@ -35,6 +35,12 @@
 * **Decision:** Default `selectedSessionId` to `'live'` upon opening any patient consultation, calculate dynamic session numbering as `N+1` based on completed records, and persist the finalized encounter to backend `/api/scheduling/patients/{id}/sessions` upon clicking `Close Consultation`.
 * **Consequence:** Clean progression from Session 1 to Session 2 and beyond across distinct appointments, with instant access to past session history records without interface confusion.
 
+### ADR-FE-07: CDS Tab Screens Scrollable Viewport & Pinned Navigation Architecture
+* **Context:** The 5 Clinical Decision Support (CDS) tab screens (Analysis & Summary, Clinical Decision, Medicines, Confidence, and SOAP Note) contain rich clinical protocol data (DDx rankings, red flags, audio protocol inquiries, RAG drug lists, SOAP sections) that exceed typical viewport heights.
+* **Decision:** Implemented a flex-column layout with `position: sticky; top: 0; z-index: 11-12;` on the intelligence top navigation and 5-segment tab selector bar (`.intel-tabs-nav`), combined with a bounded scrollable viewport on `.intel-tab-content-area` (`max-height: calc(100vh - 210px); overflow-y: auto;`) and isolated `.tab-pane` scrolling with custom teal scrollbars.
+* **Consequence:** Clinicians can effortlessly scroll through all medical recommendations, protocol questionnaires, and SOAP note sections while keeping tab navigation permanently visible at the top.
+
+
 ---
 
 ## 2. Environment Configurations

@@ -105,3 +105,5 @@ $slate-900:   #0f172a;
 * **Waveform Visualizer:** Smooth 60 FPS HTML5 canvas waveform reacting to real-time speech amplitude.
 * **Card Transitions:** Staggered fade-and-slide entry (`translateY(8px) -> translateY(0)`) when new differential diagnosis cards or clinical suggestions appear.
 * **Accordion Animations:** Smooth CSS grid transition for expanding and collapsing individual SOAP sections.
+* **CDS Scrollable Viewports & Sticky Navigation:** The 5-tab Clinical Decision Support panel (`.intelligence-panel-card`) features sticky headers (`position: sticky; top: 0`) for the top navigation bar and 5-segment tab selector, while `.intel-tab-content-area` and `.tab-pane` containers provide smooth, isolated vertical scrolling (`max-height: calc(100vh - 210px); overflow-y: auto;`) with tailored teal scrollbars.
+

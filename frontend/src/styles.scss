@@ -2180,6 +2180,16 @@ body {
       .intelligence-panel-card {
         padding: 0;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 120px);
+
+        .panel-top-nav-bar {
+          position: sticky;
+          top: 0;
+          z-index: 12;
+          flex-shrink: 0;
+        }
 
         .intel-tabs-nav {
           display: flex;
@@ -2189,6 +2199,11 @@ body {
           border-bottom: 1px solid var(--border-color);
           overflow-x: auto;
           white-space: nowrap;
+          position: sticky;
+          top: 0;
+          z-index: 11;
+          background: var(--card-bg);
+          flex-shrink: 0;
 
           .intel-tab-btn {
             background: transparent;
@@ -2225,11 +2240,35 @@ body {
 
         .intel-tab-content-area {
           padding: 1.5rem 1.75rem;
+          flex: 1;
+          max-height: calc(100vh - 210px);
+          min-height: 480px;
+          overflow-y: auto;
+          overflow-x: hidden;
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+
+          &::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+          }
+          &::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          &::-webkit-scrollbar-thumb {
+            background: rgba(13, 148, 136, 0.25);
+            border-radius: 4px;
+            &:hover {
+              background: rgba(13, 148, 136, 0.45);
+            }
+          }
 
           .tab-pane {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
+            width: 100%;
+            box-sizing: border-box;
 
             &.animated-pane {
               animation: fadeInPane 0.25s ease-out;
