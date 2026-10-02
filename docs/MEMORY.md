@@ -50,6 +50,21 @@
 * **Decision:** Updated template avatar initial resolution in `doctor-dashboard.component.html` to prioritize `doctorInitials` for doctor rows (`ex.isDoctor`) and `visitDetails.initials` for patient rows (`!ex.isDoctor`), eliminating badge collision or accidental fallback to raw exchange string tags.
 * **Consequence:** Pristine visual differentiation between doctor speech and patient speech across all consultation modes.
 
+### ADR-FE-10: Genuine Consultation Transcript Integrity & Decommissioning Dialogue Simulation
+* **Context:** Previously, the "Automate Protocol" button simulated artificial multi-turn doctor/patient exchanges and injected fake dialogue strings directly into the live consultation transcript. This risked polluting actual clinical documentation with unsaid medical statements.
+* **Decision:** Completely decommissioned the automated simulation script (`triggerFollowUpQuestionsFlow`) and removed all "Automate Protocol" buttons from the header, protocol card, and Confidence tab. Protocol inquiries remain as high-value physician guidance prompts with "Ask Verbally" controls that keep the live microphone channel active for real verbal consultation without injecting synthetic text.
+* **Consequence:** 100% genuine transcript fidelity matching only what was verbally spoken and transcribed in the clinical encounter.
+
+### ADR-FE-11: 6-Tab Clinical Decision Support (CDS) Architecture & Dedicated Follow-Up Section
+* **Context:** Clinical decision workflows require an intuitive progression: initial diagnostic synthesis, differential diagnosis ranking, confidence verification, targeted clinical probing questions, guideline medications, and final SOAP note generation.
+* **Decision:** Reconfigured `.intel-tabs-nav` to adopt the 6-tab sequence: `1. Analysis & Summary`, `2. Clinical Decision`, `3. Confidence`, `4. Follow-up`, `5. Medicines`, and `6. SOAP Report`. Extracted the Targeted Clinical Protocol Inquiries card system into its dedicated `Follow-up` tab with identical visual design tokens, live verbal prompt banners, priority accent pillars, and progress tracking.
+* **Consequence:** Clean clinical separation between differential diagnosis assessment and targeted follow-up probing, allowing physicians to navigate seamlessly across each phase of the consultation.
+
+### ADR-FE-12: High-Contrast Clinical Notification Banner & Emoji Decommissioning
+* **Context:** Previous notice banners utilized low-contrast cyan text over light teal backgrounds with emoji characters (`🎙️`, `⚠️`) that produced readability issues on medical displays.
+* **Decision:** Re-architected `.active-notice-banner` with a crisp gradient background, 4px teal accent border, dark slate readable typography (`#0f172a` in light mode, `#f1f5f9` in dark mode), dedicated badge chip (`Active Probing Inquiry`), live red pulsing dot indicator, FontAwesome vector iconography, and accessible dismiss button without emojis.
+* **Consequence:** 100% reliable clinical legibility and professional aesthetic across both standard daylight and dark clinic viewing modes.
+
 
 
 ---

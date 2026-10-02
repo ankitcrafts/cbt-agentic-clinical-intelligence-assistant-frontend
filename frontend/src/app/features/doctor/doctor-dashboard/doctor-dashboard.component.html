@@ -651,15 +651,24 @@
             </div>
           </div>
 
-          <!-- Active follow-up live notice -->
-          <div *ngIf="activeFollowUpNotice" style="background: rgba(13, 148, 136, 0.15); border-bottom: 1px solid rgba(13, 148, 136, 0.35); padding: 0.5rem 1.5rem; font-size: 0.78rem; color: #2dd4bf; display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fa-solid fa-circle-info"></i>
-              <span>{{ activeFollowUpNotice }}</span>
+          <!-- Active Follow-Up Live Notification Banner -->
+          <div class="active-notice-banner animated-fade-in" *ngIf="activeFollowUpNotice">
+            <div class="notice-content-left">
+              <div class="notice-icon-pill">
+                <i class="fa-solid fa-microphone-lines"></i>
+                <span class="live-dot-pulse"></span>
+              </div>
+              <div class="notice-text-wrap">
+                <span class="notice-badge">Active Probing Inquiry</span>
+                <span class="notice-message">{{ activeFollowUpNotice }}</span>
+              </div>
             </div>
+            <button type="button" class="btn-dismiss-notice" (click)="activeFollowUpNotice = null" title="Dismiss notification">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
           </div>
 
-          <!-- Tab Navigation Bar (Matching Image 3) -->
+          <!-- Tab Navigation Bar -->
           <div class="intel-tabs-nav">
             <button 
               type="button" 
@@ -680,18 +689,26 @@
             <button 
               type="button" 
               class="intel-tab-btn" 
-              [class.active]="activeTab === 'medicines'" 
-              (click)="setActiveTab('medicines')"
-            >
-              Medicines
-            </button>
-            <button 
-              type="button" 
-              class="intel-tab-btn" 
               [class.active]="activeTab === 'confidence'" 
               (click)="setActiveTab('confidence')"
             >
               Confidence
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'followup'" 
+              (click)="setActiveTab('followup')"
+            >
+              Follow-up
+            </button>
+            <button 
+              type="button" 
+              class="intel-tab-btn" 
+              [class.active]="activeTab === 'medicines'" 
+              (click)="setActiveTab('medicines')"
+            >
+              Medicines
             </button>
             <button 
               type="button" 
@@ -705,7 +722,7 @@
 
           <!-- Tab Body Content -->
           <div class="intel-tab-content-area">
-            <!-- TAB 1: Analysis & Summary (Matching Image 3) -->
+            <!-- TAB 1: Analysis & Summary -->
             <div class="tab-pane animated-pane" *ngIf="activeTab === 'analysis'">
               <!-- Clinical Summary Section -->
               <div class="intel-section">
@@ -745,7 +762,7 @@
                 <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
                 <div class="alert-content">
                   <h4>Diagnostic Confidence is {{ currentConfidenceMetrics.overallScore }}% (< 70% threshold)</h4>
-                  <p>Incomplete symptom topography, uncharacterized lifestyle factors, and pending neurological red flags detected. Ask the guideline-based follow-up questions below to reach ≥ 70% diagnostic certainty.</p>
+                  <p>Incomplete symptom topography, uncharacterized lifestyle factors, and pending neurological red flags detected. Review targeted protocol inquiries in the Follow-up tab to reach ≥ 70% diagnostic certainty.</p>
                 </div>
               </div>
 
@@ -753,7 +770,7 @@
                 <i class="fa-solid fa-circle-check alert-icon"></i>
                 <div class="alert-content">
                   <h4>✓ High Diagnostic Confidence: {{ currentConfidenceMetrics.overallScore }}% (Target ≥ 70% Achieved)</h4>
-                  <p>Multi-turn follow-up inquiries completed in the same session. Tension-Type Headache confirmed as primary diagnosis with red flags excluded. All 5 tabs and merged SOAP report updated.</p>
+                  <p>Clinical protocol inquiries completed in the session. Tension-Type Headache confirmed as primary diagnosis with red flags excluded. All CDS tabs and merged SOAP report updated.</p>
                 </div>
               </div>
 
@@ -817,6 +834,83 @@
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- TAB 3: Confidence -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
+              <!-- OVERALL DIAGNOSTIC CONFIDENCE -->
+              <div class="intel-section">
+                <span class="eyebrow-tag" style="text-align: center; display: block; margin-bottom: 1.25rem;">OVERALL DIAGNOSTIC CONFIDENCE</span>
+                
+                <div class="overall-confidence-gauge-card">
+                  <!-- Gauge Scale Graphic -->
+                  <div class="gauge-meter-wrapper">
+                    <div class="gauge-semi-arc">
+                      <div class="arc-seg arc-low"></div>
+                      <div class="arc-seg arc-med active-needle"></div>
+                      <div class="arc-seg arc-high"></div>
+                    </div>
+                    <div class="gauge-labels-row">
+                      <span class="gauge-lbl low-lbl">Low</span>
+                      <span class="gauge-lbl med-lbl">Medium</span>
+                      <span class="gauge-lbl high-lbl">High</span>
+                    </div>
+                  </div>
+
+                  <div class="gauge-center-value font-mono">{{ currentConfidenceMetrics.overallScore }}%</div>
+                  <h4 class="gauge-status-title">{{ currentConfidenceMetrics.overallLevel }}</h4>
+                  <p class="gauge-subtext">{{ currentConfidenceMetrics.subtext }}</p>
+                </div>
+              </div>
+
+              <!-- Action Card for Low/Moderate Confidence (<70%) -->
+              <div class="confidence-alert-card warning-below-threshold" style="margin-top: 1.25rem;" *ngIf="isConfidenceBelowThreshold">
+                <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+                <div class="alert-content" style="flex: 1;">
+                  <h4>Target Threshold: ≥ 70% Confidence Required</h4>
+                  <p style="margin-bottom: 0.65rem;">Current confidence is {{ currentConfidenceMetrics.overallScore }}%. Ask the recommended protocol inquiries during consultation to clarify symptom topography and medical history.</p>
+                  <button type="button" class="btn-followup-primary" (click)="activeTab = 'followup'" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; border-radius: 6px; background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%); color: #fff; border: none; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <i class="fa-solid fa-clipboard-list"></i> Review Follow-up Protocol
+                  </button>
+                </div>
+              </div>
+
+              <div class="confidence-alert-card success-above-threshold" style="margin-top: 1.25rem;" *ngIf="!isConfidenceBelowThreshold">
+                <i class="fa-solid fa-circle-check alert-icon"></i>
+                <div class="alert-content" style="flex: 1;">
+                  <h4>✓ Diagnostic Certainty Achieved: {{ currentConfidenceMetrics.overallScore }}%</h4>
+                  <p style="margin-bottom: 0.65rem;">Symptom completeness, medical history, lifestyle context, and DDx alignment meet clinical verification benchmarks.</p>
+                  <button type="button" *ngIf="answeredQuestionsCount > 0" (click)="resetInquiries()" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 4px; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Protocol Criteria
+                  </button>
+                </div>
+              </div>
+
+              <!-- BREAKDOWN BY DOMAIN -->
+              <div class="intel-section" style="margin-top: 1.5rem;">
+                <span class="eyebrow-tag">BREAKDOWN BY DOMAIN</span>
+                
+                <div class="domains-breakdown-list">
+                  <div class="domain-metric-row" *ngFor="let dom of currentConfidenceMetrics.domains">
+                    <div class="domain-header-row">
+                      <span class="domain-name">{{ dom.name }}</span>
+                      <span class="domain-score font-mono">{{ dom.percentage }}%</span>
+                    </div>
+                    <div class="progress-track">
+                      <div class="progress-bar-fill" [style.width]="dom.percentage + '%'" [style.background]="dom.color"></div>
+                    </div>
+                    <p class="domain-desc">{{ dom.description }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Follow-up (Targeted Clinical Protocol Inquiries) -->
+            <div class="tab-pane animated-pane" *ngIf="activeTab === 'followup'">
+              <div class="medicines-rag-sub" style="margin-bottom: 1.25rem;">
+                <span class="rag-dot">●</span>
+                <span>Evidence-based clinical protocol inquiries retrieved via NICE, BNF, SIGN, and JNC8 guidelines.</span>
+              </div>
 
               <!-- GUIDELINE-BASED FOLLOW-UP QUESTIONS (Premium Clinical Protocol Panel) -->
               <div class="guideline-followup-card" [class.all-completed]="!isConfidenceBelowThreshold">
@@ -840,11 +934,6 @@
                       </span>
                     </div>
                   </div>
-                  <!-- Dedicated Automate Button in Card Header -->
-                  <button type="button" class="btn-automate-header" (click)="triggerFollowUpQuestionsFlow()" [disabled]="isFollowUpLoading" title="Simulate multi-turn follow-up dialogue, update CDS criteria, and elevate confidence to ≥70%">
-                    <i class="fa-solid fa-spinner fa-spin" *ngIf="isFollowUpLoading"></i>
-                    <span>{{ isFollowUpLoading ? 'Processing...' : 'Automate Protocol' }}</span>
-                  </button>
                 </div>
 
                 <!-- Live Verbal Inquiry Prompt Banner (When doctor clicks Ask) -->
@@ -963,7 +1052,7 @@
                     <p class="action-prompt-text">
                       <span *ngIf="isConfidenceBelowThreshold">
                         <i class="fa-solid fa-circle-info"></i>
-                        Inquire verbally during the consultation or use <strong>Automate Protocol</strong> to simulate protocol inquiries &amp; elevate confidence to ≥ 70%.
+                        Inquire verbally during the consultation to address protocol criteria and elevate diagnostic certainty.
                       </span>
                       <span *ngIf="!isConfidenceBelowThreshold" class="text-success-status">
                         <i class="fa-solid fa-circle-check"></i>
@@ -971,21 +1060,17 @@
                       </span>
                     </p>
                   </div>
-                  <div class="action-btns-group">
-                    <button type="button" class="btn-followup-primary" (click)="triggerFollowUpQuestionsFlow()" [disabled]="isFollowUpLoading">
-                      <i class="fa-solid fa-spinner fa-spin" *ngIf="isFollowUpLoading"></i>
-                      <span>{{ isFollowUpCompleted ? 'Re-Automate Protocol (≥70%)' : 'Automate Protocol Inquiries (≥70%)' }}</span>
-                    </button>
-                    <button type="button" class="btn-followup-secondary" *ngIf="isFollowUpCompleted" (click)="resetConsultationRound()" title="Reset back to initial triage state">
+                  <div class="action-btns-group" *ngIf="answeredQuestionsCount > 0">
+                    <button type="button" class="btn-followup-secondary" (click)="resetInquiries()" title="Reset addressed inquiries">
                       <i class="fa-solid fa-arrow-rotate-left"></i>
-                      <span>Reset</span>
+                      <span>Reset Criteria</span>
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- TAB 3: Medicines -->
+            <!-- TAB 5: Medicines -->
             <div class="tab-pane animated-pane" *ngIf="activeTab === 'medicines'">
               <div class="medicines-rag-sub">
                 <span class="rag-dot">●</span>
@@ -1026,77 +1111,8 @@
                   <p class="med-recommendation">{{ med.recommendation }}</p>
 
                   <div class="med-warning-box">
-                    <span class="warning-icon">⚠️</span>
+                    <span class="warning-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
                     <span>{{ med.warning }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- TAB 4: Confidence -->
-            <div class="tab-pane animated-pane" *ngIf="activeTab === 'confidence'">
-              <!-- OVERALL DIAGNOSTIC CONFIDENCE -->
-              <div class="intel-section">
-                <span class="eyebrow-tag" style="text-align: center; display: block; margin-bottom: 1.25rem;">OVERALL DIAGNOSTIC CONFIDENCE</span>
-                
-                <div class="overall-confidence-gauge-card">
-                  <!-- Gauge Scale Graphic -->
-                  <div class="gauge-meter-wrapper">
-                    <div class="gauge-semi-arc">
-                      <div class="arc-seg arc-low"></div>
-                      <div class="arc-seg arc-med active-needle"></div>
-                      <div class="arc-seg arc-high"></div>
-                    </div>
-                    <div class="gauge-labels-row">
-                      <span class="gauge-lbl low-lbl">Low</span>
-                      <span class="gauge-lbl med-lbl">Medium</span>
-                      <span class="gauge-lbl high-lbl">High</span>
-                    </div>
-                  </div>
-
-                  <div class="gauge-center-value font-mono">{{ currentConfidenceMetrics.overallScore }}%</div>
-                  <h4 class="gauge-status-title">{{ currentConfidenceMetrics.overallLevel }}</h4>
-                  <p class="gauge-subtext">{{ currentConfidenceMetrics.subtext }}</p>
-                </div>
-              </div>
-
-              <!-- Action Card for Low/Moderate Confidence (<70%) -->
-              <div class="confidence-alert-card warning-below-threshold" style="margin-top: 1.25rem;" *ngIf="isConfidenceBelowThreshold">
-                <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
-                <div class="alert-content" style="flex: 1;">
-                  <h4>Target Threshold: ≥ 70% Confidence Required</h4>
-                  <p style="margin-bottom: 0.65rem;">Current confidence is 58%. Ask the recommended follow-up questions to clarify symptom topography and lifestyle factors in the same session.</p>
-                  <button type="button" class="btn-followup-primary" (click)="triggerFollowUpQuestionsFlow()" [disabled]="isFollowUpLoading" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; border-radius: 6px; background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%); color: #fff; border: none; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <i class="fa-solid fa-comments"></i> Ask Follow-Up &amp; Boost to 86%
-                  </button>
-                </div>
-              </div>
-
-              <div class="confidence-alert-card success-above-threshold" style="margin-top: 1.25rem;" *ngIf="!isConfidenceBelowThreshold">
-                <i class="fa-solid fa-circle-check alert-icon"></i>
-                <div class="alert-content" style="flex: 1;">
-                  <h4>✓ Diagnostic Certainty Achieved: 86%</h4>
-                  <p style="margin-bottom: 0.65rem;">Symptom completeness (88%), medical history (92%), lifestyle context (84%), and DDx alignment (91%) all meet clinical verification benchmarks.</p>
-                  <button type="button" (click)="resetConsultationRound()" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 4px; background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;">
-                    <i class="fa-solid fa-rotate-left"></i> Reset to Initial Round (58%)
-                  </button>
-                </div>
-              </div>
-
-              <!-- BREAKDOWN BY DOMAIN -->
-              <div class="intel-section" style="margin-top: 1.5rem;">
-                <span class="eyebrow-tag">BREAKDOWN BY DOMAIN</span>
-                
-                <div class="domains-breakdown-list">
-                  <div class="domain-metric-row" *ngFor="let dom of currentConfidenceMetrics.domains">
-                    <div class="domain-header-row">
-                      <span class="domain-name">{{ dom.name }}</span>
-                      <span class="domain-score font-mono">{{ dom.percentage }}%</span>
-                    </div>
-                    <div class="progress-track">
-                      <div class="progress-bar-fill" [style.width]="dom.percentage + '%'" [style.background]="dom.color"></div>
-                    </div>
-                    <p class="domain-desc">{{ dom.description }}</p>
                   </div>
                 </div>
               </div>

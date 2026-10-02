@@ -124,8 +124,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   // Image 4: AI Suggestions List (Dynamic per patient)
   aiSuggestionsList: any[] = [];
 
-  // Image 3: 5-Tab CDS Active Tab
-  activeTab: 'analysis' | 'clinical' | 'medicines' | 'confidence' | 'soap' = 'analysis';
+  // 6-Tab CDS Active Tab
+  activeTab: 'analysis' | 'clinical' | 'confidence' | 'followup' | 'medicines' | 'soap' = 'analysis';
 
   // Live Transcript Exchanges (Dynamic per patient)
   transcriptExchanges: any[] = [];
@@ -441,7 +441,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.viewMode = 'queue';
   }
 
-  setActiveTab(tab: 'analysis' | 'clinical' | 'medicines' | 'confidence' | 'soap') {
+  setActiveTab(tab: 'analysis' | 'clinical' | 'confidence' | 'followup' | 'medicines' | 'soap') {
     this.activeTab = tab;
   }
 
@@ -862,77 +862,6 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Triggers the comprehensive automated follow-up simulation (Automate button):
-   * 1. Appends follow-up exchanges to active session conversation transcript.
-   * 2. Marks all guideline follow-up questions answered.
-   * 3. Increases Confidence from 58% (<70%) to 86% (>=70%).
-   * 4. Updates all 5 CDS tabs and merges comprehensive SOAP note.
-   */
-  async triggerFollowUpQuestionsFlow(): Promise<void> {
-    this.isFollowUpLoading = true;
-    this.activeFollowUpNotice = 'Automating follow-up inquiries & elevating Diagnostic Confidence to 86%...';
-
-    // Simulate real audio/dialogue progression in session
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const questions = this.currentGuidelineFollowUpQuestions;
-    const patientName = this.visitDetails.patientName || 'Patient';
-    const followUpExchanges: any[] = [];
-
-    questions.forEach((q, idx) => {
-      const minStart = 12 + Math.floor(idx / 2);
-      const secStart = (idx % 2 === 0) ? '15' : '45';
-      const secEnd = (idx % 2 === 0) ? '35' : '55';
-
-      followUpExchanges.push({
-        speaker: 'Doctor',
-        speakerRole: 'Doctor',
-        speakerName: 'Dr. Yuki Tanaka',
-        isDoctor: true,
-        text: q.doctorSnippet || q.question,
-        timestamp: `${minStart}:${secStart}`
-      });
-      followUpExchanges.push({
-        speaker: 'Patient',
-        speakerRole: 'Patient',
-        speakerName: patientName,
-        isDoctor: false,
-        text: q.patientSnippet || 'Patient acknowledged symptoms and verified clinical details.',
-        timestamp: `${minStart}:${secEnd}`
-      });
-
-      this.answeredQuestionIds.add(q.id);
-      q.asked = true;
-      q.answered = true;
-    });
-
-    // Mark hardcoded list as answered as well if used
-    this.guidelineFollowUpQuestionsList.forEach(q => {
-      this.answeredQuestionIds.add(q.id);
-      q.asked = true;
-      q.answered = true;
-    });
-
-    // Append to live exchanges
-    const currentEx = this.currentTranscriptExchanges;
-    const mergedExchanges = [...currentEx, ...followUpExchanges];
-    this.transcriptExchanges = mergedExchanges;
-    this.recordingService.latestExchanges.set(mergedExchanges);
-
-    // Mark follow-up completed
-    this.isFollowUpCompleted = true;
-    this.activeInquiryQuestion = null;
-    this.editedSoapReport = null; // Re-sync effective SOAP with newly merged report
-    this.isFollowUpLoading = false;
-    this.activeFollowUpNotice = 'Follow-up inquiries automated. Diagnostic Confidence updated to 86% (≥ 70%). All 5 tabs & SOAP note updated.';
-
-    // Auto-clear notice after 5 seconds
-    setTimeout(() => {
-      this.activeFollowUpNotice = null;
-    }, 5000);
-  }
-
-  /**
    * Starts live verbal inquiry for an individual follow-up question.
    * If the recording is paused or idle, starts/resumes it so doctor & patient speech is recorded into the same session.
    */
@@ -953,7 +882,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.activeFollowUpNotice = `🎙️ Active Probing Inquiry: "${questionItem.question}" — The microphone is live in this session. Ask the patient now.`;
+    this.activeFollowUpNotice = `"${questionItem.question}" — Ambient microphone channel is live. Ask patient now.`;
   }
 
   /**
@@ -987,25 +916,27 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Resets consultation back to initial presentation state (58% confidence < 70%).
+   * Resets answered status of protocol inquiries without mutating the live consultation transcript.
    */
-  resetConsultationRound(): void {
+  resetInquiries(): void {
     this.isFollowUpCompleted = false;
     this.activeInquiryQuestion = null;
-    this.editedSoapReport = null;
     this.answeredQuestionIds.clear();
     this.guidelineFollowUpQuestionsList.forEach(q => {
       q.asked = false;
       q.answered = false;
     });
-    // Restore base exchanges (first 10 exchanges)
-    const base = this.currentTranscriptExchanges.slice(0, 10);
-    this.transcriptExchanges = base;
-    this.recordingService.latestExchanges.set(base);
-    this.activeFollowUpNotice = 'Consultation round reset to initial presentation (Confidence: 58%).';
+    this.activeFollowUpNotice = 'Protocol inquiries reset.';
     setTimeout(() => {
       this.activeFollowUpNotice = null;
     }, 3000);
+  }
+
+  /**
+   * Alias for backward compatibility.
+   */
+  resetConsultationRound(): void {
+    this.resetInquiries();
   }
 
   exportSoapPdf(): void {

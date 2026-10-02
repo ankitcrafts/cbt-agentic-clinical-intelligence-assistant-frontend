@@ -102,8 +102,6 @@ $slate-900:   #0f172a;
 ## 5. UI Micro-Interactions & Animations
 
 * **Pulse Glow:** Subtle breathing animation around the microphone recording button when active (`@keyframes pulse-ring`).
-* **Waveform Visualizer:** Smooth 60 FPS HTML5 canvas waveform reacting to real-time speech amplitude.
-* **Card Transitions:** Staggered fade-and-slide entry (`translateY(8px) -> translateY(0)`) when new differential diagnosis cards or clinical suggestions appear.
-* **Accordion Animations:** Smooth CSS grid transition for expanding and collapsing individual SOAP sections.
-* **CDS Scrollable Viewports & Sticky Navigation:** The 5-tab Clinical Decision Support panel (`.intelligence-panel-card`) features sticky headers (`position: sticky; top: 0`) for the top navigation bar and 5-segment tab selector, while `.intel-tab-content-area` and `.tab-pane` containers provide smooth, isolated vertical scrolling (`max-height: calc(100vh - 210px); overflow-y: auto;`) with tailored teal scrollbars.
+* **Dedicated Follow-up Protocol Tab:** Houses the full clinical protocol inquiry system with priority indicator pillars (High/Moderate/Routine), live ambient verbal prompting banners, and protocol fulfillment tracking.
+* **High-Contrast Active Notice Banner:** Professional, emoji-free prompt banner with an emerald-bordered gradient, pulsing live ambient indicator, structured clinical metadata tags, and accessible dismiss button for high visual clarity across all display modes.
 

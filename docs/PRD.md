@@ -81,8 +81,7 @@ sequenceDiagram
 * **FR-2.1:** Real-time extraction of symptoms, onset, medical history, medications, and allergies.
 * **FR-2.2:** Differential diagnosis card ranking with confidence indicators and justification quotes from clinical guidelines.
 * **FR-2.3:** Red Flag alerts highlighting emergency warning signs requiring immediate triage.
-* **FR-2.4:** Suggested clinical probing questions for the physician to rule in/out top differential conditions.
-* **FR-2.5:** 5-tab scrollable Clinical Decision Support (CDS) console (Analysis, Clinical Decision, Medicines, Confidence, SOAP) with sticky top navigation and isolated viewport scrolling.
+* **FR-2.5:** 6-tab scrollable Clinical Decision Support (CDS) console (Analysis & Summary, Clinical Decision, Confidence, Follow-up, Medicines, SOAP Report) with sticky top navigation and isolated viewport scrolling.
 
 ### 5.3 Automated Documentation & Export
 * **FR-3.1:** Instant drafting of structured SOAP notes divided into:
