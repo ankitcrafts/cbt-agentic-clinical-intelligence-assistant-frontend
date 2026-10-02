@@ -1223,7 +1223,7 @@ export class RecordingService implements OnDestroy {
   }
 
   /**
-   * Clears any active unclosed recording draft for a specific patient upon consultation closure.
+   * Clears any active unclosed recording draft for a specific patient upon consultation closure or rescheduling.
    */
   clearPatientLiveDraft(patientId: string): void {
     if (!patientId) return;
@@ -1232,6 +1232,40 @@ export class RecordingService implements OnDestroy {
     this.patientSessionsMap.delete(normPid);
     this.patientSessionsMap.delete(rawPid);
     this.patientSessionsMap.delete(patientId);
+  }
+
+  /**
+   * Resets all recorded data, live transcript, and CDS intelligence for a patient
+   * to ensure a 100% fresh start upon new appointment scheduling, rescheduling, or new session start.
+   */
+  resetPatientState(patientId: string): void {
+    if (!patientId) return;
+    const normPid = patientId.startsWith('#') ? patientId : '#' + patientId;
+    const rawPid = patientId.replace('#', '');
+
+    this.clearPatientLiveDraft(patientId);
+
+    if (this.currentPatientId === normPid || this.currentPatientId === rawPid || this.currentPatientId === patientId) {
+      this.cleanupRecording();
+      this.state.set('IDLE');
+      this.durationSeconds.set(0);
+      this.errorMessage.set(null);
+      this.recordedBlob.set(null);
+      this.recordedFile.set(null);
+      this.audioUrl.set(null);
+      this.sessionMetadata.set(null);
+      this.latestTranscript.set('');
+      this.latestExchanges.set([]);
+      this.latestSuggestions.set([]);
+      this.latestClinicalAnalysis.set(null);
+      this.gdriveWebViewLink.set(null);
+      this.gdriveFileId.set(null);
+      this.recordedSessions.set([]);
+      this.consultationMode.set('IN_PERSON');
+      this.audioSourceType.set('MIC');
+      this.sessionNumber.set(1);
+      this.sessionTitle.set('Session 1');
+    }
   }
 
   /**

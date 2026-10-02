@@ -100,6 +100,7 @@ sequenceDiagram
 * **FR-4.1:** Passwordless authentication utilizing Gmail SMTP 6-digit OTP delivery.
 * **FR-4.2:** Role-based access control (RBAC) with three distinct views: `DOCTOR`, `PATIENT`, and `ADMIN`.
 * **FR-4.3:** Interactive appointment scheduling grid with doctor availability slots, buffer management, and status lifecycle (`SCHEDULED`, `COMPLETED`, `CANCELLED`).
+* **FR-4.4:** Fresh State Initialization on Session Scheduling: Whenever a new session or next session appointment is scheduled/rescheduled with any doctor, or when clicking "New Session", the dialogue transcript, AI suggestions, and all 5 CDS tabs automatically reset to a clean, patient-specific intake state without retaining stale audio or drafts from previous sessions.
 
 ---
 

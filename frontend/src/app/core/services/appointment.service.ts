@@ -2,6 +2,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { RecordingService } from './recording.service';
 
 export interface DoctorSlot {
   id: string;
@@ -66,6 +67,7 @@ export interface ClinicPatient {
 })
 export class AppointmentService {
   private http = inject(HttpClient);
+  private recordingService = inject(RecordingService);
   private apiBaseUrl = (environment as any).apiBaseUrl || 'http://localhost:8000';
 
   isLoading = signal<boolean>(false);
@@ -927,6 +929,9 @@ export class AppointmentService {
       ? `Patient requested ${doc.name} as preferred physician.` 
       : `Allocated to ${doc.name} at ${timeSlot} (${slot.duration}).`);
 
+    // Reset old recording draft, transcript exchanges, AI suggestions, and CDS tabs for a 100% fresh start
+    this.recordingService.resetPatientState(patientId);
+
     this.patients.update(list => list.map(p => {
       if (p.id === patientId) {
         return {
@@ -1312,6 +1317,9 @@ export class AppointmentService {
       }
       return p;
     }));
+
+    // Reset recording draft and active signals for this patient
+    this.recordingService.resetPatientState(patientId);
 
     try {
       const resp: any = await firstValueFrom(

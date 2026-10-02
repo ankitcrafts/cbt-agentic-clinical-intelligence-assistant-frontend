@@ -38,8 +38,11 @@ gantt
 - [x] **TSK-FE-12:** Multi-Appointment Sequential Session Lifecycle: ensured that a consultation only completes as Session 1 upon clicking "Close Consultation"; re-opening the patient for subsequent appointments automatically initializes Session 2 (and Session N+1) while preserving all historical completed session records in the history tabs.
 - [x] **TSK-FE-13:** Premium Clinical Protocol Inquiry Card Redesign: redesigned the Guideline Follow-Up Questions section with clinical grade card tiles, straight vertical priority color strips (High/Moderate/Routine), smooth hover lifts, live audio wave animation boxes, addressed finding snippet cards, and a dynamic progress bar tracker.
 - [x] **TSK-FE-14:** CDS Tab Screens Scrollable Viewport & Sticky Navigation: Configured responsive flex-column container layout with pinned/sticky top navigation and 5-tab bar (`.intel-tabs-nav`), paired with scrollable `.intel-tab-content-area` and individual `.tab-pane` viewports with custom scrollbars across all CDS tabs (Analysis, Clinical Decision, Medicines, Confidence, SOAP Note).
+- [x] **TSK-FE-15:** Scheduled Next Session & New Session Fresh State Initialization: Ensured that whenever a next session or new session appointment is scheduled/rescheduled for a patient with any doctor, or when starting a "New Session", the dialogue Transcript, AI suggestions, and all 5 CDS tabs (Analysis & Summary, Clinical Decision, Medicines, Confidence, SOAP Report) start with a 100% clean, patient-specific slate without leaking previous consultation drafts.
+- [x] **TSK-FE-16:** Transcript Speaker Disambiguation & Initials Resolution: Fixed consultation transcript rendering so Doctor turns cleanly align on the doctor side (left) with Doctor initials (`AK`), and Patient turns cleanly align on the patient side (right) with Patient initials (`T`), eliminating speaker tag collapse.
 
 ### 2.2 Active Sprint Tasks (In Progress)
+
 - [ ] **TSK-FE-08:** Refine real-time differential diagnosis card animations and interactive citation tooltips linking to NICE guidelines.
 - [ ] **TSK-FE-09:** Add client-side PDF preview modal before triggering direct download or Google Drive sync.
 - [ ] **TSK-FE-10:** Optimize audio buffer streaming chunks for low-bandwidth clinic connections.

@@ -40,6 +40,17 @@
 * **Decision:** Implemented a flex-column layout with `position: sticky; top: 0; z-index: 11-12;` on the intelligence top navigation and 5-segment tab selector bar (`.intel-tabs-nav`), combined with a bounded scrollable viewport on `.intel-tab-content-area` (`max-height: calc(100vh - 210px); overflow-y: auto;`) and isolated `.tab-pane` scrolling with custom teal scrollbars.
 * **Consequence:** Clinicians can effortlessly scroll through all medical recommendations, protocol questionnaires, and SOAP note sections while keeping tab navigation permanently visible at the top.
 
+### ADR-FE-08: Fresh State Isolation for Scheduled Next Sessions & New Sessions
+* **Context:** When a next session or new session appointment is scheduled/rescheduled for a patient with any doctor, or when starting a "New Session", old transcripts, AI suggestions, and 5-CDS tab data from previous patients or earlier sessions must not persist or leak into the newly scheduled consultation.
+* **Decision:** Implemented `RecordingService.resetPatientState(patientId)` invoked automatically during slot assignment, walk-in registration, and consultation completion. In `DoctorDashboardComponent`, `openConsultation` and `startNewSession()` reset live draft signals (`latestTranscript`, `latestExchanges`, `latestSuggestions`, `latestClinicalAnalysis`, `patientSummaryText`, `editedSoapReport`), while 5-CDS getters dynamically bind to the current patient's triage intake data with dedicated empty states (`.empty-diff-state`, `.empty-meds-state`) prior to recording audio.
+* **Consequence:** 100% clean, patient-isolated consultation workspaces for every newly scheduled appointment across any doctor.
+
+### ADR-FE-09: Transcript Speaker Avatar Initial Disambiguation & Layout Alignment
+* **Context:** When rendering consultation transcripts, avatar bubbles must cleanly reflect the attending physician's initials (`doctorInitials`, e.g. `AK`) on the left side with green/teal styling and the patient's initials (`visitDetails.initials`, e.g. `T`) on the right side with neutral styling.
+* **Decision:** Updated template avatar initial resolution in `doctor-dashboard.component.html` to prioritize `doctorInitials` for doctor rows (`ex.isDoctor`) and `visitDetails.initials` for patient rows (`!ex.isDoctor`), eliminating badge collision or accidental fallback to raw exchange string tags.
+* **Consequence:** Pristine visual differentiation between doctor speech and patient speech across all consultation modes.
+
+
 
 ---
 

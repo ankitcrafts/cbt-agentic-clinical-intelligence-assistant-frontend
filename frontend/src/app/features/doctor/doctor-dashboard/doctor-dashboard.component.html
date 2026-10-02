@@ -409,7 +409,7 @@
           </button>
 
           <!-- Reset / New Session Button (Only when not recording/paused AND has recordings) -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState !== 'RECORDING' && currentState !== 'PAUSED' && hasRecordings" (click)="recordingService.resetState()" style="opacity: 0.9;">
+          <button type="button" class="btn-play-pause" *ngIf="currentState !== 'RECORDING' && currentState !== 'PAUSED' && hasRecordings" (click)="startNewSession()" style="opacity: 0.9;" title="Start a fresh consultation session (clears transcript and resets CDS tabs)">
             <i class="fa-solid fa-plus"></i>
             <span>New Session</span>
           </button>
@@ -520,7 +520,7 @@
             [class.patient-row]="!ex.isDoctor"
           >
             <div class="avatar-bubble" [class.doctor-avatar]="ex.isDoctor" [class.patient-avatar]="!ex.isDoctor">
-              {{ ex.isDoctor ? (ex.speaker || doctorInitials || 'DOC') : (ex.speaker || visitDetails.initials || 'PT') }}
+              {{ ex.isDoctor ? (doctorInitials || ex.speaker || 'DOC') : (visitDetails.initials || ex.speaker || 'PT') }}
             </div>
             <div class="bubble-content">
               <p class="bubble-text">{{ ex.text }}</p>
@@ -760,7 +760,24 @@
               <div class="intel-section">
                 <span class="eyebrow-tag">DIFFERENTIAL DIAGNOSIS RANKING</span>
                 
-                <div class="differential-ranking-list">
+                <!-- Empty state when no differential diagnosis calculated yet -->
+                <div class="empty-diff-state animated-fade-in" *ngIf="currentDifferentialDiagnoses.length === 0">
+                  <div class="empty-glow-ring">
+                    <div class="empty-icon-circle">
+                      <i class="fa-solid fa-stethoscope"></i>
+                    </div>
+                  </div>
+                  <div class="empty-title">Awaiting Clinical Analysis</div>
+                  <div class="empty-sub">
+                    Differential diagnosis rankings and risk probabilities will appear here in real-time once consultation audio for <strong>{{ visitDetails.patientName }}</strong> is recorded and analyzed.
+                  </div>
+                  <div class="empty-audio-hint">
+                    <span class="live-ping-dot"></span>
+                    <span>Autonomous multi-hypothesis differential generator</span>
+                  </div>
+                </div>
+
+                <div class="differential-ranking-list" *ngIf="currentDifferentialDiagnoses.length > 0">
                   <div class="diff-diag-card" *ngFor="let diag of currentDifferentialDiagnoses">
                     <div class="diag-header-row">
                       <div class="diag-title-group">
@@ -786,7 +803,7 @@
               </div>
 
               <!-- CLINICAL RED FLAGS -->
-              <div class="intel-section" style="margin-top: 1.5rem;">
+              <div class="intel-section" style="margin-top: 1.5rem;" *ngIf="currentRedFlags.length > 0">
                 <span class="eyebrow-tag" style="color: #ef4444;">CLINICAL RED FLAGS</span>
                 <div class="red-flags-container">
                   <div class="critical-red-flag-card" *ngFor="let flag of currentRedFlags">
@@ -975,7 +992,24 @@
                 <span>Retrieved via RAG from BNF, NICE, JNC8, and SIGN guidelines.</span>
               </div>
 
-              <div class="medicines-list">
+              <!-- Empty state when no guideline medicines retrieved yet -->
+              <div class="empty-meds-state animated-fade-in" *ngIf="currentGuidelineMedicines.length === 0">
+                <div class="empty-glow-ring">
+                  <div class="empty-icon-circle">
+                    <i class="fa-solid fa-pills"></i>
+                  </div>
+                </div>
+                <div class="empty-title">No Guideline Medications Retrieved Yet</div>
+                <div class="empty-sub">
+                  Evidence-based prescribing guidelines (BNF, NICE, JNC8, SIGN) will be automatically retrieved via RAG for <strong>{{ visitDetails.patientName }}</strong> upon running clinical analysis.
+                </div>
+                <div class="empty-audio-hint">
+                  <span class="live-ping-dot"></span>
+                  <span>Evidence-graded drug dosages &amp; contraindication screening</span>
+                </div>
+              </div>
+
+              <div class="medicines-list" *ngIf="currentGuidelineMedicines.length > 0">
                 <div class="med-card" *ngFor="let med of currentGuidelineMedicines">
                   <div class="med-top-row">
                     <div class="med-name-group">
