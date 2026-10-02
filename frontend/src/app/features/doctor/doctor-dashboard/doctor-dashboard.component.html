@@ -491,8 +491,19 @@
       <!-- 2. Transcript Box -->
       <div class="cliniq-card transcript-box">
         <div class="transcript-header">
-          <h3 class="box-title">Transcript</h3>
-          <span class="transcript-meta">{{ currentTranscriptExchanges.length }} exchanges · {{ currentTranscriptExchanges.length > 0 ? 'AI-generated' : 'Awaiting audio' }}</span>
+          <div class="transcript-header-title-group">
+            <h3 class="box-title">Transcript</h3>
+            <span class="transcript-meta">{{ currentTranscriptExchanges.length }} exchanges · {{ currentTranscriptExchanges.length > 0 ? 'AI-generated' : 'Awaiting audio' }}</span>
+          </div>
+          <!-- Legend badge for new users to immediately know who is the Doctor and Patient -->
+          <div class="transcript-legend" *ngIf="currentTranscriptExchanges.length > 0">
+            <span class="legend-badge doctor-legend-tag" title="Doctor speech appears on the left in medical teal">
+              <i class="fa-solid fa-user-doctor"></i> Doctor (Left)
+            </span>
+            <span class="legend-badge patient-legend-tag" title="Patient speech appears on the right in patient slate">
+              <i class="fa-solid fa-hospital-user"></i> Patient (Right)
+            </span>
+          </div>
         </div>
 
         <!-- Empty state when no transcript available yet -->
@@ -514,15 +525,35 @@
 
         <div class="transcript-messages-list" *ngIf="currentTranscriptExchanges.length > 0">
           <div 
-            class="chat-bubble-row" 
-            *ngFor="let ex of currentTranscriptExchanges"
+            class="chat-bubble-row animated-bubble-entry" 
+            *ngFor="let ex of currentTranscriptExchanges; let idx = index"
             [class.doctor-row]="ex.isDoctor"
             [class.patient-row]="!ex.isDoctor"
+            [style.animation-delay]="(idx * 0.06) + 's'"
           >
-            <div class="avatar-bubble" [class.doctor-avatar]="ex.isDoctor" [class.patient-avatar]="!ex.isDoctor">
-              {{ ex.isDoctor ? (doctorInitials || ex.speaker || 'DOC') : (visitDetails.initials || ex.speaker || 'PT') }}
+            <!-- Animated Tag Avatar with Initial & Mini Role Emblem -->
+            <div 
+              class="avatar-bubble" 
+              [class.doctor-avatar]="ex.isDoctor" 
+              [class.patient-avatar]="!ex.isDoctor"
+              [title]="ex.isDoctor ? ('Doctor: ' + (ex.speakerName || currentDoctorName)) : ('Patient: ' + (ex.speakerName || visitDetails.patientName))"
+            >
+              <span class="avatar-initials-text">{{ ex.isDoctor ? (doctorInitials || ex.speaker || 'DR') : (visitDetails.initials || ex.speaker || 'PT') }}</span>
+              <span class="avatar-sub-badge" [class.doctor-sub-badge]="ex.isDoctor" [class.patient-sub-badge]="!ex.isDoctor">
+                <i [class]="ex.isDoctor ? 'fa-solid fa-stethoscope' : 'fa-solid fa-user'"></i>
+              </span>
             </div>
+
+            <!-- Speech Bubble with Explicit Role Header Tag -->
             <div class="bubble-content">
+              <div class="bubble-speaker-header">
+                <span class="role-pill-indicator" [class.doctor-pill]="ex.isDoctor" [class.patient-pill]="!ex.isDoctor">
+                  <i [class]="ex.isDoctor ? 'fa-solid fa-user-doctor' : 'fa-solid fa-hospital-user'"></i>
+                  <span class="role-name-label">{{ ex.isDoctor ? 'Doctor' : 'Patient' }}</span>
+                </span>
+                <span class="speaker-full-name">{{ ex.isDoctor ? (ex.speakerName || currentDoctorName) : (ex.speakerName || visitDetails.patientName) }}</span>
+                <span class="bubble-turn-time" *ngIf="ex.timestamp">· {{ ex.timestamp }}</span>
+              </div>
               <p class="bubble-text">{{ ex.text }}</p>
             </div>
           </div>
