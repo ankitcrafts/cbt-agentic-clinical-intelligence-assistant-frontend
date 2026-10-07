@@ -60,4 +60,8 @@ export class AdminDashboardComponent {
   goToPatientDesk(): void {
     this.authService.currentStep.set(3); // Step 3 corresponds to Patients Management in Admin Flow
   }
+
+  goToDoctorDesk(): void {
+    this.authService.currentStep.set(2); // Step 2 corresponds to Doctors Management in Admin Flow
+  }
 }

@@ -1,9 +1,18 @@
 <div class="management-page">
-  <div class="page-header">
-    <div>
-      <h1>Recordings & Reports</h1>
-      <p class="subtitle">View and audit all consultation recordings and clinical reports</p>
+  <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+      <button class="back-icon-btn" (click)="goBackToDashboard()" title="Back to Admin Dashboard" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; cursor: pointer;">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <div>
+        <h1 style="margin: 0; font-size: 1.75rem;">Recordings & Reports</h1>
+        <p class="subtitle" style="margin: 0;">View and audit all consultation recordings and clinical reports</p>
+      </div>
     </div>
+    <button class="btn btn-outline" (click)="goBackToDashboard()" style="padding: 0.55rem 1.15rem; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem;">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Back to Dashboard</span>
+    </button>
   </div>
 
   <div class="card table-card">

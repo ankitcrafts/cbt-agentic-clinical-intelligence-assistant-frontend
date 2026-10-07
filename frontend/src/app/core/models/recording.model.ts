@@ -82,6 +82,10 @@ export interface ClinicalAnalysisData {
     assessment?: string;
     plan?: string;
   };
+  guideline_follow_up_questions?: any[];
+  guidelineFollowUpQuestions?: any[];
+  follow_up_questions?: any[];
+  followUpQuestions?: any[];
   ai_suggestions?: AISuggestion[];
   aiSuggestions?: AISuggestion[];
 }

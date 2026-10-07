@@ -14,7 +14,7 @@ import { UserRole } from '../../../core/models/platform.model';
 export class DoctorLoginComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
 
-  email = 'doctor@cliniq.health';
+  email = '';
   otpCode = '';
   countdown = 0;
   private timerInterval: any = null;
@@ -26,7 +26,7 @@ export class DoctorLoginComponent implements OnInit, OnDestroy {
   signupPhone = '';
 
   ngOnInit() {
-    this.syncRoleEmail(this.authService.currentRole());
+    this.email = '';
   }
 
   ngOnDestroy() {
@@ -35,25 +35,18 @@ export class DoctorLoginComponent implements OnInit, OnDestroy {
 
   selectRole(role: UserRole) {
     this.authService.setRole(role);
-    this.syncRoleEmail(role);
+    this.email = '';
     this.otpCode = '';
     this.clearTimer();
   }
 
-  private syncRoleEmail(role: UserRole) {
-    if (role === 'ADMIN') this.email = 'admin@cliniq.health';
-    else if (role === 'DOCTOR') this.email = 'doctor@cliniq.health';
-    else this.email = 'patient@cliniq.health';
-  }
-
   async onSendOtp() {
     if (!this.email) return;
+    this.otpCode = '';
     const res = await this.authService.sendOtp(this.email, this.authService.currentRole());
     if (res && res.success) {
       this.startResendTimer();
-      if (res.dev_otp) {
-        this.otpCode = res.dev_otp;
-      }
+      this.otpCode = '';
     }
   }
 
@@ -99,12 +92,6 @@ export class DoctorLoginComponent implements OnInit, OnDestroy {
 
   onQuickDemoLogin() {
     this.authService.quickDemoLogin(this.authService.currentRole());
-  }
-
-  autofillDevOtp() {
-    if (this.authService.devOtp()) {
-      this.otpCode = this.authService.devOtp()!;
-    }
   }
 
   private startResendTimer() {

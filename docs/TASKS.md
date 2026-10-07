@@ -1,0 +1,66 @@
+# Project Tasks & Development Roadmap
+## ClinIQ: Frontend & Full-Stack System Tasks
+
+---
+
+## 1. Project Milestones
+
+```mermaid
+gantt
+    title ClinIQ Frontend & Full-Stack System Roadmap
+    dateFormat  YYYY-MM-DD
+    section Phase 1: Core Portal & Audio
+    Angular 19 Standalone Setup       :done,    des1, 2026-08-01, 2026-08-15
+    Web Audio & MediaRecorder Stream  :done,    des2, 2026-08-16, 2026-08-30
+    section Phase 2: Role Portals & CDS
+    Doctor Consultation Console      :done,    des3, 2026-09-01, 2026-09-12
+    Patient Booking & OTP Flow       :done,    des4, 2026-09-10, 2026-09-20
+    Admin Schedules & Telemetry      :done,    des5, 2026-09-18, 2026-09-24
+    section Phase 3: Polish & Hardening
+    E2E Flow Navigator Refinement    :active,  des6, 2026-09-25, 2026-10-05
+    Offline Resilience & PWA Cache   :         des7, 2026-10-06, 2026-10-20
+```
+
+---
+
+## 2. Detailed Task Breakdown
+
+### 2.1 Completed Tasks (Done)
+- [x] **TSK-FE-01:** Scaffold Angular 19 application with SCSS design token architecture (`styles.scss`).
+- [x] **TSK-FE-02:** Implement browser-based audio recorder service with HTML5 canvas waveform visualization.
+- [x] **TSK-FE-03:** Build Doctor Consultation workspace with 3-column split (Audio Stream, AI Decision Support, SOAP Note Editor).
+- [x] **TSK-FE-04:** Implement Patient Portal with interactive doctor slot booking, multi-step stepper, and OTP modal.
+- [x] **TSK-FE-05:** Build Admin Dashboard with doctor availability grid and clinic management controls.
+- [x] **TSK-FE-06:** Implement `AuthService` and `AuthInterceptor` supporting Bearer token injection and role-based guards (`RoleGuard`).
+- [x] **TSK-FE-07:** Implement Interactive Flow Navigator for demonstrating full patient-to-doctor lifecycle.
+- [x] **TSK-FE-10:** Dynamic Follow-Up Questions Extraction & Extensible Architecture: bound dashboard follow-up cards directly to live backend analysis outputs with condition-adaptive fallbacks and extensible interfaces for upcoming graph-based follow-up processes.
+- [x] **TSK-FE-11:** Live Doctor Verbal In-Session Audio Probing & Dedicated "Automate" Mode: implemented continuous microphone recording workflow for verbal doctor inquiries along with a dedicated "Automate" button on the follow-up questions card that auto-simulates multi-turn dialogue, updates all 5 CDS tabs, and elevates confidence to ≥70%.
+- [x] **TSK-FE-12:** Multi-Appointment Sequential Session Lifecycle: ensured that a consultation only completes as Session 1 upon clicking "Close Consultation"; re-opening the patient for subsequent appointments automatically initializes Session 2 (and Session N+1) while preserving all historical completed session records in the history tabs.
+- [x] **TSK-FE-13:** Premium Clinical Protocol Inquiry Card Redesign: redesigned the Guideline Follow-Up Questions section with clinical grade card tiles, straight vertical priority color strips (High/Moderate/Routine), smooth hover lifts, live audio wave animation boxes, addressed finding snippet cards, and a dynamic progress bar tracker.
+- [x] **TSK-FE-14:** CDS Tab Screens Scrollable Viewport & Sticky Navigation: Configured responsive flex-column container layout with pinned/sticky top navigation and 5-tab bar (`.intel-tabs-nav`), paired with scrollable `.intel-tab-content-area` and individual `.tab-pane` viewports with custom scrollbars across all CDS tabs (Analysis, Clinical Decision, Medicines, Confidence, SOAP Note).
+- [x] **TSK-FE-15:** Scheduled Next Session & New Session Fresh State Initialization: Ensured that whenever a next session or new session appointment is scheduled/rescheduled for a patient with any doctor, or when starting a "New Session", the dialogue Transcript, AI suggestions, and all 5 CDS tabs (Analysis & Summary, Clinical Decision, Medicines, Confidence, SOAP Report) start with a 100% clean, patient-specific slate without leaking previous consultation drafts.
+- [x] **TSK-FE-16:** Transcript Speaker Disambiguation & Initials Resolution: Fixed consultation transcript rendering so Doctor turns cleanly align on the doctor side (left) with Doctor initials (`AK`), and Patient turns cleanly align on the patient side (right) with Patient initials (`T`), eliminating speaker tag collapse.
+- [x] **TSK-FE-17:** Follow-Up Dialogue Automation Decommissioning & Real Transcript Preservation: Removed automated protocol simulation buttons ("Automate Protocol") and eliminated synthetic dialogue injection into the session transcript, ensuring all conversation transcripts strictly reflect authentic doctor-patient verbal consultations and ambient recordings.
+- [x] **TSK-FE-18:** 6-Tab CDS Architecture & Dedicated Follow-Up Tab Arrangement: Re-ordered the consultation intelligence tabs into the exact sequence: 1. Analysis & Summary, 2. Clinical Decision, 3. Confidence, 4. Follow-up, 5. Medicines, 6. SOAP Report; and extracted the full Targeted Clinical Protocol Inquiries card system into its dedicated Follow-up tab.
+- [x] **TSK-FE-19:** High-Contrast Professional Notification Banner & Emoji Decommissioning: Redesigned the top consultation notice banner with high-contrast clinical typography, solid border accents, live pulsing recording indicator, and clean SVG iconography, eliminating all emojis for optimal clinical scannability.
+
+### 2.2 Active Sprint Tasks (In Progress)
+
+- [ ] **TSK-FE-08:** Refine real-time differential diagnosis card animations and interactive citation tooltips linking to NICE guidelines.
+- [ ] **TSK-FE-09:** Add client-side PDF preview modal before triggering direct download or Google Drive sync.
+- [ ] **TSK-FE-10:** Optimize audio buffer streaming chunks for low-bandwidth clinic connections.
+
+### 2.3 Future Roadmap (Backlog)
+- [ ] **TSK-FE-11:** Progressive Web App (PWA) configuration with service worker caching for offline consultation viewing.
+- [ ] **TSK-FE-12:** WebRTC peer-to-peer video integration for built-in telehealth consultations.
+- [ ] **TSK-FE-13:** Multi-language UI localization (i18n) supporting Spanish, French, and Hindi.
+- [ ] **TSK-FE-14:** Voice-activated physician command macros (e.g. "ClinIQ, prescribe Amoxicillin 500mg TDS for 5 days").
+
+---
+
+## 3. Bug Tracking & Quality Backlog
+
+| Issue ID | Description | Severity | Target Resolution |
+| :--- | :--- | :--- | :--- |
+| **BUG-FE-01** | Fix audio recorder waveform freeze when switching browser tabs during long recording sessions. | Medium | Sprint 4 |
+| **BUG-FE-02** | Ensure OTP countdown timer preserves state if user temporarily navigates away from modal. | Low | Sprint 4 |

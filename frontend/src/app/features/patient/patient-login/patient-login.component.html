@@ -12,7 +12,8 @@
       <span class="eyebrow">AGENTIC CLINICAL INTELLIGENCE</span>
       <h1 class="hero-title serif-title">A co-pilot that listens, documents and thinks alongside the clinician.</h1>
       <p class="hero-subtitle">
-        Real-time consultation capture, automated SOAP notes and guideline-grounded decision support — with a hospital-wide view for operations and a clear record for patients.
+        Real-time consultation capture, automated SOAP notes and guideline-grounded decision support — with a
+        hospital-wide view for operations and a clear record for patients.
       </p>
 
       <div class="features-grid">
@@ -69,32 +70,20 @@
       <div class="role-selector-group">
         <label class="section-label">SIGN IN AS</label>
         <div class="role-tabs-grid">
-          <button 
-            type="button"
-            class="role-tab"
-            [class.active]="authService.currentRole() === 'ADMIN'"
-            (click)="selectRole('ADMIN')"
-          >
+          <button type="button" class="role-tab" [class.active]="authService.currentRole() === 'ADMIN'"
+            (click)="selectRole('ADMIN')">
             <i class="fa-solid fa-shield-halved"></i>
             <span>Administrator</span>
           </button>
 
-          <button 
-            type="button"
-            class="role-tab"
-            [class.active]="authService.currentRole() === 'DOCTOR'"
-            (click)="selectRole('DOCTOR')"
-          >
+          <button type="button" class="role-tab" [class.active]="authService.currentRole() === 'DOCTOR'"
+            (click)="selectRole('DOCTOR')">
             <i class="fa-solid fa-user-doctor"></i>
             <span>Doctor</span>
           </button>
 
-          <button 
-            type="button"
-            class="role-tab"
-            [class.active]="authService.currentRole() === 'PATIENT'"
-            (click)="selectRole('PATIENT')"
-          >
+          <button type="button" class="role-tab" [class.active]="authService.currentRole() === 'PATIENT'"
+            (click)="selectRole('PATIENT')">
             <i class="fa-solid fa-user"></i>
             <span>Patient</span>
           </button>
@@ -123,16 +112,11 @@
       </div>
 
       <!-- Step 1: Request OTP Form -->
-      <form *ngIf="!authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onSendOtp()" class="login-fields-form">
+      <form *ngIf="!authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onSendOtp()"
+        class="login-fields-form">
         <div class="form-group">
           <label>Patient email / Gmail</label>
-          <input 
-            type="email" 
-            [(ngModel)]="email" 
-            name="email" 
-            required 
-            placeholder="e.g. patient@cliniq.health"
-          >
+          <input type="email" [(ngModel)]="email" name="email" required placeholder="patient@cliniq.health">
         </div>
 
         <button type="submit" class="submit-btn" [disabled]="authService.isLoading() || !email">
@@ -147,37 +131,25 @@
 
         <button type="button" class="quick-demo-btn" (click)="onQuickDemoLogin()">
           <i class="fa-solid fa-bolt"></i>
-          <span>1-Click Demo Login as {{ authService.currentRole() === 'ADMIN' ? 'Administrator' : (authService.currentRole() === 'DOCTOR' ? 'Doctor' : 'Patient') }}</span>
+          <span>1-Click Demo Login as {{ authService.currentRole() === 'ADMIN' ? 'Administrator' :
+            (authService.currentRole() === 'DOCTOR' ? 'Doctor' : 'Patient') }}</span>
         </button>
       </form>
 
       <!-- Step 2: Verify OTP Form -->
-      <form *ngIf="authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onVerifyOtp()" class="login-fields-form">
-        <!-- Dev OTP Helper Pill -->
-        <div class="otp-dev-hint" *ngIf="authService.devOtp()" (click)="autofillDevOtp()">
-          <span><i class="fa-solid fa-key"></i> Code: <strong>{{ authService.devOtp() }}</strong></span>
-          <button type="button" class="autofill-btn">Autofill</button>
-        </div>
-
+      <form *ngIf="authService.otpSent() && !authService.isNewUserPendingProfile()" (ngSubmit)="onVerifyOtp()"
+        class="login-fields-form">
         <div class="form-group">
           <label>Enter 6-digit OTP Code sent to <strong>{{ email }}</strong></label>
-          <input 
-            type="text" 
-            class="otp-input-box"
-            [(ngModel)]="otpCode" 
-            name="otpCode" 
-            required 
-            maxlength="6"
-            placeholder="••••••"
-            autocomplete="one-time-code"
-            autofocus
-          >
+          <input type="text" class="otp-input-box" [(ngModel)]="otpCode" name="otpCode" required maxlength="6"
+            placeholder="••••••" autocomplete="off" autofocus>
         </div>
 
         <button type="submit" class="submit-btn" [disabled]="authService.isLoading() || !otpCode || otpCode.length < 4">
           <i class="fa-solid fa-spinner fa-spin" *ngIf="authService.isLoading()"></i>
           <i class="fa-solid fa-arrow-right-to-bracket" *ngIf="!authService.isLoading()"></i>
-          <span>Verify & Enter {{ authService.currentRole() === 'ADMIN' ? 'Admin Portal' : (authService.currentRole() === 'DOCTOR' ? 'Clinician Suite' : 'Patient Portal') }}</span>
+          <span>Verify & Enter {{ authService.currentRole() === 'ADMIN' ? 'Admin Portal' : (authService.currentRole()
+            === 'DOCTOR' ? 'Clinician Suite' : 'Patient Portal') }}</span>
         </button>
 
         <div class="auth-actions-row">
@@ -202,8 +174,10 @@
       </form>
 
       <!-- Step 3: New Real User Profile Onboarding Form -->
-      <form *ngIf="authService.isNewUserPendingProfile()" (ngSubmit)="onCompleteSignupProfile()" class="login-fields-form">
-        <div style="background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.35); border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+      <form *ngIf="authService.isNewUserPendingProfile()" (ngSubmit)="onCompleteSignupProfile()"
+        class="login-fields-form">
+        <div
+          style="background: rgba(45, 212, 191, 0.1); border: 1px solid rgba(45, 212, 191, 0.35); border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
           <div style="font-size: 0.8rem; color: #94a3b8;">
             Assigned Patient ID:
           </div>
@@ -214,24 +188,13 @@
 
         <div class="form-group">
           <label>Full Name <span style="color: #f87171;">*</span></label>
-          <input 
-            type="text" 
-            [(ngModel)]="signupFullName" 
-            name="signupFullName" 
-            required 
-            placeholder="e.g. Marcus Delgado"
-            autofocus
-          >
+          <input type="text" [(ngModel)]="signupFullName" name="signupFullName" required
+            placeholder="e.g. Marcus Delgado" autofocus>
         </div>
 
         <div class="form-group">
           <label>Phone Number (Optional)</label>
-          <input 
-            type="tel" 
-            [(ngModel)]="signupPhone" 
-            name="signupPhone" 
-            placeholder="e.g. +1 (555) 019-2834"
-          >
+          <input type="tel" [(ngModel)]="signupPhone" name="signupPhone" placeholder="e.g. +1 (555) 019-2834">
         </div>
 
         <button type="submit" class="submit-btn" [disabled]="authService.isLoading() || !signupFullName">
@@ -241,13 +204,15 @@
         </button>
 
         <div class="auth-actions-row" style="justify-content: center; margin-top: 0.75rem;">
-          <button type="button" class="text-action-btn" (click)="onSkipSignupProfile()" style="color: #94a3b8; font-size: 0.785rem;">
+          <button type="button" class="text-action-btn" (click)="onSkipSignupProfile()"
+            style="color: #94a3b8; font-size: 0.785rem;">
             Skip for now &amp; use ID {{ authService.currentUser().id }} <i class="fa-solid fa-arrow-right"></i>
           </button>
         </div>
       </form>
 
-      <p class="disclaimer-text"><i class="fa-solid fa-shield-halved"></i> HIPAA & GDPR compliant healthcare portal with encrypted OTP verification.</p>
+      <p class="disclaimer-text"><i class="fa-solid fa-shield-halved"></i> Healthcare Compliance Portal with encrypted
+        OTP verification.</p>
     </div>
   </div>
 </div>

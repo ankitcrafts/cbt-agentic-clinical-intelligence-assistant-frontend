@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, delay, tap } from 'rxjs/operators';
+import { catchError, delay, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 import { MockDataService } from './mock-data.service';
@@ -365,7 +365,7 @@ export class RecordingService implements OnDestroy {
     this.audioUrl.set(previewUrl);
 
     const encounterId = context?.encounterId || this.mockData.activeConsultation().id || 'CONS-41233';
-    const doctorId = context?.doctorId || 'DOC-001';
+    const doctorId = context?.doctorId || this.authService.currentUser()?.id || 'DOC-001';
     const patientId = context?.patientId || this.mockData.activeConsultation().patientPid || 'P1245';
 
     const metadata: RecordingSessionMetadata = {
@@ -485,7 +485,7 @@ export class RecordingService implements OnDestroy {
         this.mimeType.set(targetMime);
 
         const encounterId = context?.encounterId || this.mockData.activeConsultation().id || 'CONS-41233';
-        const doctorId = context?.doctorId || 'DOC-001';
+        const doctorId = context?.doctorId || this.authService.currentUser()?.id || 'DOC-001';
         const patientId = context?.patientId || this.mockData.activeConsultation().patientPid || 'P1245';
         const fileName = `rec_${encounterId}_${Date.now()}.${ext}`;
 
@@ -664,12 +664,13 @@ export class RecordingService implements OnDestroy {
     this.errorMessage.set(null);
 
     const activeCons = this.mockData.activeConsultation();
+    const currentUser = this.authService.currentUser();
     const encounterId = overrideContext?.encounterId || metadata.encounterId || activeCons.id || 'CONS-41233';
-    const doctorId = overrideContext?.doctorId || metadata.doctorId || 'DOC-001';
+    const doctorId = overrideContext?.doctorId || metadata.doctorId || currentUser?.id || 'DOC-001';
     const patientId = overrideContext?.patientId || metadata.patientId || activeCons.patientPid || 'P1245';
-    const doctorName = overrideContext?.doctorName || 'Dr. Yuki Tanaka';
+    const doctorName = overrideContext?.doctorName || currentUser?.name || 'Dr. Yuki Tanaka';
     const patientName = overrideContext?.patientName || activeCons.patientName || 'Marcus Delgado';
-    const doctorInitials = overrideContext?.doctorInitials || 'YT';
+    const doctorInitials = overrideContext?.doctorInitials || currentUser?.avatar_initials || 'YT';
     const patientInitials = overrideContext?.patientInitials || 'MD';
 
     const formData = new FormData();
@@ -827,15 +828,19 @@ export class RecordingService implements OnDestroy {
     const normPid = rawPid.startsWith('#') ? rawPid : '#' + rawPid;
     const pName = activeCons.patientName || 'Patient';
     const pInitials = pName ? pName.split(' ').map(n => n[0]).join('') : 'PT';
+    const currentUser = this.authService.currentUser();
+    const docId = session.metadata.doctorId || currentUser?.id || 'DOC-001';
+    const docName = currentUser?.name || 'Dr. Yuki Tanaka';
+    const docInitials = currentUser?.avatar_initials || 'DOC';
 
     const formData = new FormData();
     formData.append('file', session.recordedFile, session.recordedFile.name);
     formData.append('encounter_id', session.metadata.encounterId);
-    formData.append('doctor_id', session.metadata.doctorId);
+    formData.append('doctor_id', docId);
     formData.append('patient_id', normPid);
-    formData.append('doctor_name', 'Dr. Yuki Tanaka');
+    formData.append('doctor_name', docName);
     formData.append('patient_name', pName);
-    formData.append('doctor_initials', 'YT');
+    formData.append('doctor_initials', docInitials);
     formData.append('patient_initials', pInitials);
     formData.append('recording_started_at', session.metadata.recordingStartedAt);
     formData.append('recording_ended_at', session.metadata.recordingEndedAt);
@@ -1198,15 +1203,69 @@ export class RecordingService implements OnDestroy {
   getPatientConsultationSessions(patientId: string): Observable<any[]> {
     const baseUrl = environment.apiBaseUrl || 'http://127.0.0.1:8000';
     const cleanPid = patientId.startsWith('#') ? patientId : '#' + patientId;
-    return this.http.get<any[]>(`${baseUrl}/api/v1/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+    return this.http.get<any>(`${baseUrl}/api/v1/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+      map((res: any) => Array.isArray(res) ? res : (res?.data || [])),
       catchError(() => {
-        return this.http.get<any[]>(`${baseUrl}/patients/${encodeURIComponent(cleanPid)}/sessions`);
+        return this.http.get<any>(`${baseUrl}/api/scheduling/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+          map((res: any) => Array.isArray(res) ? res : (res?.data || []))
+        );
+      }),
+      catchError(() => {
+        return this.http.get<any>(`${baseUrl}/patients/${encodeURIComponent(cleanPid)}/sessions`).pipe(
+          map((res: any) => Array.isArray(res) ? res : (res?.data || []))
+        );
       }),
       catchError(err => {
         console.warn('Failed to fetch patient consultation sessions from backend:', err);
         return of([]);
       })
     );
+  }
+
+  /**
+   * Clears any active unclosed recording draft for a specific patient upon consultation closure or rescheduling.
+   */
+  clearPatientLiveDraft(patientId: string): void {
+    if (!patientId) return;
+    const normPid = patientId.startsWith('#') ? patientId : '#' + patientId;
+    const rawPid = patientId.replace('#', '');
+    this.patientSessionsMap.delete(normPid);
+    this.patientSessionsMap.delete(rawPid);
+    this.patientSessionsMap.delete(patientId);
+  }
+
+  /**
+   * Resets all recorded data, live transcript, and CDS intelligence for a patient
+   * to ensure a 100% fresh start upon new appointment scheduling, rescheduling, or new session start.
+   */
+  resetPatientState(patientId: string): void {
+    if (!patientId) return;
+    const normPid = patientId.startsWith('#') ? patientId : '#' + patientId;
+    const rawPid = patientId.replace('#', '');
+
+    this.clearPatientLiveDraft(patientId);
+
+    if (this.currentPatientId === normPid || this.currentPatientId === rawPid || this.currentPatientId === patientId) {
+      this.cleanupRecording();
+      this.state.set('IDLE');
+      this.durationSeconds.set(0);
+      this.errorMessage.set(null);
+      this.recordedBlob.set(null);
+      this.recordedFile.set(null);
+      this.audioUrl.set(null);
+      this.sessionMetadata.set(null);
+      this.latestTranscript.set('');
+      this.latestExchanges.set([]);
+      this.latestSuggestions.set([]);
+      this.latestClinicalAnalysis.set(null);
+      this.gdriveWebViewLink.set(null);
+      this.gdriveFileId.set(null);
+      this.recordedSessions.set([]);
+      this.consultationMode.set('IN_PERSON');
+      this.audioSourceType.set('MIC');
+      this.sessionNumber.set(1);
+      this.sessionTitle.set('Session 1');
+    }
   }
 
   /**

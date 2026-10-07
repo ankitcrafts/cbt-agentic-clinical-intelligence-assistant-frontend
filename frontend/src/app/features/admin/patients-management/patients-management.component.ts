@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../../core/services/auth.service';
 import { AppointmentService, ClinicPatient, DoctorProfile, DoctorSlot } from '../../../core/services/appointment.service';
 
 @Component({
@@ -11,10 +12,15 @@ import { AppointmentService, ClinicPatient, DoctorProfile, DoctorSlot } from '..
   styleUrls: ['./patients-management.component.scss']
 })
 export class PatientsManagementComponent implements OnInit {
+  authService = inject(AuthService);
   appointmentService = inject(AppointmentService);
 
   searchTerm = '';
   statusFilter: 'ALL' | 'UNASSIGNED' | 'SCHEDULED' | 'IN_CONSULTATION' | 'PREFERRED' | 'RETURNING' = 'ALL';
+
+  goBackToDashboard(): void {
+    this.authService.currentStep.set(1);
+  }
 
   // Assignment Modal State
   showAssignModal = false;

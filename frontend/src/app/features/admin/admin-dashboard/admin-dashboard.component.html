@@ -1,35 +1,47 @@
 <div class="cliniq-dashboard-page">
   <!-- Title Header & Quick Action -->
   <div class="dashboard-title-header">
-    <div>
+    <div class="header-left">
       <h1 class="main-title serif-title">Hospital Administration Overview</h1>
       <p class="subtitle">Real-time clinician staffing, slot distribution, and arriving patient load — {{ todayDate }}</p>
     </div>
-    <button class="btn btn-primary" (click)="goToPatientDesk()" style="padding: 0.55rem 1.15rem; background: #0d9488; border: 1px solid #0d9488; color: #ffffff; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem;">
-      <i class="fa-solid fa-user-clock"></i>
-      <span>Open Patient Intake &amp; Slot Desk</span>
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="goToDoctorDesk()">
+        <i class="fa-solid fa-user-doctor"></i>
+        <span>Doctors &amp; Staff Directory</span>
+      </button>
+      <button class="btn btn-primary" (click)="goToPatientDesk()">
+        <i class="fa-solid fa-user-clock"></i>
+        <span>Open Patient Intake &amp; Slot Desk</span>
+      </button>
+    </div>
   </div>
 
   <!-- Top KPI Cards (4 Cards Grid) -->
   <div class="kpi-cards-grid">
-    <div class="cliniq-card kpi-card">
-      <span class="kpi-label">PHYSICIANS ON DUTY</span>
+    <div class="cliniq-card kpi-card" (click)="goToDoctorDesk()" style="cursor: pointer;" title="Click to view full Doctor Roster &amp; Manage Clinicians">
+      <span class="kpi-label" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>PHYSICIANS ON DUTY</span>
+        <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem; color: #0d9488;"></i>
+      </span>
       <div class="kpi-val-group">
         <span class="kpi-value serif-title">{{ activeDoctorsCount }}/{{ doctors.length }}</span>
       </div>
-      <span class="kpi-sub">Available for consultation today</span>
+      <span class="kpi-sub">Available for consultation today · Click to manage</span>
     </div>
 
-    <div class="cliniq-card kpi-card" (click)="goToPatientDesk()" style="cursor: pointer;">
-      <span class="kpi-label">ARRIVING / UNASSIGNED</span>
+    <div class="cliniq-card kpi-card" (click)="goToPatientDesk()" style="cursor: pointer;" title="Click to open Patient Intake &amp; Slot Desk">
+      <span class="kpi-label" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>ARRIVING / UNASSIGNED</span>
+        <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem; color: #d97706;" *ngIf="unassignedCount > 0"></i>
+      </span>
       <div class="kpi-val-group">
         <span class="kpi-value serif-title" [style.color]="unassignedCount > 0 ? '#d97706' : '#0d9488'">{{ unassignedCount }}</span>
       </div>
       <span class="kpi-sub">{{ unassignedCount > 0 ? 'Patients awaiting doctor allocation' : 'All arriving patients allocated' }}</span>
     </div>
 
-    <div class="cliniq-card kpi-card">
+    <div class="cliniq-card kpi-card" (click)="goToPatientDesk()" style="cursor: pointer;">
       <span class="kpi-label">TOTAL CLINIC PATIENTS</span>
       <div class="kpi-val-group">
         <span class="kpi-value serif-title">{{ totalPatients }}</span>
@@ -37,7 +49,7 @@
       <span class="kpi-sub">{{ scheduledCount }} booked consultation slots</span>
     </div>
 
-    <div class="cliniq-card kpi-card">
+    <div class="cliniq-card kpi-card" (click)="goToDoctorDesk()" style="cursor: pointer;">
       <span class="kpi-label">CONSULTATION ROOMS</span>
       <div class="kpi-val-group">
         <span class="kpi-value serif-title">6/8</span>
@@ -50,15 +62,20 @@
   <div class="section-block">
     <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem;">
       <h3 class="section-eyebrow" style="margin: 0;">PHYSICIAN AVAILABILITY &amp; SCHEDULE OCCUPANCY</h3>
-      <span style="font-size: 0.78rem; color: #0d9488; font-weight: 600;">Real-time appointment slot tracker</span>
+      <a (click)="goToDoctorDesk()" style="font-size: 0.78rem; color: #0d9488; font-weight: 600; cursor: pointer; text-decoration: none;">
+        Manage All Clinicians &rarr;
+      </a>
     </div>
     <div class="clinicians-grid">
-      <div class="cliniq-card clinician-card" *ngFor="let dr of doctors">
+      <div class="cliniq-card clinician-card" *ngFor="let dr of doctors" (click)="goToDoctorDesk()" style="cursor: pointer;" title="Click to view/edit doctor profile and schedule">
         <div class="card-top-row">
           <div class="dr-profile">
             <div class="avatar-circle">{{ dr.initials }}</div>
             <div class="dr-info">
-              <h4 class="dr-name">{{ dr.name }}</h4>
+              <h4 class="dr-name">
+                {{ dr.name }}
+                <span *ngIf="dr.isNewUpcoming" style="font-size: 0.65rem; background: #e0e7ff; color: #4338ca; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700; margin-left: 0.3rem;">NEW</span>
+              </h4>
               <span class="dr-specialty">{{ dr.specialty }}</span>
             </div>
           </div>
@@ -93,13 +110,19 @@
 
   <!-- Department Load Section -->
   <div class="section-block">
-    <h3 class="section-eyebrow">DEPARTMENT ROSTER &amp; TIMING SLOTS</h3>
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem;">
+      <h3 class="section-eyebrow" style="margin: 0;">DEPARTMENT ROSTER &amp; TIMING SLOTS</h3>
+      <a (click)="goToDoctorDesk()" style="font-size: 0.78rem; color: #0d9488; font-weight: 600; cursor: pointer;">
+        Configure Timing Slots &rarr;
+      </a>
+    </div>
     <div class="table-container cliniq-card p-0">
       <table class="cliniq-table">
         <thead>
           <tr>
             <th>CLINICIAN</th>
             <th>SPECIALTY &amp; DEPARTMENT</th>
+            <th>ROOM &amp; SHIFT</th>
             <th>DUTY STATUS</th>
             <th>AVAILABLE SLOTS</th>
             <th class="text-right">PATIENTS ASSIGNED</th>
@@ -110,10 +133,18 @@
             <td>
               <div class="table-dr-cell">
                 <div class="avatar-mini">{{ dr.initials }}</div>
-                <span class="font-bold">{{ dr.name }}</span>
+                <div>
+                  <span class="font-bold">{{ dr.name }}</span>
+                  <span *ngIf="dr.isNewUpcoming" style="font-size: 0.62rem; background: #e0e7ff; color: #4338ca; padding: 0.05rem 0.3rem; border-radius: 4px; font-weight: 700; margin-left: 0.3rem;">NEW</span>
+                </div>
               </div>
             </td>
             <td>{{ dr.specialty }} · {{ dr.department }}</td>
+            <td>
+              <span style="font-size: 0.78rem; color: var(--text-muted, #64748b);">
+                {{ dr.room || 'Suite 101' }} ({{ dr.shiftTiming || '09:00 AM - 05:00 PM' }})
+              </span>
+            </td>
             <td>
               <span class="table-status-pill" [class.on-duty]="dr.available" [class.off-duty]="!dr.available">
                 {{ dr.dutyStatus }}
