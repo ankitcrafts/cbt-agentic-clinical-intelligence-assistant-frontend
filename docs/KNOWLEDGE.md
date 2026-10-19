@@ -19,6 +19,11 @@ The SOAP structure is the universally recognized clinical documentation standard
 * **Differential Diagnosis:** A systematic diagnostic method used to identify the presence of an entity where multiple alternatives are possible. ClinIQ calculates a confidence score for each differential candidate based on symptom overlap with clinical guidelines.
 * **Red Flag Symptoms:** High-urgency clinical indicators that mandate immediate escalation (e.g., crushing retrosternal chest pain radiating to the left arm, acute focal neurological deficits, sudden severe 'thunderclap' headache).
 
+### 1.3 Clinical Prescription Directives & Physician Autonomy
+* **Prescription Structure:** Comprehensive clinical prescriptions require 8 key parameters: active compound (`medication`), potency/unit (`strength`), administration pathway (`route`), interval (`frequency`), course horizon (`duration`), unit dispense (`quantity`), renewal quota (`refills`), and patient-facing administration guidance (`instructions`).
+* **Essential Hypertension Guideline Regimen:** In patients with Stage 1 Essential Hypertension (such as Marcus Delgado, 42M, BP 138/88 mmHg) who present with recurrent tension-type headaches, first-line therapy typically utilizes an ACE-inhibitor (e.g., Lisinopril 10 mg OD) with scheduled renal function (eGFR/creatinine) and potassium monitoring.
+* **Clinician Review Safeguards:** Review alerts remind clinicians to cross-reference drug-drug interactions, known allergies, and contraindications before finalizing directives.
+
 ---
 
 ## 2. Audio Capture & Speech-to-Text Processing

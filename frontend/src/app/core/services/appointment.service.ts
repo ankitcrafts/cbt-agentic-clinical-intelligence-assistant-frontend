@@ -1249,7 +1249,8 @@ export class AppointmentService {
     soapReport: any,
     doctorName?: string,
     doctorId?: string,
-    encounterId?: string
+    encounterId?: string,
+    prescription?: any
   ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
       const cleanId = patientId.replace(/^#/, '');
@@ -1258,6 +1259,7 @@ export class AppointmentService {
         doctor_id: doctorId || 'DOC-ATTENDING',
         doctor_name: doctorName || 'Attending Physician',
         soap_report: soapReport,
+        prescription: prescription || null,
         patient_summary: soapReport?.plan || ''
       };
 
@@ -1271,6 +1273,7 @@ export class AppointmentService {
         const sharedPayload = {
           patientId,
           soapReport,
+          prescription: prescription || null,
           doctorName: doctorName || 'Attending Physician',
           timestamp: new Date().toISOString()
         };
@@ -1288,6 +1291,7 @@ export class AppointmentService {
       const fallbackPayload = {
         patientId,
         soapReport,
+        prescription: prescription || null,
         doctorName: doctorName || 'Attending Physician',
         timestamp: new Date().toISOString()
       };

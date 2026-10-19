@@ -20,9 +20,10 @@
 * **SCSS & CSS Structure:**
   * Use design tokens defined in `styles.scss` for colors, spacing, typography, and border radiuses.
   * Do not hardcode ad-hoc hex colors or magic numbers inside component SCSS files; always reference theme variables (e.g. `var(--primary-600)`, `var(--slate-800)`).
-* **Responsive Layouts:**
-  * Mobile-first responsive design using modern CSS Grid and Flexbox.
-  * Breakpoints: Mobile ($< 640\text{px}$), Tablet ($640\text{px} - 1024\text{px}$), Desktop ($> 1024\text{px}$).
+### 1.3 Physician Prescription & Directives Standards
+* **Clinical Autonomy & Physician Wisdom:** Prescription values must never be forcefully automated or locked against physician edits. Clinicians retain absolute authority to adjust medication names, dosages, frequencies, and durations.
+* **Patient Safety Review Alert:** The prescription dialog must always feature the prominent safety notice ("Review dosage, contraindications, allergies, and interactions before signing") to prevent clinical oversights.
+* **SOAP Synchronization:** Any prescription edits confirmed by the doctor must immediately reflect in the SOAP Report tab without requiring page refresh, and be included in any patient-shared copies.
 
 ---
 

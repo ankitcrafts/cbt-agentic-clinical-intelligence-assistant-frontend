@@ -28,6 +28,16 @@ export interface SoapPdfData {
     assessment: string;
     plan: string;
   };
+  prescription?: {
+    medication: string;
+    strength: string;
+    route: string;
+    frequency: string;
+    duration: string;
+    quantity: string;
+    refills: string | number;
+    instructions?: string;
+  };
 }
 
 @Injectable({
@@ -260,6 +270,45 @@ export class PdfExportService {
       doc.text(splitLines, margin + 7, y + 16);
 
       y += cardHeight + 4;
+    }
+
+    // ==========================================
+    // 4.5. OFFICIAL PRESCRIPTION DIRECTIVE (IF AVAILABLE)
+    // ==========================================
+    if (data.prescription) {
+      checkPageBreak(28);
+      doc.setFillColor(240, 253, 250); // Teal 50
+      doc.setDrawColor(45, 212, 191); // Teal 400
+      doc.roundedRect(margin, y, contentWidth, 22, 2, 2, 'FD');
+
+      // Left Accent Color Bar
+      doc.setFillColor(13, 148, 136); // Teal 600
+      doc.roundedRect(margin, y, 3.5, 22, 1.5, 1.5, 'F');
+
+      // Title
+      doc.setTextColor(13, 148, 136);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.text('OFFICIAL PRESCRIPTION DIRECTIVE', margin + 7, y + 6);
+
+      // Medication details
+      doc.setTextColor(15, 23, 42);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(`${data.prescription.medication} ${data.prescription.strength}`, margin + 7, y + 11.5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text(`·  ${data.prescription.route}  ·  ${data.prescription.frequency}  ·  ${data.prescription.duration}`, margin + 45, y + 11.5);
+
+      // Quantity, Refills & Instructions
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      const refillText = `${data.prescription.quantity}  ·  ${data.prescription.refills} refill(s)`;
+      const instText = data.prescription.instructions ? `  ·  "${data.prescription.instructions}"` : '';
+      doc.text(`${refillText}${instText}`, margin + 7, y + 17);
+
+      y += 26;
     }
 
     // ==========================================

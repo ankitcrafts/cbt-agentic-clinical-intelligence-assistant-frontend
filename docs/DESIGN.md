@@ -97,6 +97,19 @@ $slate-900:   #0f172a;
 * **Doctor Schedule Grid:** Real-time visual calendar to configure working hours, break buffers, and slot durations.
 * **User & Role Directory:** Table with pagination, search, role toggles (`ADMIN`, `DOCTOR`, `PATIENT`), and activity audit logs.
 
+### 4.4 Clinical Prescription Directives & Modal Component Specs
+* **Prescription Card Container (`.soap-prescription-card`):**
+  * Border: `1.5px solid #2dd4bf` (Teal 400), background `#ffffff` / `#1e293b` (dark).
+  * Rounded corners: `12px`, padding: `1rem 1.35rem`.
+  * Left icon box: `44px x 44px`, background `rgba(45, 212, 191, 0.14)`, SVG list/rx icon.
+  * Hierarchy: Title (`font-weight: 700`), Medication & Strength bold (`0.92rem`), metadata dot dividers, supply/refill line (`0.8rem`).
+  * Interactive review button: `.btn-rx-review` with pen icon (`#0d9488`).
+* **Edit Prescription Modal Dialog (`.rx-edit-modal-card`):**
+  * Width: `95%`, `max-width: 620px`, `border-radius: 16px`, `box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.28)`.
+  * 2-Column Responsive Form Grids: Strength/Route, Frequency/Duration, Quantity/Refills (`1fr 1fr`).
+  * Safety Info Banner: Cyan-tinted alert box (`#f0fdfa`, border `#ccfbf1`) with info circle.
+  * Footer Actions: Live change tracking label ("No changes made" / "Unsaved changes"), secondary "Discard" button, and primary "Save prescription" button (`#0f3d39`).
+
 ---
 
 ## 5. UI Micro-Interactions & Animations

@@ -84,6 +84,12 @@ frontend/src/app/
 * **Reactive Forms:** Form validation for appointment booking and custom patient registration with asynchronous validators for OTP checks.
 * **Component Communication:** Unidirectional data flow with smart container components orchestrating dumb/presentational child components.
 
+### 2.3 Physician Wisdom Prescription & Modal Architecture
+* **SOAP Tab Prescription Placement:** Dedicated Prescription card placed inside the scrollable `.soap-preview-container` directly beneath the Plan (`P`) section and above the legal disclaimer footer.
+* **Prescription Directives Model:** Implements `PrescriptionItem` typed schema (`medication`, `strength`, `route`, `frequency`, `duration`, `quantity`, `refills`, `instructions`, `prescribedBy`, `prescribedDate`).
+* **Interactive Modal Workflow:** Clicking the card or "Review & edit" opens `.rx-edit-modal-card` dialog for clinicians to adjust dosages, routes, and instructions based on medical judgment.
+* **Downstream Data Synchronization:** Changes update the active consultation state, inject into ReportLab/jsPDF export engines, and synchronize across browser tabs / patient portal via `appointmentService.shareSoapReportWithPatient`.
+
 ---
 
 ## 3. Real-Time Audio Capture & Streaming Pipeline

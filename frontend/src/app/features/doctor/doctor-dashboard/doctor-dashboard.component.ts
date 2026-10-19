@@ -11,6 +11,19 @@ import { AppointmentService } from '../../../core/services/appointment.service';
 import { PdfExportService } from '../../../core/services/pdf-export.service';
 import { RecordedSessionItem } from '../../../core/models/recording.model';
 
+export interface PrescriptionItem {
+  medication: string;
+  strength: string;
+  route: string;
+  frequency: string;
+  duration: string;
+  quantity: string;
+  refills: string | number;
+  instructions: string;
+  prescribedBy?: string;
+  prescribedDate?: string;
+}
+
 @Component({
   selector: 'app-doctor-dashboard',
   standalone: true,
@@ -106,20 +119,39 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }));
   }
 
-  // Active Consultation Details
+  // Active Consultation Details (Defaulting to Active Patient Marcus Delgado)
   visitDetails: any = {
-    patientName: 'Anya Kowalski',
-    visitId: '#00673920',
-    initials: 'AK',
-    demographics: '29F · #00673920',
-    visitType: 'New Patient',
-    reason: 'Chest tightness, shortness of breath on exertion',
-    condition: 'New presentation',
-    lastVisit: '—',
+    patientName: 'Marcus Delgado',
+    visitId: '#00847261',
+    initials: 'MD',
+    demographics: '42M · #00847261',
+    visitType: 'Cardiology follow-up',
+    reason: 'Hypertension review + new headache complaint',
+    condition: 'Hypertension Stage 1',
+    lastVisit: 'July 14, 2026',
     date: 'Aug 13, 2026',
-    time: '11:00',
-    duration: '45 min'
+    time: '09:00 AM',
+    duration: '30 min',
+    vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10', spo2: '98%', temp: '36.6 °C' }
   };
+
+  // Prescription State (Doctor Wisdom & Prescription Directives)
+  currentPrescription: PrescriptionItem = {
+    medication: 'Lisinopril',
+    strength: '10 mg',
+    route: 'Oral',
+    frequency: 'Once daily',
+    duration: '6 weeks',
+    quantity: '42 tablets',
+    refills: '1',
+    instructions: 'Take one tablet every morning with breakfast. Continue daily home blood pressure monitoring.',
+    prescribedBy: 'Dr. Yuki Tanaka',
+    prescribedDate: 'Aug 13, 2026'
+  };
+
+  showPrescriptionModal: boolean = false;
+  editPrescriptionForm: PrescriptionItem = { ...this.currentPrescription };
+  prescriptionChangeStatus: string = 'No changes made';
 
   // Image 4: AI Suggestions List (Dynamic per patient)
   aiSuggestionsList: any[] = [];
@@ -127,8 +159,19 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   // 6-Tab CDS Active Tab
   activeTab: 'analysis' | 'clinical' | 'confidence' | 'followup' | 'medicines' | 'soap' = 'analysis';
 
-  // Live Transcript Exchanges (Dynamic per patient)
-  transcriptExchanges: any[] = [];
+  // Live Transcript Exchanges (Dynamic per patient, matching consultation dialog)
+  transcriptExchanges: any[] = [
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Good morning, Marcus. How have you been feeling since our last visit?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: "Mostly okay, but I've been getting these headaches in the afternoon. Usually around 2 or 3pm." },
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'How often are these headaches occurring? Daily, a few times a week?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Maybe four or five times a week. They last about an hour.' },
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'On a scale of 1 to 10, how would you rate the pain?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Maybe a 5 or 6. Uncomfortable but I can still work.' },
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Where exactly do you feel the pain? Is it throbbing, sharp, or dull?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Dull pressure, like a tight band around my forehead and temples.' },
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Any visual changes, nausea, or sensitivity to light with them?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'No, nothing like that. Just the dull ache and afternoon fatigue.' }
+  ];
 
   // Interactive SOAP Editing & Reframing State
   editedSoapReport: { subjective: string; objective: string; assessment: string; plan: string } | null = null;
@@ -276,6 +319,10 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.activeInquiryQuestion = null;
     this.aiSuggestionsList = [];
     this.activeFollowUpNotice = null;
+    this.currentPrescription = this.getPrescriptionForPatient(patientId, patient.name);
+    this.editPrescriptionForm = { ...this.currentPrescription };
+    this.prescriptionChangeStatus = 'No changes made';
+    this.showPrescriptionModal = false;
 
     // Clear any previous live draft signals for a 100% fresh start
     this.recordingService.latestTranscript.set('');
@@ -853,6 +900,18 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     if (live && live.subjective) {
       return live;
     }
+    if (this.visitDetails.patientName?.includes('Delgado') || this.visitDetails.visitId?.includes('00847261')) {
+      return {
+        subjective: `Patient Marcus Delgado (42M) presents for hypertension review and evaluation of new afternoon headaches. Reports headaches occur 4-5 times/week, dull frontal-temporal tightness, pain 5-6/10 lasting ~1 hour. Denies visual changes, nausea, photophobia, palpitations, or shortness of breath.`,
+        objective: `Last visit (2026-07-14): BP 138/88 mmHg, HR 72 bpm, Wt 81 kg, Temp 36.6 °C. Current Rx: Lisinopril 10 mg OD, Atorvastatin 20 mg OD. Vitals not yet recorded for today's visit.`,
+        assessment: `1. Essential Hypertension Stage 1 — suboptimally controlled; BP improving but remains above target (<130/80). 2. New symptom: recurrent afternoon headaches — aetiology unclear. DDx includes tension-type headache, caffeine withdrawal, or white-coat effect. Neurological red flag screen pending.`,
+        plan: `1. Continue Lisinopril 10 mg; consider adding Amlodipine 5 mg if BP >140 systolic at next measurement.
+2. Headache workup: neurological exam (today); fundoscopy; daily home BP diary.
+3. Lifestyle: caffeine diary, screen-time hygiene, regular sleep schedule.
+4. Labs: fasting lipid panel and renal function (eGFR, creatinine) — overdue.
+5. Follow-up in 6 weeks or sooner if headaches worsen or BP spikes.`
+      };
+    }
     return {
       subjective: `Patient ${this.visitDetails.patientName || 'Patient'}, ${this.visitDetails.demographics || ''}, presents for scheduled ${this.visitDetails.visitType?.toLowerCase() || 'consultation'}.\nChief reason for visit: ${this.visitDetails.reason || 'Clinical review'}.\nConsultation audio recording and live transcription in progress.`,
       objective: `Recorded Vitals: ${this.visitDetails.vitals ? (typeof this.visitDetails.vitals === 'object' ? 'BP ' + (this.visitDetails.vitals.bp || '120/80 mmHg') + ', HR ' + (this.visitDetails.vitals.hr || '72 bpm') : this.visitDetails.vitals) : 'BP 120/80 mmHg, HR 72 bpm, SpO2 98%'}.\nClinical examination and physical findings pending doctor entry.`,
@@ -949,11 +1008,11 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     const patId = p?.visitId || '#00847261';
 
     this.pdfExportService.exportSoapNotePdf({
-      patientName: p?.patientName || 'Ranjana Kumari',
+      patientName: p?.patientName || 'Marcus Delgado',
       patientId: patId,
-      demographics: p?.demographics || '42F',
+      demographics: p?.demographics || '42M · #00847261',
       age: p?.age || 42,
-      gender: p?.gender || 'Female',
+      gender: p?.gender || 'Male',
       doctorName: docName,
       doctorId: docId,
       doctorSpecialty: `${dept} / Specialist`,
@@ -961,8 +1020,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       consultationDate: p?.date || new Date().toISOString().split('T')[0],
       reason: p?.reason || 'Clinical Consultation',
       condition: p?.condition || 'Under Evaluation',
-      vitals: p?.vitals || { bp: '120/80 mmHg', hr: '72 bpm', temp: '36.6 °C', weight: '75 kg', spo2: '98%' },
-      soap: this.effectiveSoapReport
+      vitals: p?.vitals || { bp: '138/88 mmHg', hr: '72 bpm', temp: '36.6 °C', weight: '81 kg', spo2: '98%' },
+      soap: this.effectiveSoapReport,
+      prescription: this.currentPrescription
     });
   }
 
@@ -989,12 +1049,13 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         this.effectiveSoapReport,
         docName,
         docId,
-        encounterId
+        encounterId,
+        this.currentPrescription
       );
 
       this.isSharingSoap = false;
       this.isSoapShared = true;
-      this.soapShareMessage = `Official SOAP Report successfully shared with ${this.visitDetails.patientName || 'patient'}. The patient's portal (Follow-up Alerts, Medical Records, Prescriptions) is now updated with this SOAP note.`;
+      this.soapShareMessage = `Official SOAP Report & Prescribed Medication (${this.currentPrescription.medication} ${this.currentPrescription.strength}) successfully shared with ${this.visitDetails.patientName || 'patient'}. The patient's portal (Follow-up Alerts, Medical Records, Prescriptions) is now updated.`;
 
       // Also persist to recording feedback database
       this.saveFinalSOAPToDatabase();
@@ -1036,6 +1097,109 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       this.saveStatusMessage = `Updated ${this.activeEditSection.toUpperCase()} section locally. Click "Finalize & Save to DB" to persist changes.`;
       this.activeEditSection = null;
     }
+  }
+
+  // ----------------------------------------------------
+  // PRESCRIPTION DIRECTIVE METHODS (Doctor Clinical Wisdom)
+  // ----------------------------------------------------
+  openPrescriptionModal(): void {
+    this.editPrescriptionForm = { ...this.currentPrescription };
+    this.prescriptionChangeStatus = 'No changes made';
+    this.showPrescriptionModal = true;
+  }
+
+  closePrescriptionModal(): void {
+    this.showPrescriptionModal = false;
+  }
+
+  onPrescriptionFieldChange(): void {
+    const isDifferent =
+      this.editPrescriptionForm.medication !== this.currentPrescription.medication ||
+      this.editPrescriptionForm.strength !== this.currentPrescription.strength ||
+      this.editPrescriptionForm.route !== this.currentPrescription.route ||
+      this.editPrescriptionForm.frequency !== this.currentPrescription.frequency ||
+      this.editPrescriptionForm.duration !== this.currentPrescription.duration ||
+      this.editPrescriptionForm.quantity !== this.currentPrescription.quantity ||
+      this.editPrescriptionForm.refills !== this.currentPrescription.refills ||
+      this.editPrescriptionForm.instructions !== this.currentPrescription.instructions;
+
+    this.prescriptionChangeStatus = isDifferent ? 'Unsaved changes' : 'No changes made';
+  }
+
+  discardPrescriptionEdits(): void {
+    this.editPrescriptionForm = { ...this.currentPrescription };
+    this.prescriptionChangeStatus = 'No changes made';
+    this.showPrescriptionModal = false;
+  }
+
+  savePrescriptionEdits(): void {
+    this.currentPrescription = { ...this.editPrescriptionForm };
+    this.prescriptionChangeStatus = 'No changes made';
+    this.showPrescriptionModal = false;
+
+    this.saveStatusMessage = `Prescription for ${this.currentPrescription.medication} (${this.currentPrescription.strength}) updated and recorded in SOAP report.`;
+    setTimeout(() => {
+      if (this.saveStatusMessage?.startsWith('Prescription for')) {
+        this.saveStatusMessage = null;
+      }
+    }, 4500);
+  }
+
+  getPrescriptionForPatient(patientId: string, patientName?: string): PrescriptionItem {
+    if (patientName?.includes('Delgado') || patientId.includes('00847261')) {
+      return {
+        medication: 'Lisinopril',
+        strength: '10 mg',
+        route: 'Oral',
+        frequency: 'Once daily',
+        duration: '6 weeks',
+        quantity: '42 tablets',
+        refills: '1',
+        instructions: 'Take one tablet every morning with breakfast. Continue daily home blood pressure monitoring.',
+        prescribedBy: 'Dr. Yuki Tanaka',
+        prescribedDate: 'Aug 13, 2026'
+      };
+    }
+    if (patientName?.includes('Sharma') || patientId.includes('00391847')) {
+      return {
+        medication: 'Propranolol',
+        strength: '40 mg',
+        route: 'Oral',
+        frequency: 'Twice daily',
+        duration: '4 weeks',
+        quantity: '56 tablets',
+        refills: '1',
+        instructions: 'Take one tablet twice daily with food. Monitor resting pulse; do not discontinue abruptly.',
+        prescribedBy: 'Dr. Yuki Tanaka',
+        prescribedDate: 'Aug 13, 2026'
+      };
+    }
+    if (patientName?.includes('Kowalski') || patientId.includes('00673920')) {
+      return {
+        medication: 'Albuterol Inhaler',
+        strength: '90 mcg',
+        route: 'Inhalation',
+        frequency: 'Every 4-6h PRN',
+        duration: '30 days',
+        quantity: '1 canister (200 doses)',
+        refills: '2',
+        instructions: 'Inhale 1-2 puffs every 4 to 6 hours as needed for shortness of breath or wheezing. Rinse mouth after use.',
+        prescribedBy: 'Dr. Yuki Tanaka',
+        prescribedDate: 'Aug 13, 2026'
+      };
+    }
+    return {
+      medication: 'Amoxicillin',
+      strength: '500 mg',
+      route: 'Oral',
+      frequency: 'Three times daily',
+      duration: '7 days',
+      quantity: '21 capsules',
+      refills: '0',
+      instructions: 'Take one capsule three times daily with a full glass of water after meals until completed.',
+      prescribedBy: 'Dr. Yuki Tanaka',
+      prescribedDate: 'Aug 13, 2026'
+    };
   }
 
   triggerAIReframe(section: 'subjective' | 'objective' | 'assessment' | 'plan'): void {

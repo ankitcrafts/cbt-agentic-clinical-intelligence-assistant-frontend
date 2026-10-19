@@ -65,7 +65,10 @@
 * **Decision:** Re-architected `.active-notice-banner` with a crisp gradient background, 4px teal accent border, dark slate readable typography (`#0f172a` in light mode, `#f1f5f9` in dark mode), dedicated badge chip (`Active Probing Inquiry`), live red pulsing dot indicator, FontAwesome vector iconography, and accessible dismiss button without emojis.
 * **Consequence:** 100% reliable clinical legibility and professional aesthetic across both standard daylight and dark clinic viewing modes.
 
-
+### ADR-FE-13: Physician Wisdom Prescription Directives & Interactive Modal Dialog Architecture
+* **Context:** Clinical decision support must empower clinicians to prescribe medications based on their own judgment, clinical wisdom, and the trust established with patients. The prescription card must sit prominently at the bottom of the SOAP Report tab (below Plan), and clicking it must trigger a dedicated edit dialog matching the Figma specification (Images 1, 2, and 3).
+* **Decision:** Implemented `.soap-prescription-card` within `.soap-preview-container` below Plan with an emerald/teal border, icon box, dosage/frequency/duration metadata, supply details, and a "Review & edit" action. Developed `.rx-edit-modal-card` dialog supporting typed `PrescriptionItem` values (`medication`, `strength`, `route`, `frequency`, `duration`, `quantity`, `refills`, `instructions`), safety review warnings, and status tracking ("No changes made" / "Unsaved changes"). Integrated prescription data into `pdf-export.service.ts` for official PDF exports and `appointment.service.ts` for patient portal synchronization.
+* **Consequence:** Full physician autonomy and trust in medication management, compliant with medical documentation standards and matching the user-requested Figma UX.
 
 ---
 
