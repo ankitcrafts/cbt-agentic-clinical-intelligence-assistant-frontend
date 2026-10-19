@@ -90,6 +90,38 @@ frontend/src/app/
 * **Interactive Modal Workflow:** Clicking the card or "Review & edit" opens `.rx-edit-modal-card` dialog for clinicians to adjust dosages, routes, and instructions based on medical judgment.
 * **Downstream Data Synchronization:** Changes update the active consultation state, inject into ReportLab/jsPDF export engines, and synchronize across browser tabs / patient portal via `appointmentService.shareSoapReportWithPatient`.
 
+### 2.2 Doctor-to-Patient Sharing, Print, and PDF Export Pipeline
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Doctor
+    participant DocDashboard as Doctor Consultation Console
+    participant PdfService as PdfExportService (jsPDF)
+    participant ApptService as AppointmentService
+    participant Backend as FastAPI /api/scheduling
+    participant DB as SQLite / PostgreSQL
+    participant Storage as Multi-Key LocalStorage
+    actor Patient
+    participant PatDashboard as Patient Portal (Tab 3: Prescriptions)
+
+    Doctor->>DocDashboard: Clicks "Export PDF"
+    DocDashboard->>PdfService: exportSoapNotePdf(patient, vitals, soap, prescription)
+    PdfService-->>Doctor: Downloads Certified PDF Medical Record with Prescription Directive
+
+    Doctor->>DocDashboard: Clicks "Print"
+    DocDashboard->>DocDashboard: @media print isolates SOAP Note & .soap-prescription-card
+
+    Doctor->>DocDashboard: Clicks "Share with Patient"
+    DocDashboard->>ApptService: shareSoapReportWithPatient(patientId, soap, doc, rx, patientName)
+    ApptService->>Backend: POST /api/scheduling/patients/{id}/share-soap
+    Backend->>DB: Updates session.soap_report_json (with embedded rx) & is_shared_with_patient = True
+    ApptService->>Storage: Writes cliniq_shared_soap_*, cliniq_last_shared_soap
+    ApptService->>PatDashboard: Dispatches CustomEvent 'cliniq_soap_shared'
+    Patient->>PatDashboard: Visits portal / Signs in
+    PatDashboard->>PatDashboard: Loads Prescriptions & displays Doctor Rx directives + SOAP modal access
+```
+
 ---
 
 ## 3. Real-Time Audio Capture & Streaming Pipeline

@@ -85,3 +85,21 @@ stateDiagram-v2
 * **Google Drive API:** Automatic cloud backup for generated medical PDFs using a Google Cloud Service Account with OAuth2 JWT grant and shared drive permissions.
 * **Gmail SMTP Service:** Secure transactional email engine sending OTP codes, appointment booking confirmations, and patient aftercare instructions.
 * **OpenRouter / OpenAI LLM APIs:** Agentic orchestration of reasoning prompts, clinical entity recognition, and medical summarization.
+
+---
+
+## 6. Clinical Prescription Directives & Patient Aftercare Models
+
+* **Clinical Data Schema:**
+  * `medication`: Generic and trade name (e.g. Amoxicillin, Lisinopril).
+  * `strength`: Exact dosage quantity and metric (e.g. 500 mg, 10 mg).
+  * `route`: Mode of administration (e.g. Oral, Sublingual, Topical, Intravenous).
+  * `frequency`: Timing pattern (e.g. Three times daily, Once daily - morning, PRN).
+  * `duration`: Course length (e.g. 7 days, 14 days, 30 days).
+  * `quantity`: Dispensation package size (e.g. 21 capsules, 30 tablets).
+  * `refills`: Allowed doctor refills (e.g. 0 refills, 3 refills).
+  * `instructions`: Precise patient guidance (e.g. 'Take one capsule three times daily with a full glass of water after meals until completed.').
+* **Patient Portal Integration:**
+  * Automatically populates Tab 3: Prescriptions with active badges and structured directives chips (`Strength`, `Route`, `Frequency`, `Duration`, `Quantity`, `Refills`).
+  * Direct one-click modal viewer for the verified clinical SOAP report and official electronic signoff.
+

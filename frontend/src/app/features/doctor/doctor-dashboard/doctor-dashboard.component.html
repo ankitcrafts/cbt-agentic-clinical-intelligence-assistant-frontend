@@ -1163,7 +1163,7 @@
                       <i class="fa-solid fa-clock"></i> Initial Assessment (58% Confidence)
                     </span>
                   </div>
-                  <span class="soap-note-meta">Aug 13, 2026 · 09:41 AM · Dr. Yuki Tanaka</span>
+                  <span class="soap-note-meta">{{ visitDetails?.date || 'Aug 13, 2026' }} · {{ visitDetails?.time || '09:41 AM' }} · {{ authService.currentUser().name || 'Dr. Yuki Tanaka' }}</span>
                 </div>
                 <div class="soap-header-btn-group">
                   <button 

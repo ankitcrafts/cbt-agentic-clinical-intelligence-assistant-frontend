@@ -1038,6 +1038,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.soapShareMessage = null;
 
     const patientId = this.visitDetails?.visitId || '#00847261';
+    const patientName = this.visitDetails?.patientName || 'Patient';
     const docUser = this.authService.currentUser();
     const docName = docUser?.name || 'Dr. Yuki Tanaka';
     const docId = docUser?.id || 'DOC-001';
@@ -1050,7 +1051,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         docName,
         docId,
         encounterId,
-        this.currentPrescription
+        this.currentPrescription,
+        patientName
       );
 
       this.isSharingSoap = false;

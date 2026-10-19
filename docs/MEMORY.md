@@ -70,6 +70,14 @@
 * **Decision:** Implemented `.soap-prescription-card` within `.soap-preview-container` below Plan with an emerald/teal border, icon box, dosage/frequency/duration metadata, supply details, and a "Review & edit" action. Developed `.rx-edit-modal-card` dialog supporting typed `PrescriptionItem` values (`medication`, `strength`, `route`, `frequency`, `duration`, `quantity`, `refills`, `instructions`), safety review warnings, and status tracking ("No changes made" / "Unsaved changes"). Integrated prescription data into `pdf-export.service.ts` for official PDF exports and `appointment.service.ts` for patient portal synchronization.
 * **Consequence:** Full physician autonomy and trust in medication management, compliant with medical documentation standards and matching the user-requested Figma UX.
 
+### ADR-FE-14: Doctor Export, Print, and Real-Time Patient Portal Sharing Synchronization
+* **Context:** Physicians need three essential actions upon finalizing a clinical consultation: (1) Download an official certified PDF medical report, (2) Print a clean, unencumbered physical paper copy of the SOAP note and prescription, and (3) Share the finalized SOAP report and prescribed medications with the patient's portal so the patient can review them upon signing in or in real-time across devices.
+* **Decision:**
+  1. **Download (PDF Export):** Enhanced `PdfExportService.exportSoapNotePdf()` to dynamically generate certified clinical PDF artifacts featuring official hospital headers, patient demographics, vitals strip, 4-quadrant SOAP sections, the official Doctor's Prescription Directive breakdown (medication, strength, route, frequency, duration, quantity, refills, instructions), and an attending physician signature stamp.
+  2. **Print Stylesheet (`@media print`):** Configured dedicated print stylesheet isolating `#soap-printable-area` and `.soap-prescription-card` with high print contrast while hiding application chrome (sidebar, audio controls, action buttons).
+  3. **Patient Portal Synchronization:** Extended `AppointmentService.shareSoapReportWithPatient()` and backend `POST /api/scheduling/patients/{id}/share-soap` to persist the prescription and patient metadata into `patient_consultation_sessions.soap_report_json`. Added multi-key reactive localStorage caching (`cliniq_shared_soap_${patientId}`, `cliniq_shared_soap_${name}`, `cliniq_last_shared_soap`) and `cliniq_soap_shared` event broadcasts so that whenever the patient signs in or navigates to Tab 3 (Prescriptions), their prescribed medications display with structured directive chips, and the verified SOAP report is immediately accessible via the modal viewer.
+* **Consequence:** Seamless physician export capabilities and transparent patient access to clinical directives and official SOAP notes.
+
 ---
 
 ## 2. Environment Configurations

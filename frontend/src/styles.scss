@@ -1062,6 +1062,32 @@ body {
             margin-bottom: 0.2rem;
           }
 
+          .rx-directives-chips {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem;
+            margin: 0.35rem 0;
+
+            .rx-chip {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.35rem;
+              font-size: 0.75rem;
+              font-weight: 600;
+              padding: 0.15rem 0.55rem;
+              background: #f0fdf4;
+              border: 1px solid #86efac;
+              color: #15803d;
+              border-radius: 6px;
+
+              i {
+                font-size: 0.7rem;
+                color: #16a34a;
+              }
+            }
+          }
+
           .rx-doctor-line {
             font-size: 0.78rem;
             color: var(--text-light);
@@ -4332,6 +4358,52 @@ body[data-theme="dark"] {
       font-size: 10pt !important;
       line-height: 1.5 !important;
       color: #1e293b !important;
+    }
+  }
+
+  .soap-prescription-card {
+    display: flex !important;
+    background: #f0fdf4 !important;
+    border: 1.5px solid #86efac !important;
+    border-radius: 6px !important;
+    padding: 0.85rem 1rem !important;
+    margin-top: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+
+    .btn-edit-rx-link {
+      display: none !important;
+    }
+
+    .prescription-badge-box {
+      background: #dcfce7 !important;
+      border: 1px solid #86efac !important;
+      color: #16a34a !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .rx-name-title {
+      color: #065f46 !important;
+      font-weight: 700 !important;
+      font-size: 11pt !important;
+    }
+
+    .rx-directive-pill {
+      background: #f8fafc !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #334155 !important;
+      font-size: 8pt !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .rx-inst-text {
+      color: #1e293b !important;
+      font-size: 9pt !important;
     }
   }
 }

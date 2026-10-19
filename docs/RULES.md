@@ -63,6 +63,7 @@ Format: `<type>(<scope>): <short summary>`
 * **Graceful Degradation:** In case of backend connection drops, display non-intrusive toast notifications with retry buttons rather than blank screens or unhandled exceptions.
 * **Loading States:** Every asynchronous action (audio processing, diagnosis retrieval, report generation, slot fetching) must provide clear skeleton loaders or spinner indicators with appropriate accessibility labels (`aria-busy="true"`).
 * **Defensive Form Submissions:** Disable submit buttons immediately upon click to prevent accidental double submissions (e.g., booking a doctor's slot twice).
+* **Print & Export Fidelity Rule:** Print views must strictly isolate clinical artifacts (SOAP reports, vitals banners, prescription directives) under `@media print`, hiding all navigational headers, sidebars, interactive edit buttons, and transient toast alerts. Exported PDFs must include official doctor signatures, patient demographics, and complete prescription directive breakdowns.
 
 ---
 

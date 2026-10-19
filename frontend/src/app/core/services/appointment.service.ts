@@ -1250,7 +1250,8 @@ export class AppointmentService {
     doctorName?: string,
     doctorId?: string,
     encounterId?: string,
-    prescription?: any
+    prescription?: any,
+    patientName?: string
   ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
       const cleanId = patientId.replace(/^#/, '');
@@ -1258,6 +1259,7 @@ export class AppointmentService {
         encounter_id: encounterId || `CONS-${cleanId}-1`,
         doctor_id: doctorId || 'DOC-ATTENDING',
         doctor_name: doctorName || 'Attending Physician',
+        patient_name: patientName || '',
         soap_report: soapReport,
         prescription: prescription || null,
         patient_summary: soapReport?.plan || ''
@@ -1270,14 +1272,26 @@ export class AppointmentService {
 
       // 2. Also update local signals & save in localStorage for instant multi-tab sync
       try {
+        const sharedSoap = {
+          ...soapReport,
+          prescription: prescription || null,
+          patientName: patientName || '',
+          patientId: patientId,
+          doctorName: doctorName || 'Attending Physician'
+        };
         const sharedPayload = {
           patientId,
-          soapReport,
+          patientName: patientName || '',
+          soapReport: sharedSoap,
           prescription: prescription || null,
           doctorName: doctorName || 'Attending Physician',
           timestamp: new Date().toISOString()
         };
         localStorage.setItem(`cliniq_shared_soap_${patientId}`, JSON.stringify(sharedPayload));
+        localStorage.setItem(`cliniq_shared_soap_${cleanId}`, JSON.stringify(sharedPayload));
+        if (patientName) {
+          localStorage.setItem(`cliniq_shared_soap_${patientName.toLowerCase().replace(/\s+/g, '_')}`, JSON.stringify(sharedPayload));
+        }
         localStorage.setItem('cliniq_last_shared_soap', JSON.stringify(sharedPayload));
         window.dispatchEvent(new CustomEvent('cliniq_soap_shared', { detail: sharedPayload }));
       } catch (e) {
@@ -1288,14 +1302,27 @@ export class AppointmentService {
     } catch (err: any) {
       console.error('Error sharing SOAP report with backend, using offline fallback:', err);
       // Fallback local storage broadcast
+      const cleanId = patientId.replace(/^#/, '');
+      const fallbackSoap = {
+        ...soapReport,
+        prescription: prescription || null,
+        patientName: patientName || '',
+        patientId: patientId,
+        doctorName: doctorName || 'Attending Physician'
+      };
       const fallbackPayload = {
         patientId,
-        soapReport,
+        patientName: patientName || '',
+        soapReport: fallbackSoap,
         prescription: prescription || null,
         doctorName: doctorName || 'Attending Physician',
         timestamp: new Date().toISOString()
       };
       localStorage.setItem(`cliniq_shared_soap_${patientId}`, JSON.stringify(fallbackPayload));
+      localStorage.setItem(`cliniq_shared_soap_${cleanId}`, JSON.stringify(fallbackPayload));
+      if (patientName) {
+        localStorage.setItem(`cliniq_shared_soap_${patientName.toLowerCase().replace(/\s+/g, '_')}`, JSON.stringify(fallbackPayload));
+      }
       localStorage.setItem('cliniq_last_shared_soap', JSON.stringify(fallbackPayload));
       window.dispatchEvent(new CustomEvent('cliniq_soap_shared', { detail: fallbackPayload }));
       return { success: true, message: 'SOAP note shared with patient successfully.' };

@@ -95,6 +95,7 @@ sequenceDiagram
   * **SOAP Note & Aftercare Report** (Patient-facing summary).
 * **FR-3.4:** Automated cloud backup to Google Drive with shareable preview links.
 * **FR-3.5:** Physician Wisdom Prescription Directives & Interactive Modal: Dedicated Prescription card positioned at the bottom of the SOAP Report tab (below Plan), enabling clinicians to prescribe medications based on their own judgment. Clicking the card opens an "Edit prescription" modal supporting medication, strength, route, frequency, duration, quantity, refills, instructions, and review alerts. Directives are automatically integrated into exported PDF reports and synchronized with the patient portal.
+* **FR-3.6:** Doctor Consultation Export (Download PDF), Dedicated Print, & Patient Portal Prescription & SOAP Note Sharing Synchronization: Enables attending physicians to export official signed clinical consultation reports as formatted PDFs with integrated medication directives; provides dedicated print views via browser printing hiding non-clinical UI chrome; and enables instantaneous sharing with the patient portal so patients can view their official SOAP notes and prescribed medication directives with structured chips upon sign-in or real-time broadcast.
 
 ### 5.4 Scheduling, Multi-Role Portals & Authentication
 * **FR-4.1:** Passwordless authentication utilizing Gmail SMTP 6-digit OTP delivery.

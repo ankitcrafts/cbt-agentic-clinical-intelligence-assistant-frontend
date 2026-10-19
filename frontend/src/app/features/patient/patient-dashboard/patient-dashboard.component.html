@@ -38,7 +38,7 @@
     </span>
   </div>
 
-  <!-- Real-time Doctor Shared SOAP Banner -->
+  <!-- Real-time Doctor Shared SOAP & Prescription Banner -->
   <div class="doctor-soap-shared-banner" *ngIf="hasSharedSoap && latestSharedSoap">
     <div class="banner-left-content">
       <div class="banner-icon-circle">
@@ -46,17 +46,17 @@
       </div>
       <div class="banner-text-content">
         <div class="banner-title-line">
-          <span class="banner-title">Doctor's SOAP Report Shared</span>
-          <span class="live-pulse-badge">Updated</span>
+          <span class="banner-title">Doctor's SOAP Report & Prescription Shared</span>
+          <span class="live-pulse-badge">Verified by Doctor</span>
         </div>
         <p class="banner-desc">
-          <strong>{{ latestSharedSoap.doctorName || 'Your Doctor' }}</strong> has verified and shared your official clinical consultation note and prescriptions.
+          <strong>{{ latestSharedSoap.doctorName || 'Your Doctor' }}</strong> has verified and shared your official clinical consultation note and prescribed medications.
         </p>
       </div>
     </div>
     <div class="banner-action-right">
       <button type="button" class="btn-banner-view" (click)="openSoapModal(latestSharedSoap)">
-        <i class="fa-solid fa-eye"></i> View SOAP Note
+        <i class="fa-solid fa-eye"></i> View SOAP & Prescription
       </button>
     </div>
   </div>
@@ -185,6 +185,17 @@
             <div class="rx-info-body">
               <h3 class="rx-item-title">{{ rx.title }}</h3>
               <div class="rx-instructions-text">{{ rx.instructions }}</div>
+
+              <!-- Directives Chips if custom doctor prescription -->
+              <div class="rx-directives-chips" *ngIf="rx.prescription">
+                <span class="rx-chip" *ngIf="rx.prescription.strength"><i class="fa-solid fa-capsules"></i> {{ rx.prescription.strength }}</span>
+                <span class="rx-chip" *ngIf="rx.prescription.route"><i class="fa-solid fa-route"></i> {{ rx.prescription.route }}</span>
+                <span class="rx-chip" *ngIf="rx.prescription.frequency"><i class="fa-solid fa-clock"></i> {{ rx.prescription.frequency }}</span>
+                <span class="rx-chip" *ngIf="rx.prescription.duration"><i class="fa-solid fa-calendar-days"></i> {{ rx.prescription.duration }}</span>
+                <span class="rx-chip" *ngIf="rx.prescription.quantity"><i class="fa-solid fa-box-archive"></i> Qty: {{ rx.prescription.quantity }}</span>
+                <span class="rx-chip" *ngIf="rx.prescription.refills !== undefined"><i class="fa-solid fa-rotate-right"></i> {{ rx.prescription.refills }} Refill(s)</span>
+              </div>
+
               <div class="rx-doctor-line">{{ rx.doctorDate }}</div>
             </div>
           </div>
@@ -440,6 +451,32 @@
         </div>
         <div class="section-text-content">
           <p style="white-space: pre-line;">{{ selectedSoapReport?.plan || '1. Continue Lisinopril 10mg daily.\n2. Schedule follow-up appointment in 4 weeks.\n3. Maintain sodium restriction.' }}</p>
+        </div>
+      </div>
+
+      <!-- Official Doctor Prescribed Medication Directive -->
+      <div class="soap-detail-section section-prescription" *ngIf="selectedSoapReport?.prescription">
+        <div class="section-tag-row">
+          <div class="section-letter-circle rx-badge-circle"><i class="fa-solid fa-prescription"></i></div>
+          <div>
+            <h4 class="section-heading">Doctor's Prescribed Medication Directive</h4>
+            <span class="section-caption">Official prescription directive verified & issued by {{ selectedSoapReport?.doctorName || 'Attending Physician' }}</span>
+          </div>
+        </div>
+        <div class="rx-prescribed-box">
+          <div class="rx-box-header">
+            <span class="rx-med-name">{{ selectedSoapReport.prescription.medication }} {{ selectedSoapReport.prescription.strength }}</span>
+            <span class="rx-route-badge">{{ selectedSoapReport.prescription.route }} · {{ selectedSoapReport.prescription.frequency }}</span>
+          </div>
+          <div class="rx-box-details">
+            <span class="rx-pill-item"><i class="fa-solid fa-calendar-days"></i> Duration: {{ selectedSoapReport.prescription.duration }}</span>
+            <span class="rx-pill-item"><i class="fa-solid fa-box-archive"></i> Dispense: {{ selectedSoapReport.prescription.quantity }}</span>
+            <span class="rx-pill-item"><i class="fa-solid fa-rotate-right"></i> Refills: {{ selectedSoapReport.prescription.refills }}</span>
+          </div>
+          <div class="rx-box-instructions" *ngIf="selectedSoapReport.prescription.instructions">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>{{ selectedSoapReport.prescription.instructions }}</span>
+          </div>
         </div>
       </div>
     </div>

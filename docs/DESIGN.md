@@ -110,6 +110,15 @@ $slate-900:   #0f172a;
   * Safety Info Banner: Cyan-tinted alert box (`#f0fdfa`, border `#ccfbf1`) with info circle.
   * Footer Actions: Live change tracking label ("No changes made" / "Unsaved changes"), secondary "Discard" button, and primary "Save prescription" button (`#0f3d39`).
 
+### 4.5 Doctor Print Layout & Patient Portal Directives Design Specs
+* **Print Stylesheet (`@media print`):**
+  * Hides header, sidebar, patient session navigation, left workspace audio panel, tabs, and action buttons.
+  * Preserves `#soap-printable-area` with full-fidelity card borders, Teal accent strip, and `.soap-prescription-card` with clean white/green contrast and `page-break-inside: avoid`.
+* **Patient Portal Directives Chips (`.rx-directives-chips`):**
+  * Displays pill badges (`.rx-chip`) with subtle green border (`#86efac`), background (`#f0fdf4`), and icon pairings for Strength, Route, Frequency, Duration, Dispense Quantity, and Refills.
+* **Patient Portal SOAP Modal Prescription Directive Box (`.rx-prescribed-box`):**
+  * Emerald header badge (`#15803d` / `#dcfce7`), clean pill items for dosage & duration, and clinical instructions callout with green left accent border.
+
 ---
 
 ## 5. UI Micro-Interactions & Animations
