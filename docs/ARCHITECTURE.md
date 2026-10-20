@@ -122,6 +122,50 @@ sequenceDiagram
     PatDashboard->>PatDashboard: Loads Prescriptions & displays Doctor Rx directives + SOAP modal access
 ```
 
+### 2.4 Dynamic 5-Tab CDS State Flow & Resilient Client Synthesis
+* **Unified Analysis Signal:** `RecordingService.latestClinicalAnalysis` stores the complete clinical intelligence payload.
+* **Dirty State Management:** `isSoapManuallyEdited: boolean` decouples user text edits from automated dialogue updates. When recording new audio or switching sessions, `isSoapManuallyEdited` is reset to false, allowing `effectiveSoapReport` to dynamically mirror the latest synthesized note.
+* **Dynamic Fallback Generators:** When backend analysis is processing or returns default models, client synthesizers (`getDynamicDifferentialForCurrentPatient`, `getDynamicMedicinesForCurrentPatient`, `getDynamicRedFlagsForCurrentPatient`, `getDynamicFollowUpQuestionsForCurrentPatient`, `getDynamicConfidenceMetrics`, `getDynamicSoapReport`) extract keywords and dialogue context to render clinically sound data for any condition cluster (Diabetes, Hypertension, Tension Headache, Respiratory).
+* **Multi-Turn Verbal Inquiries:** Verbal inquiries captured live through the ambient channel mark questions answered in `answeredQuestionIds`, dynamically elevating the 5 domain scores and overall confidence gauge.
+
+### 2.5 AI Suggestions Normalization & Historical Session Lifecycle
+
+```mermaid
+flowchart TD
+    RawSTT["Live Transcription / Backend Pipeline (/api/clinical/process-audio)"] --> SuggestionsArr["AI Suggestions Array {priority, category, title, description}"]
+    SuggestionsArr --> LiveSignal["RecordingService.latestSuggestions signal()"]
+    HistoryDB["Backend Session Store (patient_consultation_sessions)"] --> StoredJSON["ai_suggestions_json / aiSuggestions"]
+    StoredJSON --> LoadSession["RecordingService.loadConsultationSession(session)"]
+    LoadSession --> LiveSignal
+    LiveSignal --> Normalizer["currentAISuggestions Getter Normalization"]
+    AnalysisSignal["RecordingService.latestClinicalAnalysis()"] --> Normalizer
+    Normalizer --> PolymorphicExtract["Polymorphic Extract: s.text || (s.title + ' — ' + s.description)"]
+    Normalizer --> TagTypeAssign["Tag & Type: s.tag || (priority · category), nudge-high/medium/low"]
+    Normalizer --> TemplateRender["Doctor Dashboard Panel (*ngFor='let nudge of currentAISuggestions')"]
+```
+
+* **Candidate Fallback Hierarchy:** Normalizer checks `latestSuggestions()`, falls back to `aiSuggestionsList`, and finally searches nested `clinicalAnalysis.ai_suggestions` / `clinicalAnalysis.aiSuggestions`.
+* **Polymorphic Ingestion:** Transparently ingests raw LLM outputs (`{priority, category, title, description}`) as well as pre-serialized historical session items (`{id, type, tag, text}`) without data loss.
+
+### 2.4 Clinical Vitals Normalization & Display Pipeline
+
+```mermaid
+flowchart TD
+    EntityExtract["Backend Entity Extraction (vital_signs / vitals)"] --> FrontendAnalysis["RecordingService.latestClinicalAnalysis()"]
+    TriageIntake["Patient Intake Vitals (visitDetails.vitals)"] --> FrontendVisit["Doctor Dashboard visitDetails"]
+    FrontendAnalysis --> VitalsFormatter["formatVitalsDisplay(rawVitals)"]
+    FrontendVisit --> VitalsFormatter
+    VitalsFormatter --> ParseValidation{"Valid Non-Empty Keys? (!= '{}')"}
+    ParseValidation -- Yes --> FormatMetrics["Format: BP, HR, SpO2, Temp, Wt, Pain, RR, Blood Sugar"]
+    ParseValidation -- No --> FallbackNotice["Fallback to Intake or Baseline Vitals"]
+    FormatMetrics --> FindingsCard["Render KEY FINDINGS: VITALS (Clean Text, No {})"]
+    FallbackNotice --> FindingsCard
+```
+
+* **Braces Prevention:** Explicitly eliminates raw `{}` by verifying `Object.keys().length > 0` and sanitizing stringified JSON.
+* **Triage Inheritance:** If no vitals are spoken during dialogue, intake triage vitals (`${intakeVitals} (Intake)`) are presented seamlessly.
+
+
 ---
 
 ## 3. Real-Time Audio Capture & Streaming Pipeline

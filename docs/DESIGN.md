@@ -119,6 +119,33 @@ $slate-900:   #0f172a;
 * **Patient Portal SOAP Modal Prescription Directive Box (`.rx-prescribed-box`):**
   * Emerald header badge (`#15803d` / `#dcfce7`), clean pill items for dosage & duration, and clinical instructions callout with green left accent border.
 
+### 4.6 Autonomous AI Suggestions Panel & Nudge Card Component Specs
+* **AI Suggestions Panel Container (`.ai-suggestions-panel-card`):**
+  * Padding: `1.25rem 1.4rem`, border radius: `12px`, background: `var(--card-bg)`, border: `1px solid var(--border-color)`.
+  * Header: Title with wand magic sparkles icon box (`#0d9488`, `20px x 20px`), live tag (`live · updating` or `awaiting audio`).
+* **Nudge Card Styling (`.nudge-card`):**
+  * Border radius: `10px`, padding: `0.85rem 1rem`, gap: `0.35rem`.
+  * Tag typography: `0.68rem`, bold (`800`), uppercase letter-spacing `0.05em`.
+  * Body text typography: `0.825rem`, line height `1.45`.
+* **Priority Color Pillars:**
+  * **High (`.nudge-high`):** Light: `background: #fef2f2`, border: `#fecaca`, tag: `#dc2626`, text: `#7f1d1d`. Dark: `background: rgba(239, 68, 68, 0.12)`, border: `rgba(239, 68, 68, 0.35)`, tag: `#f87171`, text: `#fecaca`.
+  * **Medium (`.nudge-medium`):** Light: `background: #fffbeb`, border: `#fef3c7`, tag: `#d97706`, text: `#78350f`. Dark: `background: rgba(245, 158, 11, 0.12)`, border: `rgba(245, 158, 11, 0.35)`, tag: `#fbbf24`, text: `#fde68a`.
+  * **Low (`.nudge-low`):** Light: `background: #f0fdf4`, border: `#bbf7d0`, tag: `#16a34a`, text: `#14532d`. Dark: `background: rgba(16, 185, 129, 0.12)`, border: `rgba(16, 185, 129, 0.35)`, tag: `#34d399`, text: `#a7f3d0`.
+
+### 4.6 Key Findings & Vitals Card Tokens
+* **Card Container (`.finding-card`):** Rounded pill card with subtle border (`border: 1px solid var(--border-light)`), elevation on hover (`box-shadow: 0 2px 8px rgba(0,0,0,0.04)`).
+* **Eyebrow Label (`.finding-label`):** 11px uppercase bold caption (`font-weight: 700`, `letter-spacing: 0.05em`, color `#64748b`).
+* **Value Text (`.finding-val`):** 13px clean text typography (`color: #0f172a`, dark mode `#f8fafc`).
+* **Formatting Format:** Vitals formatted as bullet-separated standard clinical tokens (`BP: 120/80 mmHg · HR: 72 bpm · SpO2: 98% · Temp: 36.6 °C`). Raw JSON braces (`{}`) strictly forbidden.
+
+### 4.7 Dynamic 5-Tab CDS Screen Layout & Component Specs
+* **Tab 1: Analysis & Summary:** Clinical narrative summary card, key findings vitals grid, and identified issues list with severity dots (`.issue-danger`, `.issue-warning`, `.issue-info`).
+* **Tab 2: Clinical Decision:** Ranked differential diagnosis cards (`.diff-diag-card`) with numerical rank badges, ICD-10 code pills (`.icd-tag`), risk badges (`.risk-pill.high/medium/low`), colored progress bars, and critical red-flag alerts (`.critical-red-flag-card`).
+* **Tab 3: Confidence:** Overall diagnostic confidence semi-arc gauge (`.gauge-semi-arc`) with threshold indicator, 5-domain breakdown bars (`.domain-metric-row`), and actionable protocol inquiry redirect button.
+* **Tab 4: Follow-up:** Clinical protocol inquiry list (`.protocol-question-card`) with priority color pillars, live verbal inquiry banner (`.live-inquiry-banner`), and addressed finding snippets (`.answered-finding-snippet`).
+* **Tab 5: Medicines:** RAG guideline prescribing list (`.med-card`) with drug name, therapeutic class tag, evidence grade, BNF/NICE source, dosage line, and amber warning box (`.med-warning-box`).
+* **Tab 6: SOAP Report:** Structured clinical documentation with letter badge circles (`S`, `O`, `A`, `P`), inline textarea editing, AI reframing triggers, and physician prescription directives card.
+
 ---
 
 ## 5. UI Micro-Interactions & Animations

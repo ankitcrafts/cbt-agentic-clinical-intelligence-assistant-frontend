@@ -716,7 +716,30 @@ export class RecordingService implements OnDestroy {
         }
         const analysis = res.clinical_analysis || res.clinicalAnalysis;
         if (analysis) {
-          this.latestClinicalAnalysis.set(analysis);
+          const mergedAnalysis = {
+            ...analysis,
+            differential_diagnosis: analysis.differential_diagnosis || analysis.differentialDiagnosis || res.differential_diagnosis || res.differentialDiagnosis,
+            guideline_medicines: analysis.guideline_medicines || analysis.guidelineMedicines || res.guideline_medicines || res.guidelineMedicines,
+            red_flags: analysis.red_flags || analysis.redFlags || res.red_flags || res.redFlags,
+            confidence_metrics: analysis.confidence_metrics || analysis.confidenceMetrics || res.confidence_metrics || res.confidenceMetrics,
+            follow_up_questions: analysis.follow_up_questions || analysis.followUpQuestions || res.follow_up_questions || res.followUpQuestions,
+            guideline_follow_up_questions: analysis.guideline_follow_up_questions || analysis.guidelineFollowUpQuestions || res.guideline_follow_up_questions || res.guidelineFollowUpQuestions,
+            soap_report: analysis.soap_report || analysis.soapReport || res.soap_report || res.soapReport,
+          };
+          this.latestClinicalAnalysis.set(mergedAnalysis);
+        } else if (res.summary || res.differential_diagnosis || res.soap_report) {
+          this.latestClinicalAnalysis.set({
+            summary: res.summary,
+            entities: res.entities,
+            differential_diagnosis: res.differential_diagnosis || res.differentialDiagnosis,
+            guideline_medicines: res.guideline_medicines || res.guidelineMedicines,
+            red_flags: res.red_flags || res.redFlags,
+            confidence_metrics: res.confidence_metrics || res.confidenceMetrics,
+            follow_up_questions: res.follow_up_questions || res.followUpQuestions,
+            guideline_follow_up_questions: res.guideline_follow_up_questions || res.guidelineFollowUpQuestions,
+            soap_report: res.soap_report || res.soapReport,
+            ai_suggestions: res.ai_suggestions || res.aiSuggestions
+          });
         }
 
         // Sync with active consultation details
@@ -871,7 +894,30 @@ export class RecordingService implements OnDestroy {
         }
         const analysis = res.clinical_analysis || res.clinicalAnalysis;
         if (analysis) {
-          this.latestClinicalAnalysis.set(analysis);
+          const mergedAnalysis = {
+            ...analysis,
+            differential_diagnosis: analysis.differential_diagnosis || analysis.differentialDiagnosis || res.differential_diagnosis || res.differentialDiagnosis,
+            guideline_medicines: analysis.guideline_medicines || analysis.guidelineMedicines || res.guideline_medicines || res.guidelineMedicines,
+            red_flags: analysis.red_flags || analysis.redFlags || res.red_flags || res.redFlags,
+            confidence_metrics: analysis.confidence_metrics || analysis.confidenceMetrics || res.confidence_metrics || res.confidenceMetrics,
+            follow_up_questions: analysis.follow_up_questions || analysis.followUpQuestions || res.follow_up_questions || res.followUpQuestions,
+            guideline_follow_up_questions: analysis.guideline_follow_up_questions || analysis.guidelineFollowUpQuestions || res.guideline_follow_up_questions || res.guidelineFollowUpQuestions,
+            soap_report: analysis.soap_report || analysis.soapReport || res.soap_report || res.soapReport,
+          };
+          this.latestClinicalAnalysis.set(mergedAnalysis);
+        } else if (res.summary || res.differential_diagnosis || res.soap_report) {
+          this.latestClinicalAnalysis.set({
+            summary: res.summary,
+            entities: res.entities,
+            differential_diagnosis: res.differential_diagnosis || res.differentialDiagnosis,
+            guideline_medicines: res.guideline_medicines || res.guidelineMedicines,
+            red_flags: res.red_flags || res.redFlags,
+            confidence_metrics: res.confidence_metrics || res.confidenceMetrics,
+            follow_up_questions: res.follow_up_questions || res.followUpQuestions,
+            guideline_follow_up_questions: res.guideline_follow_up_questions || res.guidelineFollowUpQuestions,
+            soap_report: res.soap_report || res.soapReport,
+            ai_suggestions: res.ai_suggestions || res.aiSuggestions
+          });
         }
 
         // Sync with active consultation details
@@ -1116,27 +1162,39 @@ export class RecordingService implements OnDestroy {
   /**
    * Analyzes conversation turns directly via backend endpoint.
    */
-  analyzeConversation(conversationTurns: any[], transcriptText: string = ''): Observable<any> {
+  analyzeConversation(conversationTurns: any[], transcriptText: string = '', metadata?: { doctorName?: string; patientName?: string; doctorInitials?: string; patientInitials?: string; visitId?: string }): Observable<any> {
     const url = `${environment.apiBaseUrl}/analyze-conversation`;
-    return this.http.post<any>(url, {
+    const payload: any = {
       conversation: conversationTurns,
       transcript: transcriptText
-    }).pipe(
+    };
+    if (metadata) {
+      if (metadata.doctorName) payload.doctor_name = metadata.doctorName;
+      if (metadata.patientName) payload.patient_name = metadata.patientName;
+      if (metadata.doctorInitials) payload.doctor_initials = metadata.doctorInitials;
+      if (metadata.patientInitials) payload.patient_initials = metadata.patientInitials;
+      if (metadata.visitId) payload.visit_id = metadata.visitId;
+    }
+    return this.http.post<any>(url, payload).pipe(
       tap((res) => {
         if (res.ai_suggestions || res.aiSuggestions) {
           this.latestSuggestions.set(res.ai_suggestions || res.aiSuggestions);
         }
-        if (res.clinical_analysis || res.clinicalAnalysis) {
-          this.latestClinicalAnalysis.set(res.clinical_analysis || res.clinicalAnalysis);
-        } else {
-          this.latestClinicalAnalysis.set({
-            summary: res.summary,
-            entities: res.entities,
-            differential_diagnosis: res.differential_diagnosis,
-            soap_report: res.soap_report,
-            ai_suggestions: res.ai_suggestions
-          });
-        }
+        const analysis = res.clinical_analysis || res.clinicalAnalysis;
+        const mergedAnalysis = {
+          ...(analysis || {}),
+          summary: analysis?.summary || res.summary,
+          entities: analysis?.entities || res.entities,
+          differential_diagnosis: analysis?.differential_diagnosis || analysis?.differentialDiagnosis || res.differential_diagnosis || res.differentialDiagnosis || [],
+          guideline_medicines: analysis?.guideline_medicines || analysis?.guidelineMedicines || res.guideline_medicines || res.guidelineMedicines || [],
+          red_flags: analysis?.red_flags || analysis?.redFlags || res.red_flags || res.redFlags || [],
+          confidence_metrics: analysis?.confidence_metrics || analysis?.confidenceMetrics || res.confidence_metrics || res.confidenceMetrics || {},
+          follow_up_questions: analysis?.follow_up_questions || analysis?.followUpQuestions || res.follow_up_questions || res.followUpQuestions || [],
+          guideline_follow_up_questions: analysis?.guideline_follow_up_questions || analysis?.guidelineFollowUpQuestions || res.guideline_follow_up_questions || res.guidelineFollowUpQuestions || [],
+          soap_report: analysis?.soap_report || analysis?.soapReport || res.soap_report || res.soapReport || {},
+          ai_suggestions: analysis?.ai_suggestions || analysis?.aiSuggestions || res.ai_suggestions || res.aiSuggestions || []
+        };
+        this.latestClinicalAnalysis.set(mergedAnalysis);
         if (this.currentPatientId) {
           this.saveCurrentPatientSession(this.currentPatientId);
         }
@@ -1285,14 +1343,24 @@ export class RecordingService implements OnDestroy {
    */
   loadConsultationSession(session: any): void {
     if (!session) return;
-    this.sessionNumber.set(session.sessionNumber || 1);
-    this.sessionTitle.set(session.sessionTitle || `Session ${session.sessionNumber || 1}`);
+    this.sessionNumber.set(session.sessionNumber || session.session_number || 1);
+    this.sessionTitle.set(session.sessionTitle || session.session_title || `Session ${session.sessionNumber || session.session_number || 1}`);
     this.latestTranscript.set(session.transcript || '');
     this.latestExchanges.set(session.conversation || []);
-    this.latestSuggestions.set(session.aiSuggestions || session.ai_suggestions || []);
-    this.latestClinicalAnalysis.set(session.clinicalAnalysis || session.clinical_analysis || null);
-    this.gdriveWebViewLink.set(session.gdriveWebViewLink || null);
-    this.gdriveFileId.set(session.gdriveFileId || null);
+
+    const suggestions = session.aiSuggestions 
+      || session.ai_suggestions 
+      || session.clinicalAnalysis?.ai_suggestions 
+      || session.clinicalAnalysis?.aiSuggestions 
+      || session.clinical_analysis?.ai_suggestions 
+      || session.clinical_analysis?.aiSuggestions 
+      || [];
+    this.latestSuggestions.set(suggestions);
+
+    const analysis = session.clinicalAnalysis || session.clinical_analysis || null;
+    this.latestClinicalAnalysis.set(analysis);
+    this.gdriveWebViewLink.set(session.gdriveWebViewLink || session.gdrive_web_view_link || null);
+    this.gdriveFileId.set(session.gdriveFileId || session.gdrive_file_id || null);
 
     // Synchronize mock data state
     this.mockData.activeConsultation.update(prev => ({

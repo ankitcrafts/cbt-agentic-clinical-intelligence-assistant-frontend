@@ -2288,6 +2288,13 @@ body {
               .nudge-tag { color: #d97706; }
               .nudge-text { color: #78350f; }
             }
+
+            &.nudge-low {
+              background: #f0fdf4;
+              border: 1px solid #bbf7d0;
+              .nudge-tag { color: #16a34a; }
+              .nudge-text { color: #14532d; }
+            }
           }
         }
       }
@@ -4592,6 +4599,34 @@ body[data-theme="dark"] {
       .patient-avatar-circle {
         background: rgba(3, 105, 161, 0.25) !important;
         color: #38bdf8 !important;
+      }
+    }
+  }
+
+  .ai-suggestions-panel-card {
+    background: #0f1f1d !important;
+    border-color: #152c28 !important;
+
+    .nudge-card {
+      &.nudge-high {
+        background: rgba(239, 68, 68, 0.12) !important;
+        border-color: rgba(239, 68, 68, 0.35) !important;
+        .nudge-tag { color: #f87171 !important; }
+        .nudge-text { color: #fecaca !important; }
+      }
+
+      &.nudge-medium {
+        background: rgba(245, 158, 11, 0.12) !important;
+        border-color: rgba(245, 158, 11, 0.35) !important;
+        .nudge-tag { color: #fbbf24 !important; }
+        .nudge-text { color: #fde68a !important; }
+      }
+
+      &.nudge-low {
+        background: rgba(16, 185, 129, 0.12) !important;
+        border-color: rgba(16, 185, 129, 0.35) !important;
+        .nudge-tag { color: #34d399 !important; }
+        .nudge-text { color: #a7f3d0 !important; }
       }
     }
   }

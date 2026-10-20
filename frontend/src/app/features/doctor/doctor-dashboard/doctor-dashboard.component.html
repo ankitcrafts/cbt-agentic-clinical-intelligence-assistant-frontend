@@ -633,9 +633,10 @@
               *ngFor="let nudge of currentAISuggestions"
               [class.nudge-high]="nudge.type === 'high'"
               [class.nudge-medium]="nudge.type === 'medium'"
+              [class.nudge-low]="nudge.type === 'low'"
             >
               <span class="nudge-tag">{{ nudge.tag }}</span>
-              <p class="nudge-text">{{ nudge.text }}</p>
+              <p class="nudge-text">{{ nudge.text || (nudge.description ? (nudge.title + ' — ' + nudge.description) : nudge.title) }}</p>
             </div>
           </div>
         </div>
@@ -801,7 +802,7 @@
                 <i class="fa-solid fa-circle-check alert-icon"></i>
                 <div class="alert-content">
                   <h4>✓ High Diagnostic Confidence: {{ currentConfidenceMetrics.overallScore }}% (Target ≥ 70% Achieved)</h4>
-                  <p>Clinical protocol inquiries completed in the session. Tension-Type Headache confirmed as primary diagnosis with red flags excluded. All CDS tabs and merged SOAP report updated.</p>
+                  <p>Clinical protocol inquiries completed in the session. {{ (currentDifferentialDiagnoses[0]?.title || 'Primary clinical presentation') }} confirmed as primary diagnosis with red flags excluded. All CDS tabs and merged SOAP report updated.</p>
                 </div>
               </div>
 
@@ -1157,13 +1158,13 @@
                   <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                     <h3 class="soap-note-title">SOAP Note</h3>
                     <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px; background: rgba(13, 148, 136, 0.18); color: #2dd4bf; border: 1px solid rgba(13, 148, 136, 0.35);" *ngIf="isFollowUpCompleted">
-                      <i class="fa-solid fa-circle-check"></i> Merged Multi-Turn Record (86% Confidence)
+                      <i class="fa-solid fa-circle-check"></i> Merged Multi-Turn Record ({{ currentConfidenceMetrics.overallScore }}% Confidence)
                     </span>
                     <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px; background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);" *ngIf="!isFollowUpCompleted">
-                      <i class="fa-solid fa-clock"></i> Initial Assessment (58% Confidence)
+                      <i class="fa-solid fa-clock"></i> Clinical Assessment ({{ currentConfidenceMetrics.overallScore }}% Confidence)
                     </span>
                   </div>
-                  <span class="soap-note-meta">{{ visitDetails?.date || 'Aug 13, 2026' }} · {{ visitDetails?.time || '09:41 AM' }} · {{ authService.currentUser().name || 'Dr. Yuki Tanaka' }}</span>
+                  <span class="soap-note-meta">{{ visitDetails?.date || 'Aug 13, 2026' }} · {{ visitDetails?.time || '09:41 AM' }} · {{ currentDoctorName }}</span>
                 </div>
                 <div class="soap-header-btn-group">
                   <button 
@@ -1199,16 +1200,16 @@
               <div class="soap-patient-info-banner">
                 <div class="banner-left-info">
                   <div class="patient-avatar-circle-dark">
-                    <span>{{ visitDetails.initials || 'MD' }}</span>
+                    <span>{{ visitDetails.initials || 'PT' }}</span>
                   </div>
                   <div class="banner-names">
-                    <h4 class="patient-name-bold">{{ visitDetails.patientName || 'Marcus Delgado' }}</h4>
-                    <span class="patient-mrn-line">MRN #00847261 · DOB 1984-03-12</span>
+                    <h4 class="patient-name-bold">{{ visitDetails.patientName || 'Patient' }}</h4>
+                    <span class="patient-mrn-line">MRN {{ visitDetails.visitId || '#00847261' }} · {{ visitDetails.demographics || 'Adult Patient' }}</span>
                   </div>
                 </div>
                 <div class="banner-right-meta">
                   <span class="cliniq-soap-badge">CLINIQ SOAP</span>
-                  <span class="doctor-spec-line">Cardiology · Dr. Yuki Tanaka</span>
+                  <span class="doctor-spec-line">{{ currentDoctorDepartment }} · {{ currentDoctorName }}</span>
                 </div>
               </div>
 
