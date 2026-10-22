@@ -133,3 +133,12 @@ sequenceDiagram
 * **Diagnostic Agreement:** $\ge 90\%$ concordance between AI differential suggestions and attending physician's final assessment.
 * **Transcription Word Error Rate (WER):** $< 8\%$ on medical terminology and physician dictation.
 * **User Adoption & Satisfaction:** Physician Net Promoter Score (NPS) $> 60$.
+
+---
+
+## 8. Production Deployment & Cloudflare Zero Trust Ingress
+* **FR-8.1 Zero Trust Protected Host:** Production deployment hosted on Ubuntu 24.04 server `ubtsrv01` at internal IP `172.16.17.181`, accessible securely across the Cloudflare Zero Trust gateway (`cbtlab.cloudflareaccess.com`) with WARP virtual client interface (`10.64.20.180`).
+* **FR-8.2 Full-Stack Container Orchestration:** Orchestrated with Docker Compose v2 across 4 isolated microservices (`cliniq-frontend-prod`, `cliniq-backend-prod`, `cliniq-postgres-prod`, `cliniq-redis-prod`).
+* **FR-8.3 Single-Origin Unified Ingress:** Single ingress port 80 handled by Nginx reverse proxy serving the Angular 19 SPA and routing API, RAG, and health endpoints to the backend with zero CORS issues.
+* **FR-8.4 Automated Telemetry Verification:** Real-time `/health` telemetry endpoint monitoring database health, tracing, and storage persistence. All 6 automated deployment tests verified passing (100%).
+

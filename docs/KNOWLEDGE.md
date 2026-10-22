@@ -173,5 +173,23 @@ The overall confidence index is computed as the weighted composite average:
 $$\text{Score} = \text{round}\left(\sum_{i=1}^5 w_i \times \text{Domain}_i\right)$$
 If the composite score is $\ge 70\%$, the alert level displays `High — Clinical Consensus`. If between $50\%$ and $69\%$, it indicates `Moderate — Review`. Below $50\%$, it warns `Low — Follow-up Required`.
 
+---
+
+## 10. Cloudflare Zero Trust Production Infrastructure & Routing
+
+### 10.1 Zero Trust Private Gateway Topology
+The production deployment on host `ubtsrv01` (`172.16.17.181`) is secured through Cloudflare Zero Trust team `cbtlab` (`cbtlab.cloudflareaccess.com`):
+* **Local WARP Interface:** `10.64.20.180` assigned to enrolled client device.
+* **Server Target:** `172.16.17.181` running Ubuntu 24.04.5 LTS (41 GB RAM, Linux Kernel 6.8).
+* **Ingress Port:** Standard HTTP port 80 exposed via Docker bridge network.
+* **Reverse Proxy Mapping:**
+  * Web Application SPA: `http://172.16.17.181/` -> Nginx -> `/usr/share/nginx/html`
+  * API Endpoints: `http://172.16.17.181/api/*` -> Nginx -> `http://backend:8000/api/*`
+  * Analysis Endpoint: `http://172.16.17.181/analyze-conversation` -> Nginx -> `http://backend:8000/analyze-conversation`
+  * Visit Management: `http://172.16.17.181/visit/*` -> Nginx -> `http://backend:8000/visit/*`
+  * Reports & PDFs: `http://172.16.17.181/reports/*` -> Nginx -> `http://backend:8000/reports/*`
+  * Health Telemetry: `http://172.16.17.181/health` -> Nginx -> `http://backend:8000/health`
+  * Swagger OpenAPI: `http://172.16.17.181/docs` -> Nginx -> `http://backend:8000/docs`
+
 
 

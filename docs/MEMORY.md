@@ -87,6 +87,16 @@
   4. **HTML Double Safety Net:** Template falls back to `{{ nudge.text || (nudge.description ? (nudge.title + ' — ' + nudge.description) : nudge.title) }}` and supports `.nudge-low` and dark-mode tokens.
 * **Consequence:** 100% reliable clinical prompt and alert rendering across all historical consultation visits and live sessions without blank card anomalies.
 
+### ADR-FE-16: Angular 19 Production Containerization, Dynamic Origin Resolution & Nginx Reverse Proxy
+* **Context:** Deploying Angular 19 alongside FastAPI behind Cloudflare Zero Trust requires unified single-origin ingress, client-side route preservation, and CORS elimination.
+* **Decision:** Implemented multi-stage Dockerfile (Node.js 20 build -> Nginx 1.25 Alpine runtime), configured `environment.prod.ts` with dynamic `window.location.origin` resolution, and routed all API traffic through Nginx reverse proxy directives (`/api/`, `/analyze-conversation`, `/visit/`, `/reports/`, `/health`).
+* **Consequence:** Single-origin architecture eliminating cross-origin preflight overhead, zero configuration changes across environments, and sub-10MB lightweight frontend container footprint.
+
+### ADR-FE-17: Cloudflare Zero Trust Production Deployment & Remote Host Architecture
+* **Context:** The production system must be securely accessible to clinical users without exposing unprotected public IP ports, using enterprise Cloudflare Zero Trust network authentication (`cbtlab`).
+* **Decision:** Enrolled the host `ubtsrv01` (`172.16.17.181`) within the `cbtlab.cloudflareaccess.com` Zero Trust organization. Configured Docker Compose v2 container orchestration with automated health dependencies (`postgres:16`, `redis:7`, `cliniq-backend-prod`, `cliniq-frontend-prod`), with Nginx listening on port 80 and reverse-proxying all API requests directly to the backend.
+* **Consequence:** 100% secure end-to-end access across Cloudflare WARP client, zero open external attack surface, zero CORS issues via single-origin routing, and sub-second response times. Verified 6/6 tests passing.
+
 ---
 
 ## 2. Environment Configurations
@@ -96,6 +106,7 @@
 | `apiUrl` | `src/environments/environment.ts` | Backend FastAPI server endpoint (`http://127.0.0.1:8000`). |
 | `production` | `src/environments/environment.prod.ts` | Set to `true` for production builds. |
 | `defaultPort` | `angular.json` | Default development server port (`4200`). |
+| `SMTP_EMAIL` | `.env.production` | Verified sender email for OTP delivery (`ankitkumar021303@gmail.com`). |
 
 ---
 

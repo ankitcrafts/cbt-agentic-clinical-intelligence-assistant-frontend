@@ -152,7 +152,7 @@ export class AuthService {
         })
       );
       this.otpSent.set(true);
-      this.devOtp.set(null);
+      this.devOtp.set(response.dev_otp || null);
       this.successMessage.set(response.message || `A 6-digit verification code has been sent to ${cleanEmail}. Please check your Inbox and Spam/Promotions folder.`);
       return response;
     } catch (err: any) {
