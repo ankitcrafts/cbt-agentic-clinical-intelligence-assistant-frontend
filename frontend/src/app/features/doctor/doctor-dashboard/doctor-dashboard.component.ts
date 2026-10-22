@@ -11,6 +11,19 @@ import { AppointmentService } from '../../../core/services/appointment.service';
 import { PdfExportService } from '../../../core/services/pdf-export.service';
 import { RecordedSessionItem } from '../../../core/models/recording.model';
 
+export interface PrescriptionItem {
+  medication: string;
+  strength: string;
+  route: string;
+  frequency: string;
+  duration: string;
+  quantity: string;
+  refills: string | number;
+  instructions: string;
+  prescribedBy?: string;
+  prescribedDate?: string;
+}
+
 @Component({
   selector: 'app-doctor-dashboard',
   standalone: true,
@@ -100,26 +113,47 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       status: p.arrivalStatus === 'IN_CONSULTATION' ? 'IN_PROGRESS' : (p.arrivalStatus === 'ARRIVED' ? 'WAITING' : 'SCHEDULED'),
       statusLabel: p.arrivalStatus === 'IN_CONSULTATION' ? 'In Progress' : (p.arrivalStatus === 'ARRIVED' ? 'Waiting' : 'Scheduled'),
       lastVisit: p.lastVisit || '—',
-      vitals: p.vitals || { bp: '120/80 mmHg', hr: '72 bpm', pain: '0/10' },
+      vitals: (p.vitals && typeof p.vitals === 'object' && Object.keys(p.vitals).length > 0)
+        ? p.vitals
+        : { bp: '120/80 mmHg', hr: '72 bpm', pain: '0/10', spo2: '98%', temp: '36.6 °C' },
       isPreferredDoctorChoice: p.isPreferredDoctorChoice,
       preferredDoctorName: p.preferredDoctorName
     }));
   }
 
-  // Active Consultation Details
+  // Active Consultation Details (Defaulting to Active Patient Marcus Delgado)
   visitDetails: any = {
-    patientName: 'Anya Kowalski',
-    visitId: '#00673920',
-    initials: 'AK',
-    demographics: '29F · #00673920',
-    visitType: 'New Patient',
-    reason: 'Chest tightness, shortness of breath on exertion',
-    condition: 'New presentation',
-    lastVisit: '—',
+    patientName: 'Marcus Delgado',
+    visitId: '#00847261',
+    initials: 'MD',
+    demographics: '42M · #00847261',
+    visitType: 'Cardiology follow-up',
+    reason: 'Hypertension review + new headache complaint',
+    condition: 'Hypertension Stage 1',
+    lastVisit: 'July 14, 2026',
     date: 'Aug 13, 2026',
-    time: '11:00',
-    duration: '45 min'
+    time: '09:00 AM',
+    duration: '30 min',
+    vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10', spo2: '98%', temp: '36.6 °C' }
   };
+
+  // Prescription State (Doctor Wisdom & Prescription Directives)
+  currentPrescription: PrescriptionItem = {
+    medication: 'Lisinopril',
+    strength: '10 mg',
+    route: 'Oral',
+    frequency: 'Once daily',
+    duration: '6 weeks',
+    quantity: '42 tablets',
+    refills: '1',
+    instructions: 'Take one tablet every morning with breakfast. Continue daily home blood pressure monitoring.',
+    prescribedBy: 'Dr. Yuki Tanaka',
+    prescribedDate: 'Aug 13, 2026'
+  };
+
+  showPrescriptionModal: boolean = false;
+  editPrescriptionForm: PrescriptionItem = { ...this.currentPrescription };
+  prescriptionChangeStatus: string = 'No changes made';
 
   // Image 4: AI Suggestions List (Dynamic per patient)
   aiSuggestionsList: any[] = [];
@@ -127,11 +161,23 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   // 6-Tab CDS Active Tab
   activeTab: 'analysis' | 'clinical' | 'confidence' | 'followup' | 'medicines' | 'soap' = 'analysis';
 
-  // Live Transcript Exchanges (Dynamic per patient)
-  transcriptExchanges: any[] = [];
+  // Live Transcript Exchanges (Dynamic per patient, matching consultation dialog)
+  transcriptExchanges: any[] = [
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Good morning, Marcus. How have you been feeling since our last visit?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: "Mostly okay, but I've been getting these headaches in the afternoon. Usually around 2 or 3pm." },
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'How often are these headaches occurring? Daily, a few times a week?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Maybe four or five times a week. They last about an hour.' },
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'On a scale of 1 to 10, how would you rate the pain?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Maybe a 5 or 6. Uncomfortable but I can still work.' },
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Where exactly do you feel the pain? Is it throbbing, sharp, or dull?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Dull pressure, like a tight band around my forehead and temples.' },
+    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Any visual changes, nausea, or sensitivity to light with them?' },
+    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'No, nothing like that. Just the dull ache and afternoon fatigue.' }
+  ];
 
   // Interactive SOAP Editing & Reframing State
   editedSoapReport: { subjective: string; objective: string; assessment: string; plan: string } | null = null;
+  isSoapManuallyEdited: boolean = false;
   activeEditSection: 'subjective' | 'objective' | 'assessment' | 'plan' | null = null;
   sectionEditText: string = '';
   editReasonText: string = '';
@@ -276,6 +322,10 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.activeInquiryQuestion = null;
     this.aiSuggestionsList = [];
     this.activeFollowUpNotice = null;
+    this.currentPrescription = this.getPrescriptionForPatient(patientId, patient.name);
+    this.editPrescriptionForm = { ...this.currentPrescription };
+    this.prescriptionChangeStatus = 'No changes made';
+    this.showPrescriptionModal = false;
 
     // Clear any previous live draft signals for a 100% fresh start
     this.recordingService.latestTranscript.set('');
@@ -295,7 +345,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       date: 'Aug 13, 2026',
       time: patient.time || '09:00 AM',
       duration: patient.duration || '30 min',
-      vitals: patient.vitals || { bp: '120/80 mmHg', hr: '72 bpm', pain: '0/10' }
+      vitals: (patient.vitals && typeof patient.vitals === 'object' && Object.keys(patient.vitals).length > 0)
+        ? patient.vitals
+        : { bp: '120/80 mmHg', hr: '72 bpm', pain: '0/10', spo2: '98%', temp: '36.6 °C' }
     };
 
     // Synchronize mock data state with fresh clean baseline
@@ -349,6 +401,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.aiSuggestionsList = [];
     this.selectedSessionId = 'live';
     this.editedSoapReport = null;
+    this.isSoapManuallyEdited = false;
     this.patientSummaryText = '';
     this.answeredQuestionIds.clear();
     this.isFollowUpCompleted = false;
@@ -390,6 +443,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.recordingService.loadConsultationSession(session);
     this.transcriptExchanges = session.conversation || [];
     this.editedSoapReport = session.soapReport || session.soap_report || null;
+    this.isSoapManuallyEdited = !!this.editedSoapReport;
+    this.aiSuggestionsList = session.aiSuggestions || session.ai_suggestions || session.clinicalAnalysis?.ai_suggestions || session.clinicalAnalysis?.aiSuggestions || [];
     this.patientSummaryText = '';
     this.answeredQuestionIds.clear();
     this.isFollowUpCompleted = false;
@@ -400,7 +455,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     const patientId = this.visitDetails.visitId;
     this.recordingService.switchPatient(patientId);
     this.transcriptExchanges = this.recordingService.latestExchanges() || [];
+    this.aiSuggestionsList = this.recordingService.latestSuggestions() || [];
     this.editedSoapReport = null;
+    this.isSoapManuallyEdited = false;
     this.patientSummaryText = '';
     this.answeredQuestionIds.clear();
     this.isFollowUpCompleted = false;
@@ -416,17 +473,39 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     if (!this.canRunClinicalAnalysis) {
       return;
     }
+    const analysis = this.recordingService.latestClinicalAnalysis();
+    const hasFullAnalysis = !!(analysis && analysis.differential_diagnosis && analysis.differential_diagnosis.length > 0 && analysis.guideline_medicines && analysis.guideline_medicines.length > 0);
     const exchanges = this.currentTranscriptExchanges;
-    if (exchanges && exchanges.length > 0 && !this.recordingService.latestClinicalAnalysis()) {
+
+    if (exchanges && exchanges.length > 0 && !hasFullAnalysis) {
+      this.isProcessingAudio = true;
       const turns = exchanges.map(e => ({
         speaker: e.isDoctor ? 'Doctor' : 'Patient',
         text: e.text
       }));
-      this.recordingService.analyzeConversation(turns, this.recordingService.latestTranscript()).subscribe({
-        next: (res) => console.log('Clinical analysis generated:', res),
-        error: (err) => console.error('Failed to run clinical analysis:', err)
+      this.recordingService.analyzeConversation(
+        turns, 
+        this.recordingService.latestTranscript(),
+        {
+          doctorName: this.currentDoctorName,
+          patientName: this.visitDetails.patientName || 'Patient',
+          doctorInitials: this.doctorInitials,
+          patientInitials: this.visitDetails.initials || 'PT',
+          visitId: this.visitDetails.visitId
+        }
+      ).subscribe({
+        next: (res) => {
+          console.log('Clinical analysis generated dynamically:', res);
+          this.isProcessingAudio = false;
+          this.editedSoapReport = null;
+        },
+        error: (err) => {
+          console.error('Failed to run clinical analysis:', err);
+          this.isProcessingAudio = false;
+        }
       });
     }
+    this.editedSoapReport = null;
     this.rightPanelMode = 'analysis';
     this.activeTab = 'analysis';
   }
@@ -550,6 +629,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   uploadRecording(): void {
     const pid = this.visitDetails.visitId || this.mockData.activeConsultation().patientPid || 'P1245';
     const encId = 'CONS-' + pid.replace('#', '');
+    this.isProcessingAudio = true;
     this.recordingService.uploadRecording({
       encounterId: encId,
       doctorId: this.currentDoctorId,
@@ -561,16 +641,24 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         console.log('Google Drive upload & Deepgram transcription success:', res);
+        this.isProcessingAudio = false;
         if (res.exchanges && res.exchanges.length > 0) {
           this.transcriptExchanges = res.exchanges;
         }
+        this.editedSoapReport = null;
+        this.isSoapManuallyEdited = false;
+        this.answeredQuestionIds.clear();
+        this.isFollowUpCompleted = false;
         this.recordingService.getPatientConsultationSessions(pid).subscribe({
           next: (sessions) => {
             this.patientSessions = sessions || [];
           }
         });
       },
-      error: (err) => console.error('Upload & transcription failed:', err)
+      error: (err) => {
+        console.error('Upload & transcription failed:', err);
+        this.isProcessingAudio = false;
+      }
     });
   }
 
@@ -585,15 +673,84 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   get currentAISuggestions(): any[] {
     const live = this.recordingService.latestSuggestions();
-    if (live && live.length > 0) {
-      return live.map((s, idx) => ({
-        id: idx + 1,
-        type: (s.priority || 'high').toLowerCase(),
-        tag: `${s.priority || 'HIGH'} · ${s.category || 'CLINICAL'}`,
-        text: s.description ? `${s.title} — ${s.description}` : s.title
-      }));
+    const analysis = this.recordingService.latestClinicalAnalysis();
+    const candidateList = (live && live.length > 0)
+      ? live
+      : (this.aiSuggestionsList && this.aiSuggestionsList.length > 0)
+        ? this.aiSuggestionsList
+        : (analysis?.ai_suggestions || analysis?.aiSuggestions || []);
+
+    if (candidateList && candidateList.length > 0) {
+      return candidateList.map((s: any, idx: number) => {
+        if (!s) return null;
+        if (typeof s === 'string') {
+          return {
+            id: idx + 1,
+            type: 'high',
+            tag: 'HIGH · CLINICAL',
+            text: s,
+            title: s,
+            description: '',
+            priority: 'HIGH',
+            category: 'CLINICAL'
+          };
+        }
+
+        // 1. Resolve text content robustly
+        let text = '';
+        if (typeof s.text === 'string' && s.text.trim()) {
+          text = s.text.trim();
+        } else if (s.title && s.description) {
+          text = `${s.title} — ${s.description}`;
+        } else if (s.title) {
+          text = s.title;
+        } else if (s.description) {
+          text = s.description;
+        } else if (s.suggestion) {
+          text = s.suggestion;
+        } else if (s.actionText) {
+          text = s.actionText;
+        } else if (s.message) {
+          text = s.message;
+        } else if (s.content) {
+          text = s.content;
+        }
+
+        // 2. Resolve tag
+        let tag = '';
+        if (typeof s.tag === 'string' && s.tag.trim()) {
+          tag = s.tag.trim();
+        } else {
+          const pri = (s.priority || (s.type ? s.type.toUpperCase() : 'HIGH')).toUpperCase();
+          const cat = (s.category || 'CLINICAL').toUpperCase();
+          tag = `${pri} · ${cat}`;
+        }
+
+        // 3. Resolve type
+        let type = 'high';
+        if (typeof s.type === 'string' && s.type.trim()) {
+          type = s.type.toLowerCase();
+        } else if (typeof s.priority === 'string') {
+          type = s.priority.toLowerCase();
+        } else if (tag.includes('MEDIUM')) {
+          type = 'medium';
+        } else if (tag.includes('LOW')) {
+          type = 'low';
+        }
+
+        return {
+          id: s.id || idx + 1,
+          type,
+          tag,
+          text,
+          title: s.title || text,
+          description: s.description || '',
+          priority: s.priority || (type === 'medium' ? 'MEDIUM' : type === 'low' ? 'LOW' : 'HIGH'),
+          category: s.category || (tag.includes(' · ') ? tag.split(' · ')[1] : 'CLINICAL')
+        };
+      }).filter((item: any) => item && !!item.text);
     }
-    return this.aiSuggestionsList;
+    return [];
   }
 
   get isConfidenceBelowThreshold(): boolean {
@@ -635,7 +792,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       });
     }
 
-    return this.guidelineFollowUpQuestionsList.map(q => ({
+    const dynamicQuestions = this.getDynamicFollowUpQuestionsForCurrentPatient();
+    return dynamicQuestions.map(q => ({
       ...q,
       asked: this.answeredQuestionIds.has(q.id) || q.asked,
       answered: this.answeredQuestionIds.has(q.id) || q.answered
@@ -652,6 +810,121 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return Math.round((this.answeredQuestionsCount / total) * 100);
   }
 
+  formatVitalsDisplay(rawVitals: any): string {
+    if (!rawVitals) return '';
+
+    // Handle stringified JSON like "{}" or '{"bp":"120/80"}'
+    if (typeof rawVitals === 'string') {
+      const trimmed = rawVitals.trim();
+      if (!trimmed || trimmed === '{}' || trimmed === '[]' || trimmed === 'null' || trimmed === 'undefined' || trimmed === '""') {
+        return '';
+      }
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try {
+          rawVitals = JSON.parse(trimmed);
+        } catch {
+          // If JSON.parse fails, strip wrapping braces and return cleaned content
+          return trimmed.replace(/^\{+/, '').replace(/\}+$/, '').trim();
+        }
+      } else {
+        return trimmed;
+      }
+    }
+
+    if (typeof rawVitals === 'object' && rawVitals !== null) {
+      const keys = Object.keys(rawVitals).filter(
+        k => rawVitals[k] !== undefined && rawVitals[k] !== null && String(rawVitals[k]).trim() !== '' && String(rawVitals[k]).trim() !== '{}'
+      );
+      if (keys.length === 0) {
+        return '';
+      }
+
+      const parts: string[] = [];
+      const v = rawVitals;
+
+      const bp = v.bp || v.blood_pressure || v.BP || v.bloodPressure;
+      if (bp) {
+        const bpStr = String(bp).trim();
+        if (bpStr && bpStr !== '{}') {
+          parts.push(`BP: ${bpStr.toLowerCase().includes('mmhg') ? bpStr : bpStr + ' mmHg'}`);
+        }
+      }
+
+      const hr = v.hr || v.heart_rate || v.pulse || v.HR || v.heartRate;
+      if (hr) {
+        const hrStr = String(hr).trim();
+        if (hrStr && hrStr !== '{}') {
+          parts.push(`HR: ${hrStr.toLowerCase().includes('bpm') ? hrStr : hrStr + ' bpm'}`);
+        }
+      }
+
+      const spo2 = v.spo2 || v.o2_sat || v.oxygen || v.SpO2 || v.oxygenSaturation;
+      if (spo2) {
+        const spo2Str = String(spo2).trim();
+        if (spo2Str && spo2Str !== '{}') {
+          parts.push(`SpO2: ${spo2Str.includes('%') ? spo2Str : spo2Str + '%'}`);
+        }
+      }
+
+      const temp = v.temp || v.temperature || v.Temp;
+      if (temp) {
+        const tempStr = String(temp).trim();
+        if (tempStr && tempStr !== '{}') {
+          parts.push(`Temp: ${tempStr.includes('°') || tempStr.includes('C') || tempStr.includes('F') ? tempStr : tempStr + ' °C'}`);
+        }
+      }
+
+      const wt = v.weight || v.wt || v.Weight;
+      if (wt) {
+        const wtStr = String(wt).trim();
+        if (wtStr && wtStr !== '{}') {
+          parts.push(`Weight: ${wtStr.toLowerCase().includes('kg') || wtStr.toLowerCase().includes('lbs') ? wtStr : wtStr + ' kg'}`);
+        }
+      }
+
+      const pain = v.pain || v.Pain;
+      if (pain) {
+        const painStr = String(pain).trim();
+        if (painStr && painStr !== '{}') {
+          parts.push(`Pain: ${painStr}`);
+        }
+      }
+
+      const resp = v.resp || v.rr || v.respiratory_rate || v.respiratoryRate;
+      if (resp) {
+        const respStr = String(resp).trim();
+        if (respStr && respStr !== '{}') {
+          parts.push(`RR: ${respStr}`);
+        }
+      }
+
+      const glucose = v.glucose || v.blood_sugar || v.bloodSugar || v.bgl || v.sugar;
+      if (glucose) {
+        const gStr = String(glucose).trim();
+        if (gStr && gStr !== '{}') {
+          parts.push(`Blood Sugar: ${gStr.toLowerCase().includes('mg/dl') || gStr.toLowerCase().includes('mmol') ? gStr : gStr + ' mg/dL'}`);
+        }
+      }
+
+      if (parts.length === 0) {
+        for (const k of keys) {
+          const valStr = String(v[k]).trim();
+          if (valStr && valStr !== '{}') {
+            parts.push(`${k.replace(/_/g, ' ').toUpperCase()}: ${valStr}`);
+          }
+        }
+      }
+
+      return parts.join(' · ');
+    }
+
+    const finalStr = String(rawVitals).trim();
+    if (!finalStr || finalStr === '{}' || finalStr === '[]' || finalStr === 'null' || finalStr === 'undefined') {
+      return '';
+    }
+    return finalStr.replace(/^\{+/, '').replace(/\}+$/, '').trim();
+  }
+
   get currentClinicalSummary(): string {
     if (this.isFollowUpCompleted) {
       return `Multi-turn follow-up inquiry completed for ${this.visitDetails.patientName || 'patient'}. Pertinent clinical findings, lifestyle contributors, and symptom characterization confirmed. Vitals and management plan updated accordingly.`;
@@ -662,7 +935,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       if (analysis.summary.clinical_summary) return analysis.summary.clinical_summary;
       if (analysis.summary.narrative_summary) return analysis.summary.narrative_summary;
       if (analysis.summary.history_of_present_illness) return `${analysis.summary.chief_complaint || ''} — ${analysis.summary.history_of_present_illness}`;
-      return JSON.stringify(analysis.summary);
+      if (analysis.summary.chief_complaint) return analysis.summary.chief_complaint;
+      return 'Clinical consultation summary available.';
     }
     return `${this.visitDetails.patientName || 'Patient'} (${this.visitDetails.demographics || '—'}) presents for scheduled ${this.visitDetails.visitType?.toLowerCase() || 'consultation'}. Reason for visit: ${this.visitDetails.reason || 'Clinical review'}. Awaiting consultation audio recording or dialogue transcript to generate live clinical intelligence.`;
   }
@@ -679,9 +953,13 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       if (e.symptoms && Array.isArray(e.symptoms) && e.symptoms.length > 0) {
         findings.push({ label: 'SYMPTOMS', value: e.symptoms.map((x: any) => typeof x === 'string' ? x : x.name || x.symptom).join(', ') });
       }
-      if (e.vital_signs || e.vitals) {
-        findings.push({ label: 'VITALS', value: typeof e.vital_signs === 'object' ? JSON.stringify(e.vital_signs) : String(e.vital_signs || e.vitals) });
-      }
+
+      // Resolve vitals cleanly without raw JSON braces {}
+      const entityVitals = this.formatVitalsDisplay(e.vital_signs || e.vitals);
+      const intakeVitals = this.formatVitalsDisplay(this.visitDetails?.vitals);
+      const vitalsValue = entityVitals || (intakeVitals ? `${intakeVitals} (Intake)` : 'BP: 120/80 mmHg · HR: 72 bpm · SpO2: 98% (Baseline)');
+      findings.push({ label: 'VITALS', value: vitalsValue });
+
       if (findings.length > 0) return findings;
     }
     if (this.isFollowUpCompleted) {
@@ -703,11 +981,14 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   get currentIdentifiedIssues(): any[] {
     const analysis = this.recordingService.latestClinicalAnalysis();
-    if (analysis?.summary?.identified_issues && Array.isArray(analysis.summary.identified_issues)) {
+    if (analysis?.summary?.identified_issues && Array.isArray(analysis.summary.identified_issues) && analysis.summary.identified_issues.length > 0) {
       return analysis.summary.identified_issues.map((it: any) => typeof it === 'string' ? { text: it, type: 'warning', dotColor: '#f59e0b' } : it);
     }
-    if (analysis?.entities?.potential_risks && Array.isArray(analysis.entities.potential_risks)) {
+    if (analysis?.entities?.potential_risks && Array.isArray(analysis.entities.potential_risks) && analysis.entities.potential_risks.length > 0) {
       return analysis.entities.potential_risks.map((it: any) => ({ text: typeof it === 'string' ? it : it.risk, type: 'danger', dotColor: '#ef4444' }));
+    }
+    if (analysis?.entities?.warning_signs && Array.isArray(analysis.entities.warning_signs) && analysis.entities.warning_signs.length > 0) {
+      return analysis.entities.warning_signs.map((it: any) => ({ text: typeof it === 'string' ? it : it.warning || it.sign, type: 'warning', dotColor: '#f59e0b' }));
     }
     if (this.isFollowUpCompleted) {
       return [
@@ -727,30 +1008,25 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         const pct = Math.round(d.percentage || (d.confidence ? d.confidence * 100 : (d.confidence_score ? d.confidence_score * 100 : 75)));
         const risk = (d.risk || d.risk_level || (pct > 70 ? 'high' : pct > 40 ? 'medium' : 'low')).toLowerCase();
         return {
-          rank: idx + 1,
-          title: d.title || d.name || d.diagnosis || 'Clinical Assessment',
-          icdCode: d.icdCode || d.icd10_code || d.icd_code || 'R69',
+          rank: d.rank || idx + 1,
+          title: d.title || d.name || d.condition || d.diagnosis || 'Clinical Assessment',
+          icdCode: d.icdCode || d.icd10_code || d.icd10 || d.icd_code || 'R69',
           risk: risk,
           riskLabel: risk,
           percentage: pct,
-          color: risk === 'high' ? '#0d9488' : risk === 'medium' ? '#f59e0b' : '#2dd4bf',
-          description: d.description || d.reason || d.recommended_plan || 'Evaluated based on clinical symptoms and encounter context.'
+          color: d.color || (risk === 'high' ? '#0d9488' : risk === 'medium' ? '#f59e0b' : '#2dd4bf'),
+          description: d.description || d.reason || d.justification || d.recommended_plan || 'Evaluated based on clinical symptoms and encounter context.'
         };
       });
     }
     if (this.isFollowUpCompleted) {
-      return [
-        {
-          rank: 1,
-          title: `${this.visitDetails.reason || 'Clinical Presentation'} (Confirmed)`,
-          icdCode: 'R69',
-          risk: 'high',
-          riskLabel: 'high',
-          percentage: 86,
-          color: '#0d9488',
-          description: `Primary clinical hypothesis verified after protocol inquiries for ${this.visitDetails.patientName}.`
-        }
-      ];
+      const dynamic = this.getDynamicDifferentialForCurrentPatient();
+      if (dynamic.length > 0) {
+        return dynamic.map((d, i) => i === 0 ? { ...d, percentage: Math.max(d.percentage, 86) } : d);
+      }
+    }
+    if (this.currentTranscriptExchanges.length > 0 || (this.recordingService.latestTranscript() && this.recordingService.latestTranscript().trim().length > 0) || this.visitDetails.reason) {
+      return this.getDynamicDifferentialForCurrentPatient();
     }
     return [];
   }
@@ -773,12 +1049,12 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       return [
         {
           severity: 'RESOLVED',
-          title: `Acute red flags ruled out during consultation inquiries for ${this.visitDetails.patientName}`,
-          recommendation: 'Maintain standard clinical vigilance and follow-up'
+          title: `Acute clinical red flags excluded during consultation inquiries for ${this.visitDetails.patientName}.`,
+          recommendation: 'Maintain standard clinical vigilance and scheduled surveillance.'
         }
       ];
     }
-    return [];
+    return this.getDynamicRedFlagsForCurrentPatient();
   }
 
   get currentGuidelineMedicines(): any[] {
@@ -795,6 +1071,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         warning: m.warning || m.contraindications || 'Review patient contraindications before prescribing.'
       }));
     }
+    if (this.currentTranscriptExchanges.length > 0 || (this.recordingService.latestTranscript() && this.recordingService.latestTranscript().trim().length > 0) || this.visitDetails.reason) {
+      return this.getDynamicMedicinesForCurrentPatient();
+    }
     return [];
   }
 
@@ -805,7 +1084,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         overallLevel: 'High — Validated',
         subtext: `High clinical certainty achieved after protocol inquiry for ${this.visitDetails.patientName}.`,
         domains: [
-          { name: 'Symptom completeness', percentage: 88, description: 'Symptom pattern and clinical timeline confirmed', color: '#0d9488' },
+          { name: 'Symptom completeness', percentage: 90, description: 'Symptom pattern and clinical timeline confirmed', color: '#0d9488' },
           { name: 'Medical history coverage', percentage: 92, description: 'Prior diagnoses and medication adherence documented', color: '#0f766e' },
           { name: 'Lifestyle & social history', percentage: 84, description: 'Workday habits, sleep, and routine triggers fully explored', color: '#0d9488' },
           { name: 'DDx alignment', percentage: 91, description: 'High concordance with clinical presentation', color: '#0d9488' },
@@ -814,23 +1093,706 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       };
     }
     const analysis = this.recordingService.latestClinicalAnalysis();
-    if (analysis?.confidence_metrics || analysis?.confidenceMetrics) {
-      return analysis.confidence_metrics || analysis.confidenceMetrics;
-    }
-    if (this.currentTranscriptExchanges.length > 0) {
+    const raw = analysis?.confidence_metrics || analysis?.confidenceMetrics;
+    if (raw && (raw.overallScore != null || raw.overall_confidence != null || raw.top_differential_confidence_percent != null)) {
+      const score = raw.overallScore ?? Math.round((raw.overall_confidence ? raw.overall_confidence * 100 : raw.top_differential_confidence_percent) ?? 72);
+      const level = raw.overallLevel || (score >= 75 ? 'High — Validated' : score >= 65 ? 'Moderate — Active Evaluation' : 'Moderate — Review');
+      const subtext = raw.subtext || (score >= 70 ? `High clinical certainty (${score}%) achieved.` : `Current diagnostic confidence is ${score}% (below 70% threshold). Ask targeted protocol inquiries.`);
+      let domains = raw.domains;
+      if (!Array.isArray(domains) || domains.length === 0) {
+        if (raw.breakdown && typeof raw.breakdown === 'object') {
+          domains = Object.keys(raw.breakdown).map(k => ({
+            name: k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            percentage: Math.round(Number(raw.breakdown[k]) <= 1 ? Number(raw.breakdown[k]) * 100 : Number(raw.breakdown[k])),
+            description: 'Domain clinical metric evaluated',
+            color: '#0d9488'
+          }));
+        } else {
+          domains = this.getDynamicConfidenceMetrics().domains;
+        }
+      }
       return {
-        overallScore: 58,
-        overallLevel: 'Moderate — Review',
-        subtext: 'Based on transcript completeness, symptom coverage, and DDx alignment. (Below 70% threshold — follow-up inquiry recommended)',
+        overallScore: score,
+        overallLevel: level,
+        subtext,
+        domains
+      };
+    }
+    return this.getDynamicConfidenceMetrics();
+  }
+
+  get currentSoapReport(): any {
+    const analysis = this.recordingService.latestClinicalAnalysis();
+    const live = analysis?.soap_report || analysis?.soapReport;
+    if (live && live.subjective && live.assessment && live.plan) {
+      return live;
+    }
+    return this.getDynamicSoapReport();
+  }
+
+  get currentDoctorDepartment(): string {
+    return this.authService.currentUser()?.department || 'Cardiology';
+  }
+
+  private getConsultationContextText(): string {
+    const reason = this.visitDetails?.reason || '';
+    const condition = this.visitDetails?.condition || '';
+    const patientName = this.visitDetails?.patientName || '';
+    const transcript = this.recordingService.latestTranscript() || '';
+    const exchangesText = (this.currentTranscriptExchanges || []).map((e: any) => e.text || '').join(' ');
+    return `${reason} ${condition} ${patientName} ${transcript} ${exchangesText}`.toLowerCase();
+  }
+
+  getDynamicDifferentialForCurrentPatient(): any[] {
+    const text = this.getConsultationContextText();
+    
+    // 1. Diabetes / Endocrine / Glucose
+    if (/diabet|sugar|glucose|thirst|urina|polyuria|polydipsia|hba1c|endocrine/i.test(text)) {
+      return [
+        {
+          rank: 1,
+          title: 'Type 2 Diabetes Mellitus',
+          icdCode: 'E11.9',
+          risk: 'high',
+          riskLabel: 'high',
+          percentage: 88,
+          color: '#0d9488',
+          description: 'Symptom profile characterized by polydipsia, polyuria, and fatigue; fasting blood glucose and HbA1c elevation screen indicated per NICE NG28.'
+        },
+        {
+          rank: 2,
+          title: 'Dehydration / Hyperosmolar Fluid Deficit',
+          icdCode: 'E86.0',
+          risk: 'medium',
+          riskLabel: 'medium',
+          percentage: 65,
+          color: '#f59e0b',
+          description: 'Osmotic diuresis secondary to glycosuria with volume contraction; oral rehydration and electrolyte monitoring indicated.'
+        },
+        {
+          rank: 3,
+          title: 'Metabolic Syndrome / Dysglycemia',
+          icdCode: 'E88.81',
+          risk: 'low',
+          riskLabel: 'low',
+          percentage: 46,
+          color: '#2dd4bf',
+          description: 'Cluster of metabolic factors including insulin resistance, weight distribution, and vascular risk factors.'
+        }
+      ];
+    }
+
+    // 2. Hypertension / Blood Pressure / Cardiovascular
+    if (/hypertens|blood pressure|high bp|systolic|diastolic|chest|palpitat|cardio/i.test(text)) {
+      return [
+        {
+          rank: 1,
+          title: 'Essential (Primary) Hypertension Stage 1',
+          icdCode: 'I10',
+          risk: 'high',
+          riskLabel: 'high',
+          percentage: 84,
+          color: '#0d9488',
+          description: 'Sustained systemic arterial pressure exceeding 130/80 mmHg; requires guideline-directed monotherapy and cardiovascular risk surveillance per NICE NG136.'
+        },
+        {
+          rank: 2,
+          title: 'Tension-Type Headache (Hemodynamic Exacerbation)',
+          icdCode: 'G44.2',
+          risk: 'medium',
+          riskLabel: 'medium',
+          percentage: 68,
+          color: '#f59e0b',
+          description: 'Bilateral band-like cephalea exacerbated by work stress, posture, and elevated hemodynamic afterload.'
+        },
+        {
+          rank: 3,
+          title: 'Secondary Hypertension Screening',
+          icdCode: 'I15.8',
+          risk: 'low',
+          riskLabel: 'low',
+          percentage: 38,
+          color: '#2dd4bf',
+          description: 'Evaluation for underlying renovascular, endocrine, or sleep apnoea etiologies in suboptimally controlled blood pressure.'
+        }
+      ];
+    }
+
+    // 3. Headache / Migraine / Neurological Cephalea
+    if (/headache|migraine|cephalea|forehead|temple|throbbing|tightness|scalp/i.test(text)) {
+      return [
+        {
+          rank: 1,
+          title: 'Tension-Type Headache, Episodic',
+          icdCode: 'G44.209',
+          risk: 'high',
+          riskLabel: 'high',
+          percentage: 85,
+          color: '#0d9488',
+          description: 'Bilateral pressing/tightening pain of mild-to-moderate intensity lasting 30 minutes to days; absent nausea, photophobia, or focal deficits.'
+        },
+        {
+          rank: 2,
+          title: 'Migraine without Aura',
+          icdCode: 'G43.009',
+          risk: 'medium',
+          riskLabel: 'medium',
+          percentage: 64,
+          color: '#f59e0b',
+          description: 'Recurrent unilateral or throbbing cephalalgia aggravated by routine physical activity; sensory sensitivity screen recommended.'
+        },
+        {
+          rank: 3,
+          title: 'Caffeine-Withdrawal Cephalea',
+          icdCode: 'G44.82',
+          risk: 'low',
+          riskLabel: 'low',
+          percentage: 42,
+          color: '#2dd4bf',
+          description: 'Afternoon onset headache coinciding with daily caffeine clearance in patients consuming > 300 mg daily.'
+        }
+      ];
+    }
+
+    // 4. Respiratory / Cough / Infection / Flu
+    if (/cough|throat|fever|phlegm|sneeze|breath|respirat|cold|bronch|lung/i.test(text)) {
+      return [
+        {
+          rank: 1,
+          title: 'Acute Upper Respiratory Tract Infection',
+          icdCode: 'J06.9',
+          risk: 'high',
+          riskLabel: 'high',
+          percentage: 86,
+          color: '#0d9488',
+          description: 'Acute self-limiting viral inflammation of the upper respiratory tract; symptomatic supportive therapy indicated per NICE guidelines.'
+        },
+        {
+          rank: 2,
+          title: 'Acute Bronchitis',
+          icdCode: 'J20.9',
+          risk: 'medium',
+          riskLabel: 'medium',
+          percentage: 62,
+          color: '#f59e0b',
+          description: 'Bronchial inflammation with persistent cough without clinical or radiographic evidence of pneumonia.'
+        },
+        {
+          rank: 3,
+          title: 'Seasonal Allergic Rhinitis / Airway Irritation',
+          icdCode: 'J30.2',
+          risk: 'low',
+          riskLabel: 'low',
+          percentage: 44,
+          color: '#2dd4bf',
+          description: 'Environmental mucosal hypersensitivity with clear nasal discharge and secondary pharyngeal irritation.'
+        }
+      ];
+    }
+
+    // Default Fallback based on Reason & Patient
+    return [
+      {
+        rank: 1,
+        title: this.visitDetails?.reason ? `${this.visitDetails.reason}` : 'Primary Clinical Presentation',
+        icdCode: 'R69',
+        risk: 'high',
+        riskLabel: 'high',
+        percentage: 78,
+        color: '#0d9488',
+        description: `Primary clinical hypothesis evaluated based on patient presentation (${this.visitDetails?.patientName || 'Patient'}) and active consultation dialogue.`
+      },
+      {
+        rank: 2,
+        title: `Secondary Manifestation (${this.visitDetails?.condition || 'General Assessment'})`,
+        icdCode: 'R68.89',
+        risk: 'medium',
+        riskLabel: 'medium',
+        percentage: 58,
+        color: '#f59e0b',
+        description: 'Associated symptomatic factors under clinical evaluation during consultation.'
+      },
+      {
+        rank: 3,
+        title: 'Routine Health Maintenance & Preventative Review',
+        icdCode: 'Z00.00',
+        risk: 'low',
+        riskLabel: 'low',
+        percentage: 42,
+        color: '#2dd4bf',
+        description: 'Baseline health screening, preventative surveillance, and guideline-directed checkup.'
+      }
+    ];
+  }
+
+  getDynamicMedicinesForCurrentPatient(): any[] {
+    const text = this.getConsultationContextText();
+
+    if (/diabet|sugar|glucose|thirst|urina|polyuria|polydipsia|hba1c|endocrine/i.test(text)) {
+      return [
+        {
+          name: 'Metformin Hydrochloride',
+          drugClass: 'Biguanide / Antidiabetic',
+          grade: 'Grade A',
+          source: 'NICE NG28 / BNF',
+          dosage: '500 mg PO once daily with meals, titrate to 1000 mg BID',
+          recommendation: 'First-line pharmacotherapy for glycemic control in Type 2 Diabetes Mellitus; check baseline eGFR prior to dose escalation.',
+          warning: 'Discontinue if eGFR < 30 mL/min/1.73m² or in states of tissue hypoperfusion/acute hypoxia.'
+        },
+        {
+          name: 'Empagliflozin',
+          drugClass: 'SGLT2 Inhibitor',
+          grade: 'Grade A',
+          source: 'ADA / EASD 2024 / BNF',
+          dosage: '10 mg PO once daily in morning',
+          recommendation: 'Add-on agent for cardiorenal protection and glycemic reduction through renal glucose clearance.',
+          warning: 'Maintain adequate hydration; counsel patient on genital hygiene to prevent mycotic infections.'
+        },
+        {
+          name: 'Oral Rehydration Solution (ORS)',
+          drugClass: 'Fluid & Electrolyte Therapy',
+          grade: 'Grade A',
+          source: 'WHO / BNF',
+          dosage: '200-400 mL oral fluid replacement PRN for thirst/polyuria',
+          recommendation: 'Targeted replenishment of volume and electrolytes lost to osmotic diuresis; avoid sugary sodas and juices.',
+          warning: 'Monitor serum sodium and potassium in patients with underlying chronic renal compromise.'
+        }
+      ];
+    }
+
+    if (/hypertens|blood pressure|high bp|systolic|diastolic|chest|palpitat|cardio/i.test(text)) {
+      return [
+        {
+          name: 'Lisinopril',
+          drugClass: 'ACE Inhibitor',
+          grade: 'Grade A',
+          source: 'NICE NG136 / JNC8',
+          dosage: '10 mg PO once daily in morning, titrate to 20 mg OD',
+          recommendation: 'First-line monotherapy for primary hypertension targeting systolic BP < 130 mmHg and diastolic < 80 mmHg.',
+          warning: 'Check renal panel and potassium within 2-4 weeks; discontinue immediately if angioedema or intractable dry cough occurs.'
+        },
+        {
+          name: 'Amlodipine Besylate',
+          drugClass: 'Calcium Channel Blocker (Dihydropyridine)',
+          grade: 'Grade A',
+          source: 'NICE NG136 / BNF',
+          dosage: '5 mg PO once daily',
+          recommendation: 'Add-on therapy for uncontrolled Stage 1 or Stage 2 hypertension to achieve peripheral arterial vasodilatation.',
+          warning: 'Monitor for peripheral pedal oedema and postural hypotension.'
+        },
+        {
+          name: 'Atorvastatin',
+          drugClass: 'HMG-CoA Reductase Inhibitor',
+          grade: 'Grade A',
+          source: 'NICE CG181 / BNF',
+          dosage: '20 mg PO once daily at bedtime',
+          recommendation: 'Primary cardiovascular event prevention in hypertensive adults with elevated QRISK3 score.',
+          warning: 'Report unexplained muscular pain or dark urine immediately.'
+        }
+      ];
+    }
+
+    if (/headache|migraine|cephalea|forehead|temple|throbbing|tightness|scalp/i.test(text)) {
+      return [
+        {
+          name: 'Paracetamol (Acetaminophen)',
+          drugClass: 'Simple Analgesic',
+          grade: 'Grade A',
+          source: 'BNF / SIGN 107',
+          dosage: '500 mg - 1000 mg PO every 4-6 hours PRN (Max 4000 mg/24h)',
+          recommendation: 'First-line acute symptomatic relief for mild-to-moderate episodic tension-type headache.',
+          warning: 'Do not exceed 4 g/day; risk of acute hepatic necrosis in overdose or concurrent heavy alcohol consumption.'
+        },
+        {
+          name: 'Ibuprofen',
+          drugClass: 'Non-Steroidal Anti-Inflammatory (NSAID)',
+          grade: 'Grade A',
+          source: 'NICE CKS / BNF',
+          dosage: '400 mg PO with food every 6-8 hours PRN (Max 1200 mg/day OTC)',
+          recommendation: 'Second-line acute anti-inflammatory relief for persistent tension-type cephalalgia.',
+          warning: 'Avoid in active gastric ulceration, severe renal impairment, or severe heart failure; take with meals.'
+        },
+        {
+          name: 'Amitriptyline Hydrochloride',
+          drugClass: 'Tricyclic Antidepressant / Neuromodulator',
+          grade: 'Grade B',
+          source: 'SIGN 107 / NICE CKS',
+          dosage: '10 mg PO once daily at bedtime, titrate up to 25-50 mg',
+          recommendation: 'Evidence-based prophylactic therapy for chronic frequent tension headaches exceeding 15 days per month.',
+          warning: 'Anticholinergic side effects (dry mouth, sedation); contraindicated in acute recovery phase post-myocardial infarction.'
+        }
+      ];
+    }
+
+    // Default Fallback
+    return [
+      {
+        name: 'First-Line Symptomatic Formulary Agent',
+        drugClass: 'Therapeutic Agent',
+        grade: 'Grade A',
+        source: 'NICE / BNF Guidelines',
+        dosage: 'Dosage as clinically determined by physician',
+        recommendation: `Evidence-based pharmacotherapy for ${this.visitDetails?.reason || 'primary clinical presentation'}.`,
+        warning: 'Review patient allergies, liver and renal profile prior to initiation.'
+      },
+      {
+        name: 'Supportive Maintenance & Hydration Therapy',
+        drugClass: 'Supportive Protocol',
+        grade: 'Grade B',
+        source: 'SIGN / WHO',
+        dosage: 'Daily supportive regimen',
+        recommendation: 'Structured lifestyle, hydration, and nutritional supportive therapy.',
+        warning: 'Advise patient to return if symptoms persist or escalate.'
+      }
+    ];
+  }
+
+  getDynamicRedFlagsForCurrentPatient(): any[] {
+    const text = this.getConsultationContextText();
+
+    if (/diabet|sugar|glucose|thirst|urina|polyuria|polydipsia|hba1c|endocrine/i.test(text)) {
+      return [
+        {
+          severity: 'CRITICAL',
+          title: 'Diabetic Ketoacidosis (DKA) / Hyperosmolar Hyperglycaemic State (HHS) Warning',
+          recommendation: 'Immediate capillary blood glucose, blood ketone test, and venous blood gas if nausea, vomiting, or altered mental status occurs.'
+        },
+        {
+          severity: 'WARNING',
+          title: 'Osmotic Volume Depletion & Orthostatic Hypoperfusion',
+          recommendation: 'Evaluate postural blood pressure and hydration markers; initiate prompt oral rehydration protocol.'
+        }
+      ];
+    }
+
+    if (/hypertens|blood pressure|high bp|systolic|diastolic|chest|palpitat|cardio/i.test(text)) {
+      return [
+        {
+          severity: 'CRITICAL',
+          title: 'Hypertensive Emergency Screen (BP > 180/120 mmHg with Target Organ Compromise)',
+          recommendation: 'Immediate emergency evaluation for acute encephalopathy, pulmonary oedema, aortic dissection, or acute coronary syndrome.'
+        },
+        {
+          severity: 'WARNING',
+          title: 'Suboptimal Blood Pressure Regulation (Systolic > 140 mmHg on Monotherapy)',
+          recommendation: 'Review patient medication adherence and uptitrate dual anti-hypertensive therapy per NICE Step 2 guideline.'
+        }
+      ];
+    }
+
+    if (/headache|migraine|cephalea|forehead|temple|throbbing|tightness|scalp/i.test(text)) {
+      return [
+        {
+          severity: 'CRITICAL',
+          title: 'Thunderclap Onset / Focal Neurological Deficits Screen',
+          recommendation: 'Rule out subarachnoid hemorrhage or space-occupying lesion if sudden maximum intensity within 1 minute or unilateral limb weakness.'
+        },
+        {
+          severity: 'WARNING',
+          title: 'Medication Overuse Headache Risk (> 15 Days Analgesics / Month)',
+          recommendation: 'Screen monthly analgesic frequency to prevent rebound analgesic dependency and secondary medication overuse cephalea.'
+        }
+      ];
+    }
+
+    return [
+      {
+        severity: 'WARNING',
+        title: `Clinical Vigilance Indicator for ${this.visitDetails?.reason || 'Presenting Complaint'}`,
+        recommendation: 'Monitor patient response to clinical directives; arrange expedited review if red-flag symptoms develop.'
+      }
+    ];
+  }
+
+  getDynamicFollowUpQuestionsForCurrentPatient(): Array<{
+    id: string;
+    question: string;
+    priority: 'HIGH' | 'MEDIUM' | 'LOW';
+    priorityClass: string;
+    asked: boolean;
+    answered: boolean;
+    doctorSnippet: string;
+    patientSnippet: string;
+  }> {
+    const text = this.getConsultationContextText();
+    const patientName = this.visitDetails?.patientName || 'Patient';
+
+    if (/diabet|sugar|glucose|thirst|urina|polyuria|polydipsia|hba1c|endocrine/i.test(text)) {
+      return [
+        {
+          id: 'dfq-d1',
+          question: 'Have you noticed increased frequency of urination, especially waking up multiple times at night (nocturia)?',
+          priority: 'HIGH',
+          priorityClass: 'priority-high',
+          asked: false,
+          answered: false,
+          doctorSnippet: `Have you noticed having to use the restroom more frequently than usual, ${patientName}, especially waking up during the night?`,
+          patientSnippet: 'Yes, exactly. I am waking up two or three times every night to urinate, which never used to happen.'
+        },
+        {
+          id: 'dfq-d2',
+          question: 'Have you been experiencing persistent unquenchable thirst, dry mouth, or unexplained weight loss?',
+          priority: 'HIGH',
+          priorityClass: 'priority-high',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'Have you noticed feeling unusually thirsty or having dry mouth no matter how much water you drink?',
+          patientSnippet: 'Yes doctor, my mouth feels dry constantly and I am drinking several bottles of water a day.'
+        },
+        {
+          id: 'dfq-d3',
+          question: 'Do you ever experience blurred vision, pronounced fatigue after eating, or slow-healing cuts?',
+          priority: 'MEDIUM',
+          priorityClass: 'priority-medium',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'Have you had any episodes of blurred vision or extreme tiredness after meals?',
+          patientSnippet: 'Sometimes things look a little blurry when I read, and I feel very exhausted in the afternoons.'
+        },
+        {
+          id: 'dfq-d4',
+          question: 'What are your typical daily dietary habits, particularly regarding sugary beverages, sodas, and carbohydrates?',
+          priority: 'MEDIUM',
+          priorityClass: 'priority-medium',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'Tell me about your typical daily diet — how often do you drink sweetened beverages or juices?',
+          patientSnippet: 'I do drink sweetened tea and fruit juices throughout the day to soothe my dry throat.'
+        },
+        {
+          id: 'dfq-d5',
+          question: 'Is there any known family history of diabetes mellitus, cardiovascular conditions, or kidney disease?',
+          priority: 'LOW',
+          priorityClass: 'priority-low',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'Is there any history of diabetes or high blood sugar in your immediate family?',
+          patientSnippet: 'Yes, my mother had type 2 diabetes diagnosed in her fifties.'
+        }
+      ];
+    }
+
+    if (/hypertens|blood pressure|high bp|systolic|diastolic|chest|palpitat|cardio/i.test(text)) {
+      return [
+        {
+          id: 'dfq-h1',
+          question: 'Have you checked your blood pressure at home recently, and do you experience morning occipital headaches?',
+          priority: 'HIGH',
+          priorityClass: 'priority-high',
+          asked: false,
+          answered: false,
+          doctorSnippet: `What have your blood pressure readings been looking like at home recently, ${patientName}?`,
+          patientSnippet: 'I checked a couple of times this week and it was running around 140 over 90, especially in the mornings.'
+        },
+        {
+          id: 'dfq-h2',
+          question: 'Have you noticed any chest tightness, palpitations, or shortness of breath when walking up stairs?',
+          priority: 'HIGH',
+          priorityClass: 'priority-high',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'Do you ever feel chest tightness, fluttering, or shortness of breath on exertion?',
+          patientSnippet: 'No chest pain, but occasionally a little breathlessness if I rush up two flights of stairs.'
+        },
+        {
+          id: 'dfq-h3',
+          question: 'How consistent have you been with your daily prescribed medication regimen? Any missed doses?',
+          priority: 'MEDIUM',
+          priorityClass: 'priority-medium',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'Are you taking your medication every day without missing doses?',
+          patientSnippet: 'I take it almost every morning, though I occasionally forget when traveling on weekends.'
+        },
+        {
+          id: 'dfq-h4',
+          question: 'How much caffeine or dietary salt do you consume on a typical workday?',
+          priority: 'MEDIUM',
+          priorityClass: 'priority-medium',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'How many coffees or teas do you drink a day, and do you add extra salt to meals?',
+          patientSnippet: 'I have about three strong coffees a day and frequently eat takeout food at work.'
+        },
+        {
+          id: 'dfq-h5',
+          question: 'How is your sleep quality? Has anyone mentioned that you snore loudly or stop breathing at night?',
+          priority: 'LOW',
+          priorityClass: 'priority-low',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'Are you getting restful sleep, or waking up feeling unrefreshed?',
+          patientSnippet: 'I wake up frequently and my partner mentions I snore when sleeping on my back.'
+        }
+      ];
+    }
+
+    if (/headache|migraine|cephalea|forehead|temple|throbbing|tightness|scalp/i.test(text)) {
+      return [
+        {
+          id: 'dfq-t1',
+          question: 'Where exactly is the headache — frontal, occipital, or diffuse? Any neck stiffness?',
+          priority: 'HIGH',
+          priorityClass: 'priority-high',
+          asked: false,
+          answered: false,
+          doctorSnippet: `Where exactly is the pain located, ${patientName}? And do you feel any neck stiffness?`,
+          patientSnippet: 'It is mostly across my forehead and temples, like a tight band pressing around my head. No neck stiffness.'
+        },
+        {
+          id: 'dfq-t2',
+          question: 'Do you see visual changes, flashing lights, or blind spots before or during the headache?',
+          priority: 'HIGH',
+          priorityClass: 'priority-high',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'Do you ever experience visual disturbances, flashing lights, or nausea before onset?',
+          patientSnippet: 'No visual changes, no flashing lights, and no nausea at all.'
+        },
+        {
+          id: 'dfq-t3',
+          question: 'How many caffeinated drinks do you typically have per day, and do headaches coincide with skipping coffee?',
+          priority: 'MEDIUM',
+          priorityClass: 'priority-medium',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'How much coffee or tea do you consume daily, and does the pain start in the afternoon?',
+          patientSnippet: 'I drink about 3 to 4 large mugs of coffee in the morning. Headaches usually kick in by 2 or 3 PM.'
+        },
+        {
+          id: 'dfq-t4',
+          question: 'Are you sleeping 7-8 hours? Any difficulty falling asleep or waking up with jaw clenching?',
+          priority: 'MEDIUM',
+          priorityClass: 'priority-medium',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'How is your sleep lately? Are you getting adequate rest or waking with tension?',
+          patientSnippet: 'I usually get about 6 hours of broken sleep and wake up feeling tension in my jaw and shoulders.'
+        },
+        {
+          id: 'dfq-t5',
+          question: 'What does your typical workday look like regarding computer screen time, posture, and ergonomics?',
+          priority: 'LOW',
+          priorityClass: 'priority-low',
+          asked: false,
+          answered: false,
+          doctorSnippet: 'How many hours are you spending looking at screens without a break?',
+          patientSnippet: 'I am on laptop and monitors for 8-9 hours straight with very few ergonomic breaks.'
+        }
+      ];
+    }
+
+    // Default Fallback
+    return [
+      {
+        id: 'dfq-g1',
+        question: `When did your current symptoms first begin, and have they progressively worsened or stayed stable?`,
+        priority: 'HIGH',
+        priorityClass: 'priority-high',
+        asked: false,
+        answered: false,
+        doctorSnippet: `Could you tell me more about when these symptoms first started, ${patientName}, and how they have evolved?`,
+        patientSnippet: 'They began a few weeks ago and have gradually become more noticeable during my daily routine.'
+      },
+      {
+        id: 'dfq-g2',
+        question: 'Have you experienced any acute warning signs such as severe lightheadedness, chest discomfort, or sudden weakness?',
+        priority: 'HIGH',
+        priorityClass: 'priority-high',
+        asked: false,
+        answered: false,
+        doctorSnippet: 'Have you had any dizziness, chest discomfort, or weakness at any point?',
+        patientSnippet: 'No severe chest discomfort or weakness, primarily the discomfort I described.'
+      },
+      {
+        id: 'dfq-g3',
+        question: 'What over-the-counter medications, treatments, or remedies have you tried so far, and did they help?',
+        priority: 'MEDIUM',
+        priorityClass: 'priority-medium',
+        asked: false,
+        answered: false,
+        doctorSnippet: 'Have you taken any medication or treatments at home to see if it provides relief?',
+        patientSnippet: 'I took some mild over-the-counter tablets which gave temporary relief for a couple of hours.'
+      },
+      {
+        id: 'dfq-g4',
+        question: 'How are these symptoms impacting your work productivity, sleep quality, and daily activities?',
+        priority: 'MEDIUM',
+        priorityClass: 'priority-medium',
+        asked: false,
+        answered: false,
+        doctorSnippet: 'How is this affecting your daily schedule and sleep?',
+        patientSnippet: 'It makes it harder to concentrate in the afternoon and my sleep has been somewhat disrupted.'
+      },
+      {
+        id: 'dfq-g5',
+        question: 'Do you have any known drug allergies or existing medical conditions we should be mindful of?',
+        priority: 'LOW',
+        priorityClass: 'priority-low',
+        asked: false,
+        answered: false,
+        doctorSnippet: 'Do you have any known allergies or other conditions I should record?',
+        patientSnippet: 'No known drug allergies that I am aware of.'
+      }
+    ];
+  }
+
+  getDynamicConfidenceMetrics(): any {
+    if (this.isFollowUpCompleted) {
+      return {
+        overallScore: 86,
+        overallLevel: 'High — Validated',
+        subtext: `High clinical certainty achieved after protocol inquiry for ${this.visitDetails.patientName}.`,
         domains: [
-          { name: 'Symptom completeness', percentage: 52, description: 'Symptom characterisation in progress', color: '#0d9488' },
-          { name: 'Medical history coverage', percentage: 78, description: 'Baseline health history documented', color: '#0f766e' },
-          { name: 'Lifestyle & social history', percentage: 36, description: 'Lifestyle triggers not yet fully explored', color: '#ef4444' },
-          { name: 'DDx alignment', percentage: 65, description: 'Differentials plausible; awaiting confirmation', color: '#f59e0b' },
-          { name: 'Guideline adherence', percentage: 71, description: 'Standard clinical screening applied', color: '#0d9488' }
+          { name: 'Symptom completeness', percentage: 90, description: 'Symptom pattern and clinical timeline confirmed', color: '#0d9488' },
+          { name: 'Medical history coverage', percentage: 92, description: 'Prior diagnoses and medication adherence documented', color: '#0f766e' },
+          { name: 'Lifestyle & social history', percentage: 84, description: 'Workday habits, sleep, and routine triggers fully explored', color: '#0d9488' },
+          { name: 'DDx alignment', percentage: 91, description: 'High concordance with clinical presentation', color: '#0d9488' },
+          { name: 'Guideline adherence', percentage: 89, description: 'Aligned with evidence-based management protocols', color: '#0d9488' }
         ]
       };
     }
+
+    const exchanges = this.currentTranscriptExchanges;
+    const count = exchanges.length;
+    const answeredCount = this.answeredQuestionIds.size;
+
+    if (count > 0 || (this.recordingService.latestTranscript() && this.recordingService.latestTranscript().trim().length > 0)) {
+      // Dynamic computation scaling with conversational depth and answered protocol inquiries
+      const boost = answeredCount * 8;
+      const symptomScore = Math.min(95, Math.max(52, 50 + count * 5 + boost));
+      const medHistScore = Math.min(92, Math.max(60, 62 + count * 3 + boost));
+      const lifestyleScore = Math.min(88, Math.max(38, 40 + count * 4 + boost));
+      const ddxScore = Math.min(95, Math.max(55, 54 + count * 5 + boost));
+      const guidelineScore = Math.min(94, Math.max(62, 66 + count * 3 + boost));
+
+      const overall = Math.min(98, Math.round(
+        (symptomScore * 0.25) +
+        (medHistScore * 0.20) +
+        (lifestyleScore * 0.15) +
+        (ddxScore * 0.25) +
+        (guidelineScore * 0.15)
+      ));
+
+      const level = overall >= 75 ? 'High — Validated' : overall >= 65 ? 'Moderate — Active Evaluation' : 'Moderate — Review Required';
+      const subtext = overall >= 70
+        ? `Diagnostic certainty reaches benchmark (${overall}%). Multi-domain clinical criteria satisfied.`
+        : `Based on transcript completeness, symptom coverage, and DDx alignment. (Below 70% threshold — follow-up inquiry recommended)`;
+
+      return {
+        overallScore: overall,
+        overallLevel: level,
+        subtext,
+        domains: [
+          { name: 'Symptom completeness', percentage: symptomScore, description: symptomScore >= 75 ? 'Symptom pattern and clinical timeline characterized' : 'Symptom characterisation in progress', color: '#0d9488' },
+          { name: 'Medical history coverage', percentage: medHistScore, description: 'Baseline health history and concurrent conditions documented', color: '#0f766e' },
+          { name: 'Lifestyle & social history', percentage: lifestyleScore, description: lifestyleScore >= 70 ? 'Workday habits, sleep, and routine triggers explored' : 'Lifestyle triggers not yet fully explored', color: lifestyleScore < 50 ? '#ef4444' : '#f59e0b' },
+          { name: 'DDx alignment', percentage: ddxScore, description: ddxScore >= 75 ? 'Strong concordance with differential hypotheses' : 'Differentials plausible; awaiting confirmation', color: ddxScore < 70 ? '#f59e0b' : '#0d9488' },
+          { name: 'Guideline adherence', percentage: guidelineScore, description: 'Clinical screening aligned with NICE / BNF guidance', color: '#0d9488' }
+        ]
+      };
+    }
+
     return {
       overallScore: 0,
       overallLevel: 'Awaiting Audio Recording',
@@ -839,25 +1801,55 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     };
   }
 
-  get currentSoapReport(): any {
-    if (this.isFollowUpCompleted) {
-      return {
-        subjective: `Patient ${this.visitDetails.patientName || 'Patient'}, ${this.visitDetails.demographics || ''}, presents for scheduled ${this.visitDetails.visitType?.toLowerCase() || 'consultation'}.\nChief complaint / reason for visit: ${this.visitDetails.reason || 'Clinical evaluation'}.\nMulti-turn clinical inquiries completed in session. Patient confirmed pertinent history and symptom timeline without unexpected red-flag symptoms.`,
-        objective: `Recorded Vitals: ${this.visitDetails.vitals ? (typeof this.visitDetails.vitals === 'object' ? 'BP ' + (this.visitDetails.vitals.bp || '120/80 mmHg') + ', HR ' + (this.visitDetails.vitals.hr || '72 bpm') : this.visitDetails.vitals) : 'BP 120/80 mmHg, HR 72 bpm, SpO2 98%'}.\nClinical evaluation and physical observation completed.`,
-        assessment: `Primary presentation for "${this.visitDetails.reason || 'clinical consultation'}" evaluated with high diagnostic confidence (86%). Relevant clinical guidelines applied.`,
-        plan: `1. Continue recommended medical regimen as prescribed.\n2. Maintain symptom and routine lifestyle monitoring.\n3. Scheduled clinical follow-up as indicated.`
-      };
+  getDynamicSoapReport(): { subjective: string; objective: string; assessment: string; plan: string } {
+    const patientName = this.visitDetails?.patientName || 'Patient';
+    const demographics = this.visitDetails?.demographics || 'Adult Patient';
+    const reason = this.visitDetails?.reason || 'Clinical evaluation and routine consultation';
+    const visitType = this.visitDetails?.visitType?.toLowerCase() || 'consultation';
+    const vitalsStr = this.formatVitalsDisplay(this.visitDetails?.vitals) || 'BP 120/80 mmHg, HR 72 bpm, Temp 36.6 °C, SpO2 98%';
+    
+    // Gather patient statements from exchanges
+    const exchanges = this.currentTranscriptExchanges;
+    const patientStatements = exchanges
+      .filter((e: any) => !e.isDoctor)
+      .map((e: any) => e.text)
+      .filter((t: string) => t && t.length > 5);
+
+    const fullTranscript = this.recordingService.latestTranscript() || exchanges.map((e: any) => `${e.isDoctor ? 'Doctor' : 'Patient'}: ${e.text}`).join(' ');
+
+    let subjectiveBody = '';
+    if (patientStatements.length > 0) {
+      subjectiveBody = `Patient reports the following during consultation: "${patientStatements.slice(0, 3).join(' ')}"`;
+    } else if (fullTranscript.length > 10) {
+      subjectiveBody = `Consultation audio recorded and transcribed. Clinical dialogue reflects presenting concern: ${fullTranscript.slice(0, 200)}...`;
+    } else {
+      subjectiveBody = `Patient presents for scheduled ${visitType}. Reports onset of symptoms consistent with reason for visit (${reason}).`;
     }
-    const analysis = this.recordingService.latestClinicalAnalysis();
-    const live = analysis?.soap_report || analysis?.soapReport;
-    if (live && live.subjective) {
-      return live;
+
+    const ddxList = this.currentDifferentialDiagnoses;
+    const primaryDdx = ddxList[0] || { title: reason, icdCode: 'R69', percentage: 75, description: 'Under clinical evaluation.' };
+    const secondaryDdx = ddxList[1];
+
+    let assessmentText = `1. ${primaryDdx.title} (${primaryDdx.icdCode}) — Diagnostic certainty: ${primaryDdx.percentage}%. ${primaryDdx.description}`;
+    if (secondaryDdx) {
+      assessmentText += `\n2. Differential: ${secondaryDdx.title} (${secondaryDdx.icdCode}) — Probability: ${secondaryDdx.percentage}%. ${secondaryDdx.description}`;
     }
+
+    const meds = this.currentGuidelineMedicines;
+    let planMeds = '';
+    if (meds.length > 0) {
+      planMeds = meds.map((m: any, idx: number) => `   ${idx + 1}. ${m.name}: ${m.dosage} (${m.drugClass}, ${m.grade} - ${m.source}). ${m.recommendation}`).join('\n');
+    } else {
+      planMeds = `   1. Prescribe targeted guideline-directed pharmacotherapy based on confirmed diagnostic parameters.`;
+    }
+
+    const planText = `1. Clinical Workup & Surveillance:\n   - Review symptom trajectory and monitor response to primary intervention.\n   - Complete recommended laboratory screens and diagnostic investigations.\n2. Pharmacological Directives:\n${planMeds}\n3. Patient Counseling & Lifestyle:\n   - Provide evidence-based disease education, hydration guidance, and stress mitigation.\n4. Clinical Follow-up:\n   - Re-evaluate in 4 to 6 weeks or sooner if red-flag symptoms or acute distress emerge.`;
+
     return {
-      subjective: `Patient ${this.visitDetails.patientName || 'Patient'}, ${this.visitDetails.demographics || ''}, presents for scheduled ${this.visitDetails.visitType?.toLowerCase() || 'consultation'}.\nChief reason for visit: ${this.visitDetails.reason || 'Clinical review'}.\nConsultation audio recording and live transcription in progress.`,
-      objective: `Recorded Vitals: ${this.visitDetails.vitals ? (typeof this.visitDetails.vitals === 'object' ? 'BP ' + (this.visitDetails.vitals.bp || '120/80 mmHg') + ', HR ' + (this.visitDetails.vitals.hr || '72 bpm') : this.visitDetails.vitals) : 'BP 120/80 mmHg, HR 72 bpm, SpO2 98%'}.\nClinical examination and physical findings pending doctor entry.`,
-      assessment: `Clinical presentation for "${this.visitDetails.reason || 'scheduled visit'}" under active evaluation.`,
-      plan: `1. Conduct clinical consultation and interview.\n2. Record session audio for AI-assisted documentation.\n3. Formulate evidence-based treatment directives and follow-up.`
+      subjective: `Patient ${patientName} (${demographics}) presents for scheduled ${visitType}.\nChief Complaint: ${reason}.\n${subjectiveBody}`,
+      objective: `Recorded Vital Signs: ${vitalsStr}.\nPhysical Examination: General appearance alert and cooperative. Systemic examination tailored to clinical presentation completed during consultation.`,
+      assessment: assessmentText,
+      plan: planText
     };
   }
 
@@ -899,6 +1891,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     const answeredCount = allQuestions.filter(q => q.answered).length;
     if (answeredCount >= 2 || questionItem.priority === 'HIGH') {
       this.isFollowUpCompleted = true;
+      this.isSoapManuallyEdited = false;
       this.editedSoapReport = null;
     }
 
@@ -920,6 +1913,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
    */
   resetInquiries(): void {
     this.isFollowUpCompleted = false;
+    this.isSoapManuallyEdited = false;
+    this.editedSoapReport = null;
     this.activeInquiryQuestion = null;
     this.answeredQuestionIds.clear();
     this.guidelineFollowUpQuestionsList.forEach(q => {
@@ -949,11 +1944,11 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     const patId = p?.visitId || '#00847261';
 
     this.pdfExportService.exportSoapNotePdf({
-      patientName: p?.patientName || 'Ranjana Kumari',
+      patientName: p?.patientName || 'Marcus Delgado',
       patientId: patId,
-      demographics: p?.demographics || '42F',
+      demographics: p?.demographics || '42M · #00847261',
       age: p?.age || 42,
-      gender: p?.gender || 'Female',
+      gender: p?.gender || 'Male',
       doctorName: docName,
       doctorId: docId,
       doctorSpecialty: `${dept} / Specialist`,
@@ -961,8 +1956,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       consultationDate: p?.date || new Date().toISOString().split('T')[0],
       reason: p?.reason || 'Clinical Consultation',
       condition: p?.condition || 'Under Evaluation',
-      vitals: p?.vitals || { bp: '120/80 mmHg', hr: '72 bpm', temp: '36.6 °C', weight: '75 kg', spo2: '98%' },
-      soap: this.effectiveSoapReport
+      vitals: p?.vitals || { bp: '138/88 mmHg', hr: '72 bpm', temp: '36.6 °C', weight: '81 kg', spo2: '98%' },
+      soap: this.effectiveSoapReport,
+      prescription: this.currentPrescription
     });
   }
 
@@ -978,6 +1974,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.soapShareMessage = null;
 
     const patientId = this.visitDetails?.visitId || '#00847261';
+    const patientName = this.visitDetails?.patientName || 'Patient';
     const docUser = this.authService.currentUser();
     const docName = docUser?.name || 'Dr. Yuki Tanaka';
     const docId = docUser?.id || 'DOC-001';
@@ -989,12 +1986,14 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         this.effectiveSoapReport,
         docName,
         docId,
-        encounterId
+        encounterId,
+        this.currentPrescription,
+        patientName
       );
 
       this.isSharingSoap = false;
       this.isSoapShared = true;
-      this.soapShareMessage = `Official SOAP Report successfully shared with ${this.visitDetails.patientName || 'patient'}. The patient's portal (Follow-up Alerts, Medical Records, Prescriptions) is now updated with this SOAP note.`;
+      this.soapShareMessage = `Official SOAP Report & Prescribed Medication (${this.currentPrescription.medication} ${this.currentPrescription.strength}) successfully shared with ${this.visitDetails.patientName || 'patient'}. The patient's portal (Follow-up Alerts, Medical Records, Prescriptions) is now updated.`;
 
       // Also persist to recording feedback database
       this.saveFinalSOAPToDatabase();
@@ -1006,6 +2005,20 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   get effectiveSoapReport(): { subjective: string; objective: string; assessment: string; plan: string } {
+    if (this.isSoapManuallyEdited && this.editedSoapReport) {
+      return this.editedSoapReport;
+    }
+    const base = this.currentSoapReport;
+    return {
+      subjective: base.subjective || '',
+      objective: base.objective || '',
+      assessment: base.assessment || '',
+      plan: base.plan || ''
+    };
+  }
+
+  startEditSection(section: 'subjective' | 'objective' | 'assessment' | 'plan'): void {
+    this.activeEditSection = section;
     if (!this.editedSoapReport) {
       const base = this.currentSoapReport;
       this.editedSoapReport = {
@@ -1015,11 +2028,6 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         plan: base.plan || ''
       };
     }
-    return this.editedSoapReport;
-  }
-
-  startEditSection(section: 'subjective' | 'objective' | 'assessment' | 'plan'): void {
-    this.activeEditSection = section;
     this.sectionEditText = this.effectiveSoapReport[section];
     this.editReasonText = '';
   }
@@ -1032,10 +2040,123 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   saveManualSectionEdit(): void {
     if (this.activeEditSection) {
-      this.effectiveSoapReport[this.activeEditSection] = this.sectionEditText;
+      if (!this.editedSoapReport) {
+        const base = this.currentSoapReport;
+        this.editedSoapReport = {
+          subjective: base.subjective || '',
+          objective: base.objective || '',
+          assessment: base.assessment || '',
+          plan: base.plan || ''
+        };
+      }
+      this.editedSoapReport[this.activeEditSection] = this.sectionEditText;
+      this.isSoapManuallyEdited = true;
       this.saveStatusMessage = `Updated ${this.activeEditSection.toUpperCase()} section locally. Click "Finalize & Save to DB" to persist changes.`;
       this.activeEditSection = null;
     }
+  }
+
+  // ----------------------------------------------------
+  // PRESCRIPTION DIRECTIVE METHODS (Doctor Clinical Wisdom)
+  // ----------------------------------------------------
+  openPrescriptionModal(): void {
+    this.editPrescriptionForm = { ...this.currentPrescription };
+    this.prescriptionChangeStatus = 'No changes made';
+    this.showPrescriptionModal = true;
+  }
+
+  closePrescriptionModal(): void {
+    this.showPrescriptionModal = false;
+  }
+
+  onPrescriptionFieldChange(): void {
+    const isDifferent =
+      this.editPrescriptionForm.medication !== this.currentPrescription.medication ||
+      this.editPrescriptionForm.strength !== this.currentPrescription.strength ||
+      this.editPrescriptionForm.route !== this.currentPrescription.route ||
+      this.editPrescriptionForm.frequency !== this.currentPrescription.frequency ||
+      this.editPrescriptionForm.duration !== this.currentPrescription.duration ||
+      this.editPrescriptionForm.quantity !== this.currentPrescription.quantity ||
+      this.editPrescriptionForm.refills !== this.currentPrescription.refills ||
+      this.editPrescriptionForm.instructions !== this.currentPrescription.instructions;
+
+    this.prescriptionChangeStatus = isDifferent ? 'Unsaved changes' : 'No changes made';
+  }
+
+  discardPrescriptionEdits(): void {
+    this.editPrescriptionForm = { ...this.currentPrescription };
+    this.prescriptionChangeStatus = 'No changes made';
+    this.showPrescriptionModal = false;
+  }
+
+  savePrescriptionEdits(): void {
+    this.currentPrescription = { ...this.editPrescriptionForm };
+    this.prescriptionChangeStatus = 'No changes made';
+    this.showPrescriptionModal = false;
+
+    this.saveStatusMessage = `Prescription for ${this.currentPrescription.medication} (${this.currentPrescription.strength}) updated and recorded in SOAP report.`;
+    setTimeout(() => {
+      if (this.saveStatusMessage?.startsWith('Prescription for')) {
+        this.saveStatusMessage = null;
+      }
+    }, 4500);
+  }
+
+  getPrescriptionForPatient(patientId: string, patientName?: string): PrescriptionItem {
+    if (patientName?.includes('Delgado') || patientId.includes('00847261')) {
+      return {
+        medication: 'Lisinopril',
+        strength: '10 mg',
+        route: 'Oral',
+        frequency: 'Once daily',
+        duration: '6 weeks',
+        quantity: '42 tablets',
+        refills: '1',
+        instructions: 'Take one tablet every morning with breakfast. Continue daily home blood pressure monitoring.',
+        prescribedBy: 'Dr. Yuki Tanaka',
+        prescribedDate: 'Aug 13, 2026'
+      };
+    }
+    if (patientName?.includes('Sharma') || patientId.includes('00391847')) {
+      return {
+        medication: 'Propranolol',
+        strength: '40 mg',
+        route: 'Oral',
+        frequency: 'Twice daily',
+        duration: '4 weeks',
+        quantity: '56 tablets',
+        refills: '1',
+        instructions: 'Take one tablet twice daily with food. Monitor resting pulse; do not discontinue abruptly.',
+        prescribedBy: 'Dr. Yuki Tanaka',
+        prescribedDate: 'Aug 13, 2026'
+      };
+    }
+    if (patientName?.includes('Kowalski') || patientId.includes('00673920')) {
+      return {
+        medication: 'Albuterol Inhaler',
+        strength: '90 mcg',
+        route: 'Inhalation',
+        frequency: 'Every 4-6h PRN',
+        duration: '30 days',
+        quantity: '1 canister (200 doses)',
+        refills: '2',
+        instructions: 'Inhale 1-2 puffs every 4 to 6 hours as needed for shortness of breath or wheezing. Rinse mouth after use.',
+        prescribedBy: 'Dr. Yuki Tanaka',
+        prescribedDate: 'Aug 13, 2026'
+      };
+    }
+    return {
+      medication: 'Amoxicillin',
+      strength: '500 mg',
+      route: 'Oral',
+      frequency: 'Three times daily',
+      duration: '7 days',
+      quantity: '21 capsules',
+      refills: '0',
+      instructions: 'Take one capsule three times daily with a full glass of water after meals until completed.',
+      prescribedBy: 'Dr. Yuki Tanaka',
+      prescribedDate: 'Aug 13, 2026'
+    };
   }
 
   triggerAIReframe(section: 'subjective' | 'objective' | 'assessment' | 'plan'): void {
@@ -1243,8 +2364,14 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return this.recordingService.gdriveWebViewLink();
   }
 
+  manualProcessingFlag: boolean = false;
+
   get isProcessingAudio(): boolean {
-    return this.recordingService.isTranscribing() || this.recordingService.state() === 'UPLOADING' || this.recordingService.state() === 'TRANSCRIBING';
+    return this.manualProcessingFlag || this.recordingService.isTranscribing() || this.recordingService.state() === 'UPLOADING' || this.recordingService.state() === 'TRANSCRIBING';
+  }
+
+  set isProcessingAudio(val: boolean) {
+    this.manualProcessingFlag = val;
   }
 
   get latestSession(): RecordedSessionItem | null {

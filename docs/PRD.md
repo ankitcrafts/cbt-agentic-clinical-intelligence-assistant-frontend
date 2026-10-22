@@ -94,12 +94,17 @@ sequenceDiagram
   * **Clinical Analysis Report** (Detailed physician-facing record).
   * **SOAP Note & Aftercare Report** (Patient-facing summary).
 * **FR-3.4:** Automated cloud backup to Google Drive with shareable preview links.
+* **FR-3.5:** Physician Wisdom Prescription Directives & Interactive Modal: Dedicated Prescription card positioned at the bottom of the SOAP Report tab (below Plan), enabling clinicians to prescribe medications based on their own judgment. Clicking the card opens an "Edit prescription" modal supporting medication, strength, route, frequency, duration, quantity, refills, instructions, and review alerts. Directives are automatically integrated into exported PDF reports and synchronized with the patient portal.
+* **FR-3.6:** Doctor Consultation Export (Download PDF), Dedicated Print, & Patient Portal Prescription & SOAP Note Sharing Synchronization: Enables attending physicians to export official signed clinical consultation reports as formatted PDFs with integrated medication directives; provides dedicated print views via browser printing hiding non-clinical UI chrome; and enables instantaneous sharing with the patient portal so patients can view their official SOAP notes and prescribed medication directives with structured chips upon sign-in or real-time broadcast.
+* **FR-3.7:** Clinical Vitals Formatting & Braces Prevention: Clinical vitals in KEY FINDINGS and Objective SOAP sections must display as standardized, formatted clinical metrics (`BP: 120/80 mmHg · HR: 72 bpm · SpO2: 98% · Blood Sugar: ...`) and never render raw stringified JSON objects (`{}`) or raw braces. If dialogue lacks vitals, intake triage vitals or baseline metrics are formatted cleanly.
+* **FR-3.8:** Dynamic 5-Tab CDS Rendering Across Teleconsultation Channels: For remote audio channels (MS Teams, Google Meet, WhatsApp) and pre-recorded files, after transcription completes, all Clinical Decision Support tabs (Clinical Decision, Confidence, Follow-up, Medicines, SOAP Report) must dynamically render dialogue-derived clinical data. Client and service pipelines synthesize accurate differential hypotheses (Diabetes, Hypertension, Tension Headache, Respiratory), RAG medications, 5-domain confidence breakdowns, and dialogue-grounded SOAP reports matching the active patient presentation.
 
 ### 5.4 Scheduling, Multi-Role Portals & Authentication
 * **FR-4.1:** Passwordless authentication utilizing Gmail SMTP 6-digit OTP delivery.
 * **FR-4.2:** Role-based access control (RBAC) with three distinct views: `DOCTOR`, `PATIENT`, and `ADMIN`.
 * **FR-4.3:** Interactive appointment scheduling grid with doctor availability slots, buffer management, and status lifecycle (`SCHEDULED`, `COMPLETED`, `CANCELLED`).
 * **FR-4.4:** Fresh State Initialization on Session Scheduling: Whenever a new session or next session appointment is scheduled/rescheduled with any doctor, or when clicking "New Session", the dialogue transcript, AI suggestions, and all 5 CDS tabs automatically reset to a clean, patient-specific intake state without retaining stale audio or drafts from previous sessions.
+* **FR-4.5:** Polymorphic AI Suggestions Resolution & Encounter History Fidelity: Real-time autonomous AI suggestions (prompts, red-flag warnings, and clinical inquiries) must reliably display across both active live consultations and past session history reviews, automatically resolving text and priority metadata regardless of storage schema variations (`{title, description}` vs `{id, type, tag, text}`).
 
 ---
 
@@ -128,3 +133,12 @@ sequenceDiagram
 * **Diagnostic Agreement:** $\ge 90\%$ concordance between AI differential suggestions and attending physician's final assessment.
 * **Transcription Word Error Rate (WER):** $< 8\%$ on medical terminology and physician dictation.
 * **User Adoption & Satisfaction:** Physician Net Promoter Score (NPS) $> 60$.
+
+---
+
+## 8. Production Deployment & Cloudflare Zero Trust Ingress
+* **FR-8.1 Zero Trust Protected Host:** Production deployment hosted on Ubuntu 24.04 server `ubtsrv01` at internal IP `172.16.17.181`, accessible securely across the Cloudflare Zero Trust gateway (`cbtlab.cloudflareaccess.com`) with WARP virtual client interface (`10.64.20.180`).
+* **FR-8.2 Full-Stack Container Orchestration:** Orchestrated with Docker Compose v2 across 4 isolated microservices (`cliniq-frontend-prod`, `cliniq-backend-prod`, `cliniq-postgres-prod`, `cliniq-redis-prod`).
+* **FR-8.3 Single-Origin Unified Ingress:** Single ingress port 80 handled by Nginx reverse proxy serving the Angular 19 SPA and routing API, RAG, and health endpoints to the backend with zero CORS issues.
+* **FR-8.4 Automated Telemetry Verification:** Real-time `/health` telemetry endpoint monitoring database health, tracing, and storage persistence. All 6 automated deployment tests verified passing (100%).
+

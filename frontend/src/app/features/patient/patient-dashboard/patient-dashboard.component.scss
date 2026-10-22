@@ -370,6 +370,89 @@
       &.section-o .section-letter-circle { background: #0d9488; }
       &.section-a .section-letter-circle { background: #d97706; }
       &.section-p .section-letter-circle { background: #059669; }
+
+      &.section-prescription {
+        border-color: rgba(34, 197, 94, 0.4);
+        background: rgba(240, 253, 244, 0.7);
+
+        .rx-badge-circle {
+          background: #16a34a;
+          color: #ffffff;
+        }
+
+        .rx-prescribed-box {
+          margin-top: 0.85rem;
+          padding: 1rem 1.15rem;
+          background: var(--card-bg, #ffffff);
+          border: 1.5px solid #86efac;
+          border-radius: 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+
+          .rx-box-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+
+            .rx-med-name {
+              font-size: 1.05rem;
+              font-weight: 700;
+              color: #065f46;
+            }
+
+            .rx-route-badge {
+              font-size: 0.775rem;
+              font-weight: 600;
+              padding: 0.2rem 0.65rem;
+              background: #dcfce7;
+              color: #15803d;
+              border: 1px solid #86efac;
+              border-radius: 9999px;
+            }
+          }
+
+          .rx-box-details {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+
+            .rx-pill-item {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.4rem;
+              font-size: 0.825rem;
+              color: var(--text-muted, #334155);
+              font-weight: 500;
+
+              i {
+                color: #16a34a;
+              }
+            }
+          }
+
+          .rx-box-instructions {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.825rem;
+            color: var(--text-main, #1e293b);
+            background: rgba(240, 253, 250, 0.75);
+            padding: 0.65rem 0.85rem;
+            border-radius: 8px;
+            border-left: 3px solid #16a34a;
+            line-height: 1.5;
+
+            i {
+              color: #0d9488;
+              margin-top: 0.15rem;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -1425,5 +1508,42 @@
     }
   }
 }
+
+:host-context([data-theme="dark"]),
+:host-context(.dark) {
+  .soap-detail-section.section-prescription {
+    border-color: rgba(34, 197, 94, 0.3) !important;
+    background: rgba(6, 78, 59, 0.2) !important;
+
+    .rx-prescribed-box {
+      background: #0f172a !important;
+      border-color: rgba(34, 197, 94, 0.35) !important;
+
+      .rx-box-header .rx-med-name {
+        color: #34d399 !important;
+      }
+      .rx-box-header .rx-route-badge {
+        background: rgba(6, 95, 70, 0.4) !important;
+        border-color: rgba(52, 211, 153, 0.4) !important;
+        color: #6ee7b7 !important;
+      }
+      .rx-box-details .rx-pill-item {
+        color: #94a3b8 !important;
+      }
+      .rx-box-instructions {
+        background: rgba(15, 23, 42, 0.8) !important;
+        color: #e2e8f0 !important;
+        border-left-color: #10b981 !important;
+      }
+    }
+  }
+
+  .rx-directives-chips .rx-chip {
+    background: rgba(6, 95, 70, 0.3) !important;
+    border-color: rgba(52, 211, 153, 0.3) !important;
+    color: #6ee7b7 !important;
+  }
+}
+
 
 

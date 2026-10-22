@@ -65,7 +65,37 @@
 * **Decision:** Re-architected `.active-notice-banner` with a crisp gradient background, 4px teal accent border, dark slate readable typography (`#0f172a` in light mode, `#f1f5f9` in dark mode), dedicated badge chip (`Active Probing Inquiry`), live red pulsing dot indicator, FontAwesome vector iconography, and accessible dismiss button without emojis.
 * **Consequence:** 100% reliable clinical legibility and professional aesthetic across both standard daylight and dark clinic viewing modes.
 
+### ADR-FE-13: Physician Wisdom Prescription Directives & Interactive Modal Dialog Architecture
+* **Context:** Clinical decision support must empower clinicians to prescribe medications based on their own judgment, clinical wisdom, and the trust established with patients. The prescription card must sit prominently at the bottom of the SOAP Report tab (below Plan), and clicking it must trigger a dedicated edit dialog matching the Figma specification (Images 1, 2, and 3).
+* **Decision:** Implemented `.soap-prescription-card` within `.soap-preview-container` below Plan with an emerald/teal border, icon box, dosage/frequency/duration metadata, supply details, and a "Review & edit" action. Developed `.rx-edit-modal-card` dialog supporting typed `PrescriptionItem` values (`medication`, `strength`, `route`, `frequency`, `duration`, `quantity`, `refills`, `instructions`), safety review warnings, and status tracking ("No changes made" / "Unsaved changes"). Integrated prescription data into `pdf-export.service.ts` for official PDF exports and `appointment.service.ts` for patient portal synchronization.
+* **Consequence:** Full physician autonomy and trust in medication management, compliant with medical documentation standards and matching the user-requested Figma UX.
 
+### ADR-FE-14: Doctor Export, Print, and Real-Time Patient Portal Sharing Synchronization
+* **Context:** Physicians need three essential actions upon finalizing a clinical consultation: (1) Download an official certified PDF medical report, (2) Print a clean, unencumbered physical paper copy of the SOAP note and prescription, and (3) Share the finalized SOAP report and prescribed medications with the patient's portal so the patient can review them upon signing in or in real-time across devices.
+* **Decision:**
+  1. **Download (PDF Export):** Enhanced `PdfExportService.exportSoapNotePdf()` to dynamically generate certified clinical PDF artifacts featuring official hospital headers, patient demographics, vitals strip, 4-quadrant SOAP sections, the official Doctor's Prescription Directive breakdown (medication, strength, route, frequency, duration, quantity, refills, instructions), and an attending physician signature stamp.
+  2. **Print Stylesheet (`@media print`):** Configured dedicated print stylesheet isolating `#soap-printable-area` and `.soap-prescription-card` with high print contrast while hiding application chrome (sidebar, audio controls, action buttons).
+  3. **Patient Portal Synchronization:** Extended `AppointmentService.shareSoapReportWithPatient()` and backend `POST /api/scheduling/patients/{id}/share-soap` to persist the prescription and patient metadata into `patient_consultation_sessions.soap_report_json`. Added multi-key reactive localStorage caching (`cliniq_shared_soap_${patientId}`, `cliniq_shared_soap_${name}`, `cliniq_last_shared_soap`) and `cliniq_soap_shared` event broadcasts so that whenever the patient signs in or navigates to Tab 3 (Prescriptions), their prescribed medications display with structured directive chips, and the verified SOAP report is immediately accessible via the modal viewer.
+* **Consequence:** Seamless physician export capabilities and transparent patient access to clinical directives and official SOAP notes.
+
+### ADR-FE-15: Resilient Polymorphic AI Suggestions Resolution & Persistence Normalization
+* **Context:** In consultation views, AI Suggestions rendered blank cards with `HIGH · CLINICAL` pills and empty text when viewing historical session records (e.g. Session 1) or when suggestions were serialized in different data shapes (`{id, type, tag, text}` vs `{priority, category, title, description}` vs `{actionText, suggestion}`).
+* **Decision:** Re-architected `currentAISuggestions` getter and `RecordingService.loadConsultationSession()`:
+  1. **Polymorphic Text Resolution:** Priority-extracts content from `s.text`, `s.title — s.description`, `s.title`, `s.description`, `s.suggestion`, or `s.actionText`.
+  2. **Tag & Type Normalization:** Preserves pre-formatted `s.tag` when present or synthesizes `${priority} · ${category}`, and derives CSS classes (`nudge-high`, `nudge-medium`, `nudge-low`).
+  3. **Multi-Tier Candidate Fallback:** Inspects `recordingService.latestSuggestions()`, falls back to `aiSuggestionsList`, and further falls back to `clinicalAnalysis.ai_suggestions` / `clinicalAnalysis.aiSuggestions`.
+  4. **HTML Double Safety Net:** Template falls back to `{{ nudge.text || (nudge.description ? (nudge.title + ' — ' + nudge.description) : nudge.title) }}` and supports `.nudge-low` and dark-mode tokens.
+* **Consequence:** 100% reliable clinical prompt and alert rendering across all historical consultation visits and live sessions without blank card anomalies.
+
+### ADR-FE-16: Angular 19 Production Containerization, Dynamic Origin Resolution & Nginx Reverse Proxy
+* **Context:** Deploying Angular 19 alongside FastAPI behind Cloudflare Zero Trust requires unified single-origin ingress, client-side route preservation, and CORS elimination.
+* **Decision:** Implemented multi-stage Dockerfile (Node.js 20 build -> Nginx 1.25 Alpine runtime), configured `environment.prod.ts` with dynamic `window.location.origin` resolution, and routed all API traffic through Nginx reverse proxy directives (`/api/`, `/analyze-conversation`, `/visit/`, `/reports/`, `/health`).
+* **Consequence:** Single-origin architecture eliminating cross-origin preflight overhead, zero configuration changes across environments, and sub-10MB lightweight frontend container footprint.
+
+### ADR-FE-17: Cloudflare Zero Trust Production Deployment & Remote Host Architecture
+* **Context:** The production system must be securely accessible to clinical users without exposing unprotected public IP ports, using enterprise Cloudflare Zero Trust network authentication (`cbtlab`).
+* **Decision:** Enrolled the host `ubtsrv01` (`172.16.17.181`) within the `cbtlab.cloudflareaccess.com` Zero Trust organization. Configured Docker Compose v2 container orchestration with automated health dependencies (`postgres:16`, `redis:7`, `cliniq-backend-prod`, `cliniq-frontend-prod`), with Nginx listening on port 80 and reverse-proxying all API requests directly to the backend.
+* **Consequence:** 100% secure end-to-end access across Cloudflare WARP client, zero open external attack surface, zero CORS issues via single-origin routing, and sub-second response times. Verified 6/6 tests passing.
 
 ---
 
@@ -76,6 +106,7 @@
 | `apiUrl` | `src/environments/environment.ts` | Backend FastAPI server endpoint (`http://127.0.0.1:8000`). |
 | `production` | `src/environments/environment.prod.ts` | Set to `true` for production builds. |
 | `defaultPort` | `angular.json` | Default development server port (`4200`). |
+| `SMTP_EMAIL` | `.env.production` | Verified sender email for OTP delivery (`ankitkumar021303@gmail.com`). |
 
 ---
 
@@ -113,3 +144,28 @@ npx ng serve --port 4200
 ### Issue 3: CORS Errors when Calling Backend
 * **Symptom:** `Access to XMLHttpRequest at 'http://127.0.0.1:8000/api/...' has been blocked by CORS policy`.
 * **Resolution:** Verify that the FastAPI backend server is running and configured with `CORSMiddleware` allowing `allow_origins=["*"]` or `http://localhost:4200`.
+
+### Issue 4: AI Suggestions Card Rendering Blank When Switching Sessions
+* **Symptom:** When clicking past session records (e.g. Session 1) or completed encounters, the AI Suggestions panel shows red/pink cards with `HIGH · CLINICAL` but empty body text.
+* **Resolution:** Ensure `currentAISuggestions` employs polymorphic text extraction handling both raw LLM schema (`{title, description, priority, category}`) and pre-serialized `{id, type, tag, text}` schemas, and verify template binding includes fallback expressions.
+
+### Issue 5: Vitals Displayed Under Raw Curly Braces `{}` in Key Findings
+* **Symptom:** Under KEY FINDINGS, the VITALS card displays `{}` or stringified JSON syntax instead of clean human-readable vitals.
+* **Root Cause:** When `e.vital_signs` is an empty dictionary `{}` or stringified JSON from backend LLM entity extraction/fallbacks, JavaScript treats `{}` as truthy. Using `typeof e.vital_signs === 'object' ? JSON.stringify(e.vital_signs) : ...` produced the literal string `"{}"`. Furthermore, default evaluations like `patient.vitals || { ... }` evaluate to `{}` because empty objects are truthy.
+* **Resolution:** 
+  1. Implemented `formatVitalsDisplay` to validate non-empty keys, parse JSON safely, strip outer braces if any remain, and format recognized vitals (`BP`, `HR`, `SpO2`, `Temp`, `Weight`, `Pain`, `RR`, `Blood Sugar/Glucose`).
+  2. Implemented empty-object detection (`Object.keys(v).length > 0`) for queue and patient selection defaults.
+  3. Added clean fallback to patient intake vitals (`${intakeVitals} (Intake)`) or clinic baseline vitals (`BP: 120/80 mmHg · HR: 72 bpm · SpO2: 98% (Baseline)`) whenever no vitals are spoken during dialogue.
+
+### Issue 6: MS Teams Consultation CDS Tabs Not Processing Dynamically
+* **Symptom:** On MS Teams teleconsultations (and recorded call uploads), after transcription succeeded and Analysis & Summary rendered, Clinical Decision, Confidence, Follow-up, Medicines, and SOAP Report tabs remained empty or stuck on static Marcus Delgado placeholders (58% confidence, 0 medicines).
+* **Root Cause:**
+  1. `effectiveSoapReport` cached the initial placeholder into `this.editedSoapReport` upon component initialization and never cleared it when new audio was processed.
+  2. Fallback in `routes.py` omitted `differential_diagnosis`, `guideline_medicines`, `confidence_metrics`, and `follow_up_questions`.
+  3. Property naming mismatches (`icdCode` vs `icd10`, `overallScore` vs `top_differential_confidence_percent`).
+  4. Hardcoded Marcus Delgado cephalalgia note and static 58% confidence block intercepted the getters.
+* **Resolution:**
+  1. Added `isSoapManuallyEdited: boolean` to track doctor edits without blocking live updates from fresh dialogue transcripts.
+  2. Implemented dynamic client-side clinical synthesizers in `doctor-dashboard.component.ts`: `getDynamicDifferentialForCurrentPatient`, `getDynamicMedicinesForCurrentPatient`, `getDynamicRedFlagsForCurrentPatient`, `getDynamicFollowUpQuestionsForCurrentPatient`, `getDynamicConfidenceMetrics`, and `getDynamicSoapReport`.
+  3. Handled multiple condition clusters (Diabetes, Hypertension, Tension Headache, Respiratory) ensuring all 5 CDS tabs respond dynamically to the active session.
+

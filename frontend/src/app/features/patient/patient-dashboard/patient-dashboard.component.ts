@@ -156,17 +156,24 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
     } finally {
       // Check localStorage for offline/immediate sync fallback
       try {
-        const localSharedRaw = localStorage.getItem('cliniq_last_shared_soap') || localStorage.getItem(`cliniq_shared_soap_${this.patientProfile.mrn}`);
+        const localSharedRaw =
+          localStorage.getItem('cliniq_last_shared_soap') ||
+          (this.patientProfile.mrn ? localStorage.getItem(`cliniq_shared_soap_${this.patientProfile.mrn}`) : null) ||
+          (this.patientProfile.mrn ? localStorage.getItem(`cliniq_shared_soap_${this.patientProfile.mrn.replace('#', '')}`) : null) ||
+          (this.patientProfile.name ? localStorage.getItem(`cliniq_shared_soap_${this.patientProfile.name.toLowerCase().replace(/\s+/g, '_')}`) : null);
+
         if (localSharedRaw) {
           const localShared = JSON.parse(localSharedRaw);
           if (localShared?.soapReport) {
             this.hasSharedSoap = true;
+            const rxData = localShared.prescription || localShared.soapReport?.prescription || null;
             this.latestSharedSoap = {
               ...localShared.soapReport,
-              doctorName: localShared.doctorName || this.lastConsultation?.doctorName || 'Dr. Ankit Kumar',
-              date: new Date().toISOString().split('T')[0],
-              patientName: this.patientProfile.name || currentUser?.name || 'Abdul Jabbar',
-              mrn: this.patientProfile.mrn || currentUser?.id || 'PAT-4963'
+              prescription: rxData,
+              doctorName: localShared.doctorName || localShared.soapReport.doctorName || this.lastConsultation?.doctorName || 'Dr. Yuki Tanaka',
+              date: localShared.soapReport.date || new Date().toISOString().split('T')[0],
+              patientName: this.patientProfile.name || localShared.patientName || currentUser?.name || 'Patient',
+              mrn: this.patientProfile.mrn || localShared.patientId || currentUser?.id || 'PAT-1245'
             };
           }
         }
@@ -250,6 +257,33 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
             soapReport: this.latestSharedSoap || this.lastConsultation?.soapReport
           }
         ];
+      }
+
+      // Ensure doctor prescribed medication directive is added/updated in prescriptions list
+      const rx = this.latestSharedSoap?.prescription;
+      if (rx && rx.medication) {
+        const rxEntry = {
+          id: 'rx-prescribed-doctor',
+          title: `${rx.medication} — ${rx.strength || ''}`,
+          name: rx.medication,
+          dosage: `${rx.strength || ''} · ${rx.route || 'Oral'}`,
+          badge: 'active',
+          statusClass: 'active',
+          doctorDate: `${activeDoctor} · Issued ${todayStr}`,
+          instructions: rx.instructions || `Take ${rx.strength} ${rx.route} ${rx.frequency} for ${rx.duration}.`,
+          refillInfo: `${rx.quantity || 'Standard'} · ${rx.refills ?? 0} refill(s)`,
+          soapReport: this.latestSharedSoap || this.lastConsultation?.soapReport,
+          prescription: rx
+        };
+
+        const existingIdx = this.prescriptions.findIndex(
+          p => p.id === 'rx-prescribed-doctor' || (p.name && p.name.toLowerCase() === rx.medication.toLowerCase())
+        );
+        if (existingIdx >= 0) {
+          this.prescriptions[existingIdx] = rxEntry;
+        } else {
+          this.prescriptions = [rxEntry, ...this.prescriptions];
+        }
       }
 
       // If follow-up alerts is empty, populate follow-up review
@@ -337,7 +371,8 @@ export class PatientDashboardComponent implements OnInit, OnDestroy {
         objective: report.objective || '',
         assessment: report.assessment || '',
         plan: report.plan || ''
-      }
+      },
+      prescription: report.prescription || this.latestSharedSoap?.prescription || null
     });
   }
 

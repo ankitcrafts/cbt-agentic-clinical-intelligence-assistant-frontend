@@ -20,9 +20,10 @@
 * **SCSS & CSS Structure:**
   * Use design tokens defined in `styles.scss` for colors, spacing, typography, and border radiuses.
   * Do not hardcode ad-hoc hex colors or magic numbers inside component SCSS files; always reference theme variables (e.g. `var(--primary-600)`, `var(--slate-800)`).
-* **Responsive Layouts:**
-  * Mobile-first responsive design using modern CSS Grid and Flexbox.
-  * Breakpoints: Mobile ($< 640\text{px}$), Tablet ($640\text{px} - 1024\text{px}$), Desktop ($> 1024\text{px}$).
+### 1.3 Physician Prescription & Directives Standards
+* **Clinical Autonomy & Physician Wisdom:** Prescription values must never be forcefully automated or locked against physician edits. Clinicians retain absolute authority to adjust medication names, dosages, frequencies, and durations.
+* **Patient Safety Review Alert:** The prescription dialog must always feature the prominent safety notice ("Review dosage, contraindications, allergies, and interactions before signing") to prevent clinical oversights.
+* **SOAP Synchronization:** Any prescription edits confirmed by the doctor must immediately reflect in the SOAP Report tab without requiring page refresh, and be included in any patient-shared copies.
 
 ---
 
@@ -62,6 +63,10 @@ Format: `<type>(<scope>): <short summary>`
 * **Graceful Degradation:** In case of backend connection drops, display non-intrusive toast notifications with retry buttons rather than blank screens or unhandled exceptions.
 * **Loading States:** Every asynchronous action (audio processing, diagnosis retrieval, report generation, slot fetching) must provide clear skeleton loaders or spinner indicators with appropriate accessibility labels (`aria-busy="true"`).
 * **Defensive Form Submissions:** Disable submit buttons immediately upon click to prevent accidental double submissions (e.g., booking a doctor's slot twice).
+* **Print & Export Fidelity Rule:** Print views must strictly isolate clinical artifacts (SOAP reports, vitals banners, prescription directives) under `@media print`, hiding all navigational headers, sidebars, interactive edit buttons, and transient toast alerts. Exported PDFs must include official doctor signatures, patient demographics, and complete prescription directive breakdowns.
+* **Polymorphic Data Normalization Rule:** When parsing clinical AI suggestions or dynamic prompt lists, never assume single schema property existence (e.g. `s.description ? s.title : s.title`). Always provide robust priority-fallback chains resolving `s.text`, `s.title — s.description`, `s.suggestion`, and `s.actionText`, and preserve existing tags/classes to prevent blank rendering across session transitions.
+* **Clinical Vitals Formatting Rule:** Never render raw objects, stringified JSON, or raw braces (`{}`) in user-facing clinical cards (e.g. KEY FINDINGS or SOAP objective). All vitals must be parsed through `formatVitalsDisplay`, checking for non-empty keys and returning formatted strings (`BP: 120/80 mmHg · HR: 72 bpm`). In JavaScript, always verify `Object.keys(v).length > 0` rather than relying on truthy object checks (`v || default`) to avoid treating `{}` as truthy.
+* **Dynamic CDS Tab Processing Rule:** All 5 CDS tabs (Clinical Decision, Confidence, Follow-up, Medicines, SOAP Report) must dynamically adapt to active session dialogue and patient presentation. Never hardcode static placeholder patients (e.g. Marcus Delgado) or locked confidence scores (58%) into getters without condition-specific fallback synthesizers. Ensure `isSoapManuallyEdited` tracks manual doctor overrides so automated updates from fresh audio recordings or session switches update `effectiveSoapReport` smoothly without being blocked by stale cached drafts.
 
 ---
 

@@ -84,6 +84,88 @@ frontend/src/app/
 * **Reactive Forms:** Form validation for appointment booking and custom patient registration with asynchronous validators for OTP checks.
 * **Component Communication:** Unidirectional data flow with smart container components orchestrating dumb/presentational child components.
 
+### 2.3 Physician Wisdom Prescription & Modal Architecture
+* **SOAP Tab Prescription Placement:** Dedicated Prescription card placed inside the scrollable `.soap-preview-container` directly beneath the Plan (`P`) section and above the legal disclaimer footer.
+* **Prescription Directives Model:** Implements `PrescriptionItem` typed schema (`medication`, `strength`, `route`, `frequency`, `duration`, `quantity`, `refills`, `instructions`, `prescribedBy`, `prescribedDate`).
+* **Interactive Modal Workflow:** Clicking the card or "Review & edit" opens `.rx-edit-modal-card` dialog for clinicians to adjust dosages, routes, and instructions based on medical judgment.
+* **Downstream Data Synchronization:** Changes update the active consultation state, inject into ReportLab/jsPDF export engines, and synchronize across browser tabs / patient portal via `appointmentService.shareSoapReportWithPatient`.
+
+### 2.2 Doctor-to-Patient Sharing, Print, and PDF Export Pipeline
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Doctor
+    participant DocDashboard as Doctor Consultation Console
+    participant PdfService as PdfExportService (jsPDF)
+    participant ApptService as AppointmentService
+    participant Backend as FastAPI /api/scheduling
+    participant DB as SQLite / PostgreSQL
+    participant Storage as Multi-Key LocalStorage
+    actor Patient
+    participant PatDashboard as Patient Portal (Tab 3: Prescriptions)
+
+    Doctor->>DocDashboard: Clicks "Export PDF"
+    DocDashboard->>PdfService: exportSoapNotePdf(patient, vitals, soap, prescription)
+    PdfService-->>Doctor: Downloads Certified PDF Medical Record with Prescription Directive
+
+    Doctor->>DocDashboard: Clicks "Print"
+    DocDashboard->>DocDashboard: @media print isolates SOAP Note & .soap-prescription-card
+
+    Doctor->>DocDashboard: Clicks "Share with Patient"
+    DocDashboard->>ApptService: shareSoapReportWithPatient(patientId, soap, doc, rx, patientName)
+    ApptService->>Backend: POST /api/scheduling/patients/{id}/share-soap
+    Backend->>DB: Updates session.soap_report_json (with embedded rx) & is_shared_with_patient = True
+    ApptService->>Storage: Writes cliniq_shared_soap_*, cliniq_last_shared_soap
+    ApptService->>PatDashboard: Dispatches CustomEvent 'cliniq_soap_shared'
+    Patient->>PatDashboard: Visits portal / Signs in
+    PatDashboard->>PatDashboard: Loads Prescriptions & displays Doctor Rx directives + SOAP modal access
+```
+
+### 2.4 Dynamic 5-Tab CDS State Flow & Resilient Client Synthesis
+* **Unified Analysis Signal:** `RecordingService.latestClinicalAnalysis` stores the complete clinical intelligence payload.
+* **Dirty State Management:** `isSoapManuallyEdited: boolean` decouples user text edits from automated dialogue updates. When recording new audio or switching sessions, `isSoapManuallyEdited` is reset to false, allowing `effectiveSoapReport` to dynamically mirror the latest synthesized note.
+* **Dynamic Fallback Generators:** When backend analysis is processing or returns default models, client synthesizers (`getDynamicDifferentialForCurrentPatient`, `getDynamicMedicinesForCurrentPatient`, `getDynamicRedFlagsForCurrentPatient`, `getDynamicFollowUpQuestionsForCurrentPatient`, `getDynamicConfidenceMetrics`, `getDynamicSoapReport`) extract keywords and dialogue context to render clinically sound data for any condition cluster (Diabetes, Hypertension, Tension Headache, Respiratory).
+* **Multi-Turn Verbal Inquiries:** Verbal inquiries captured live through the ambient channel mark questions answered in `answeredQuestionIds`, dynamically elevating the 5 domain scores and overall confidence gauge.
+
+### 2.5 AI Suggestions Normalization & Historical Session Lifecycle
+
+```mermaid
+flowchart TD
+    RawSTT["Live Transcription / Backend Pipeline (/api/clinical/process-audio)"] --> SuggestionsArr["AI Suggestions Array {priority, category, title, description}"]
+    SuggestionsArr --> LiveSignal["RecordingService.latestSuggestions signal()"]
+    HistoryDB["Backend Session Store (patient_consultation_sessions)"] --> StoredJSON["ai_suggestions_json / aiSuggestions"]
+    StoredJSON --> LoadSession["RecordingService.loadConsultationSession(session)"]
+    LoadSession --> LiveSignal
+    LiveSignal --> Normalizer["currentAISuggestions Getter Normalization"]
+    AnalysisSignal["RecordingService.latestClinicalAnalysis()"] --> Normalizer
+    Normalizer --> PolymorphicExtract["Polymorphic Extract: s.text || (s.title + ' — ' + s.description)"]
+    Normalizer --> TagTypeAssign["Tag & Type: s.tag || (priority · category), nudge-high/medium/low"]
+    Normalizer --> TemplateRender["Doctor Dashboard Panel (*ngFor='let nudge of currentAISuggestions')"]
+```
+
+* **Candidate Fallback Hierarchy:** Normalizer checks `latestSuggestions()`, falls back to `aiSuggestionsList`, and finally searches nested `clinicalAnalysis.ai_suggestions` / `clinicalAnalysis.aiSuggestions`.
+* **Polymorphic Ingestion:** Transparently ingests raw LLM outputs (`{priority, category, title, description}`) as well as pre-serialized historical session items (`{id, type, tag, text}`) without data loss.
+
+### 2.4 Clinical Vitals Normalization & Display Pipeline
+
+```mermaid
+flowchart TD
+    EntityExtract["Backend Entity Extraction (vital_signs / vitals)"] --> FrontendAnalysis["RecordingService.latestClinicalAnalysis()"]
+    TriageIntake["Patient Intake Vitals (visitDetails.vitals)"] --> FrontendVisit["Doctor Dashboard visitDetails"]
+    FrontendAnalysis --> VitalsFormatter["formatVitalsDisplay(rawVitals)"]
+    FrontendVisit --> VitalsFormatter
+    VitalsFormatter --> ParseValidation{"Valid Non-Empty Keys? (!= '{}')"}
+    ParseValidation -- Yes --> FormatMetrics["Format: BP, HR, SpO2, Temp, Wt, Pain, RR, Blood Sugar"]
+    ParseValidation -- No --> FallbackNotice["Fallback to Intake or Baseline Vitals"]
+    FormatMetrics --> FindingsCard["Render KEY FINDINGS: VITALS (Clean Text, No {})"]
+    FallbackNotice --> FindingsCard
+```
+
+* **Braces Prevention:** Explicitly eliminates raw `{}` by verifying `Object.keys().length > 0` and sanitizing stringified JSON.
+* **Triage Inheritance:** If no vitals are spoken during dialogue, intake triage vitals (`${intakeVitals} (Intake)`) are presented seamlessly.
+
+
 ---
 
 ## 3. Real-Time Audio Capture & Streaming Pipeline
@@ -139,8 +221,14 @@ graph TD
 
 ## 6. Infrastructure & Deployment Topology
 
-* **Frontend Build Pipeline:** Compiled using Angular CLI with esbuild / Vite bundler.
-* **Static Asset Hosting:** Can be served via Nginx, AWS CloudFront + S3, or Vercel/Netlify with standard SPA fallback routing (`try_files $uri $uri/ /index.html`).
-* **Environment Configuration:**
-  * `environment.ts`: Development configuration pointing to `http://127.0.0.1:8000`.
-  * `environment.prod.ts`: Production configuration pointing to secured HTTPS gateway.
+* **Frontend Build Pipeline:** Compiled using Angular 19 application builder (`@angular-devkit/build-angular:application`) with production bundle optimizations and `environment.prod.ts` dynamic origin resolution.
+* **Production Container Stack (`docker-compose.prod.yml`):**
+  * `frontend`: Nginx 1.25 Alpine serving static assets (`dist/cbt-clinical-app/browser`) on port 80 and reverse-proxying `/api/`, `/analyze-conversation`, `/visit/`, `/reports/`, and `/health` to the backend.
+  * `backend`: Python 3.11 Slim container running FastAPI/Uvicorn with 2 worker processes and persistent volumes.
+  * `postgres`: PostgreSQL 16 Alpine container with isolated healthchecks and data persistence (`cliniIQ` database).
+  * `redis`: Redis 7 Alpine in-memory store for RAG token caching.
+* **Target Server Environment (`ubtsrv01`):**
+  * **Host:** Ubuntu 24.04.5 LTS (Kernel 6.8.0-147-generic) at `172.16.17.181`.
+  * **Resources:** 41 GB RAM, Docker 29.1.3, Docker Compose v2.40.3.
+  * **Security & Ingress:** Cloudflare Zero Trust organization `cbtlab` (`cbtlab.cloudflareaccess.com`). Client Interface IP: `10.64.20.180`.
+  * **Status:** 100% operational (4/4 containers healthy, 6/6 verification tests passing). Accessible at `http://172.16.17.181/` and `http://172.16.17.181/health`.

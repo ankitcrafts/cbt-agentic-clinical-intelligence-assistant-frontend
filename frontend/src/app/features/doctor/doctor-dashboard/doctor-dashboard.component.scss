@@ -2143,3 +2143,533 @@
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
+
+/* ==========================================================================
+   OFFICIAL CLINICAL PRESCRIPTION CARD & MODAL (Doctor Wisdom & Directives)
+   Matching Figma Consultation Support Spec (Images 1, 2 & 3)
+   ========================================================================== */
+
+.soap-prescription-card {
+  margin-top: 0.85rem;
+  background: var(--card-bg, #ffffff);
+  border: 1.5px solid #2dd4bf;
+  border-radius: 12px;
+  padding: 1rem 1.35rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 4px rgba(13, 148, 136, 0.08);
+
+  &:hover {
+    border-color: #0d9488;
+    box-shadow: 0 4px 16px rgba(13, 148, 136, 0.16);
+    transform: translateY(-1.5px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.35);
+  }
+
+  .rx-card-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+
+    .rx-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(45, 212, 191, 0.14);
+      border: 1.5px solid rgba(45, 212, 191, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #0d9488;
+
+      svg {
+        stroke: #0d9488;
+      }
+    }
+
+    .rx-info-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 0;
+
+      .rx-heading-row {
+        display: flex;
+        align-items: center;
+
+        .rx-title {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text-main, #0f172a);
+          letter-spacing: -0.01em;
+        }
+      }
+
+      .rx-main-detail {
+        font-size: 0.92rem;
+        color: var(--text-muted, #475569);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        line-height: 1.4;
+
+        .rx-med-name {
+          color: var(--text-main, #0f172a);
+          font-weight: 700;
+        }
+
+        .rx-dot {
+          color: #94a3b8;
+          font-weight: bold;
+        }
+
+        .rx-prop {
+          color: var(--text-muted, #475569);
+          font-weight: 500;
+        }
+      }
+
+      .rx-sub-detail {
+        font-size: 0.8rem;
+        color: var(--text-light, #64748b);
+        font-weight: 500;
+
+        .rx-dot {
+          color: #cbd5e1;
+          margin: 0 0.15rem;
+        }
+      }
+    }
+  }
+
+  .rx-card-right {
+    flex-shrink: 0;
+
+    .btn-rx-review {
+      background: transparent;
+      border: none;
+      color: #0d9488;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      cursor: pointer;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+
+      svg {
+        stroke: #0d9488;
+        transition: transform 0.2s ease;
+      }
+
+      &:hover {
+        background: rgba(13, 148, 136, 0.08);
+        color: #0f766e;
+
+        svg {
+          transform: rotate(-10deg) scale(1.1);
+        }
+      }
+    }
+  }
+}
+
+/* Dark mode overrides for card */
+:host-context(.dark) .soap-prescription-card,
+[data-theme="dark"] .soap-prescription-card {
+  background: #1e293b;
+  border-color: rgba(45, 212, 191, 0.45);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+
+  .rx-card-left .rx-icon-box {
+    background: rgba(45, 212, 191, 0.18);
+    border-color: rgba(45, 212, 191, 0.5);
+    color: #2dd4bf;
+
+    svg {
+      stroke: #2dd4bf;
+    }
+  }
+
+  .rx-card-left .rx-info-body {
+    .rx-heading-row .rx-title {
+      color: #f8fafc;
+    }
+    .rx-main-detail {
+      color: #cbd5e1;
+      .rx-med-name {
+        color: #f1f5f9;
+      }
+      .rx-dot {
+        color: #64748b;
+      }
+    }
+    .rx-sub-detail {
+      color: #94a3b8;
+    }
+  }
+
+  .rx-card-right .btn-rx-review {
+    color: #2dd4bf;
+    svg { stroke: #2dd4bf; }
+    &:hover {
+      background: rgba(45, 212, 191, 0.15);
+      color: #5eead4;
+    }
+  }
+}
+
+/* ==========================================================================
+   EDIT PRESCRIPTION MODAL DIALOG (Matching Image 3)
+   ========================================================================== */
+
+.rx-edit-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 95%;
+  max-width: 620px;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: rxModalZoomIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-height: 90vh;
+
+  .rx-modal-header {
+    padding: 1.25rem 1.5rem 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #f1f5f9;
+
+    .rx-modal-title-left {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+
+      .rx-modal-icon-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: rgba(13, 148, 136, 0.1);
+        border: 1.5px solid rgba(13, 148, 136, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: #0d9488;
+      }
+
+      .rx-modal-title-text {
+        .rx-modal-main-title {
+          margin: 0;
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: #0f172a;
+          letter-spacing: -0.015em;
+        }
+
+        .rx-modal-patient-subtitle {
+          font-size: 0.82rem;
+          color: #64748b;
+          font-weight: 500;
+          margin-top: 0.25rem;
+          display: block;
+        }
+      }
+    }
+
+    .btn-rx-modal-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.15rem;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 0.35rem 0.6rem;
+      line-height: 1;
+      transition: all 0.15s ease;
+
+      &:hover {
+        color: #0f172a;
+        background: #f1f5f9;
+      }
+    }
+  }
+
+  .rx-modal-body {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+    overflow-y: auto;
+
+    .rx-form-row-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+
+      @media (max-width: 520px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rx-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+
+      .rx-form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #475569;
+        letter-spacing: -0.01em;
+      }
+
+      .rx-form-input {
+        width: 100%;
+        padding: 0.62rem 0.85rem;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        color: #0f172a;
+        background: #ffffff;
+        outline: none;
+        font-family: inherit;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+
+        &::placeholder {
+          color: #94a3b8;
+        }
+
+        &:focus {
+          border-color: #0d9488;
+          box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+        }
+      }
+
+      .rx-form-textarea {
+        width: 100%;
+        padding: 0.65rem 0.85rem;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        color: #0f172a;
+        background: #ffffff;
+        outline: none;
+        font-family: inherit;
+        line-height: 1.5;
+        resize: vertical;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+
+        &::placeholder {
+          color: #94a3b8;
+        }
+
+        &:focus {
+          border-color: #0d9488;
+          box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+        }
+      }
+    }
+
+    .rx-modal-info-box {
+      background: #f0fdfa;
+      border: 1px solid #ccfbf1;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      margin-top: 0.25rem;
+
+      .rx-info-icon {
+        color: #0d9488;
+        font-size: 0.95rem;
+        margin-top: 0.1rem;
+        flex-shrink: 0;
+      }
+
+      .rx-info-text {
+        font-size: 0.78rem;
+        line-height: 1.45;
+        color: #0f766e;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .rx-modal-footer {
+    padding: 1rem 1.5rem 1.25rem;
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    .rx-footer-status {
+      font-size: 0.82rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .rx-footer-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .btn-rx-discard {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        color: #334155;
+        padding: 0.5rem 1.15rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+          color: #0f172a;
+        }
+      }
+
+      .btn-rx-save {
+        background: #0f3d39;
+        border: 1.5px solid #0f3d39;
+        color: #ffffff;
+        padding: 0.52rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(15, 61, 57, 0.2);
+
+        i {
+          font-size: 0.8rem;
+        }
+
+        &:hover {
+          background: #082926;
+          border-color: #082926;
+          transform: translateY(-1px);
+          box-shadow: 0 3px 8px rgba(15, 61, 57, 0.3);
+        }
+      }
+    }
+  }
+}
+
+@keyframes rxModalZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Dark mode overrides for modal */
+:host-context(.dark) .rx-edit-modal-card,
+[data-theme="dark"] .rx-edit-modal-card {
+  background: #1e293b;
+  border-color: #334155;
+
+  .rx-modal-header {
+    border-bottom-color: #334155;
+    .rx-modal-title-left .rx-modal-icon-badge {
+      background: rgba(45, 212, 191, 0.15);
+      border-color: rgba(45, 212, 191, 0.4);
+      color: #2dd4bf;
+    }
+    .rx-modal-title-left .rx-modal-title-text .rx-modal-main-title {
+      color: #f8fafc;
+    }
+    .rx-modal-title-left .rx-modal-title-text .rx-modal-patient-subtitle {
+      color: #94a3b8;
+    }
+    .btn-rx-modal-close:hover {
+      background: #334155;
+      color: #f1f5f9;
+    }
+  }
+
+  .rx-modal-body {
+    .rx-form-group {
+      .rx-form-label {
+        color: #cbd5e1;
+      }
+      .rx-form-input, .rx-form-textarea {
+        background: #0f172a;
+        border-color: #334155;
+        color: #f8fafc;
+        &:focus {
+          border-color: #2dd4bf;
+          box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.2);
+        }
+      }
+    }
+
+    .rx-modal-info-box {
+      background: rgba(13, 148, 136, 0.12);
+      border-color: rgba(13, 148, 136, 0.35);
+      .rx-info-icon { color: #2dd4bf; }
+      .rx-info-text { color: #a7f3d0; }
+    }
+  }
+
+  .rx-modal-footer {
+    background: #1e293b;
+    border-top-color: #334155;
+    .rx-footer-status {
+      color: #94a3b8;
+    }
+    .rx-footer-btn-group {
+      .btn-rx-discard {
+        background: #0f172a;
+        border-color: #334155;
+        color: #cbd5e1;
+        &:hover {
+          background: #1e293b;
+          color: #f8fafc;
+        }
+      }
+      .btn-rx-save {
+        background: #14b8a6;
+        border-color: #14b8a6;
+        color: #0f172a;
+        font-weight: 700;
+        &:hover {
+          background: #2dd4bf;
+          border-color: #2dd4bf;
+        }
+      }
+    }
+  }
+}
+
