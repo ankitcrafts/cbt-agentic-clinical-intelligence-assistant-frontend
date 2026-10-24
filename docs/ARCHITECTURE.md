@@ -223,12 +223,16 @@ graph TD
 
 * **Frontend Build Pipeline:** Compiled using Angular 19 application builder (`@angular-devkit/build-angular:application`) with production bundle optimizations and `environment.prod.ts` dynamic origin resolution.
 * **Production Container Stack (`docker-compose.prod.yml`):**
-  * `frontend`: Nginx 1.25 Alpine serving static assets (`dist/cbt-clinical-app/browser`) on port 80 and reverse-proxying `/api/`, `/analyze-conversation`, `/visit/`, `/reports/`, and `/health` to the backend.
+  * `frontend`: Nginx 1.25 Alpine serving static assets on port 80 (HTTP) and port 443 (HTTPS with TLSv1.2/1.3 and self-signed SSL certificate), reverse-proxying `/api/`, `/analyze-conversation`, `/visit/`, `/reports/`, and `/health` to the backend.
   * `backend`: Python 3.11 Slim container running FastAPI/Uvicorn with 2 worker processes and persistent volumes.
   * `postgres`: PostgreSQL 16 Alpine container with isolated healthchecks and data persistence (`cliniIQ` database).
   * `redis`: Redis 7 Alpine in-memory store for RAG token caching.
+* **W3C Media Devices & Secure Context Architecture:**
+  * Browsers (Chrome, Edge, Safari) mandate Secure Contexts (`window.isSecureContext === true`) for `navigator.mediaDevices.getUserMedia` (Doctor Mic) and `navigator.mediaDevices.getDisplayMedia` (Teams/Meet/WhatsApp tab audio).
+  * Native TLS on port 443 satisfies Secure Context requirements (`https://172.16.17.181/`), allowing seamless hardware access.
+  * Unencrypted HTTP ingress (`http://172.16.17.181/`) is supported via Chrome flags (`chrome://flags/#unsafely-treat-insecure-origin-as-secure`) or direct audio file upload (`FILE_UPLOAD` channel).
 * **Target Server Environment (`ubtsrv01`):**
   * **Host:** Ubuntu 24.04.5 LTS (Kernel 6.8.0-147-generic) at `172.16.17.181`.
   * **Resources:** 41 GB RAM, Docker 29.1.3, Docker Compose v2.40.3.
-  * **Security & Ingress:** Cloudflare Zero Trust organization `cbtlab` (`cbtlab.cloudflareaccess.com`). Client Interface IP: `10.64.20.180`.
-  * **Status:** 100% operational (4/4 containers healthy, 6/6 verification tests passing). Accessible at `http://172.16.17.181/` and `http://172.16.17.181/health`.
+  * **Security & Ingress:** Cloudflare Zero Trust organization `cbtlab` (`cbtlab.cloudflareaccess.com`). Dual HTTP (80) & HTTPS (443) ingress.
+  * **Status:** 100% operational. Accessible at `http://172.16.17.181/` and `https://172.16.17.181/`.

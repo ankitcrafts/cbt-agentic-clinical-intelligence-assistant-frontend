@@ -146,6 +146,11 @@ $slate-900:   #0f172a;
 * **Tab 5: Medicines:** RAG guideline prescribing list (`.med-card`) with drug name, therapeutic class tag, evidence grade, BNF/NICE source, dosage line, and amber warning box (`.med-warning-box`).
 * **Tab 6: SOAP Report:** Structured clinical documentation with letter badge circles (`S`, `O`, `A`, `P`), inline textarea editing, AI reframing triggers, and physician prescription directives card.
 
+### 4.8 Insecure Context Notice Banner & Setup Guide (`.insecure-context-banner`)
+* **Alert Container:** Amber tinted backdrop (`rgba(245, 158, 11, 0.12)`), solid border (`1px solid rgba(245, 158, 11, 0.35)`), border-radius `8px`, text color `#fde68a`.
+* **Actionable Guide Toggle:** Interactive button with setup instructions toggle (`.showInsecureContextHelp`).
+* **Instruction Card:** Elevated dark container (`rgba(15, 23, 42, 0.95)`), cyan border (`1px solid rgba(56, 189, 248, 0.35)`), step-by-step Chrome flag guidance, and direct HTTPS link (`https://172.16.17.181/`).
+
 ---
 
 ## 5. UI Micro-Interactions & Animations

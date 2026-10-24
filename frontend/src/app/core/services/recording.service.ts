@@ -81,6 +81,20 @@ export class RecordingService implements OnDestroy {
    */
   setConsultationMode(mode: ConsultationMode): void {
     this.consultationMode.set(mode);
+    if (this.state() === 'FAILED') {
+      this.state.set('IDLE');
+      this.errorMessage.set(null);
+    }
+  }
+
+  /**
+   * Resets error and failed state to IDLE.
+   */
+  resetFailedState(): void {
+    if (this.state() === 'FAILED') {
+      this.state.set('IDLE');
+      this.errorMessage.set(null);
+    }
   }
 
   /**
@@ -167,12 +181,22 @@ export class RecordingService implements OnDestroy {
     }
     const mode = this.consultationMode();
 
+    if (mode === 'FILE_UPLOAD') {
+      this.audioSourceType.set('FILE_UPLOAD');
+      this.state.set('IDLE');
+      return;
+    }
+
     try {
       if (mode === 'IN_PERSON') {
         // 1. In-Person Consultation (Microphone only)
         this.audioSourceType.set('MIC');
         if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-          const err = 'Microphone access is not supported by your browser environment.';
+          const isHttpInsecure = typeof window !== 'undefined' && !window.isSecureContext;
+          const host = typeof window !== 'undefined' ? window.location.host : '';
+          const err = isHttpInsecure
+            ? `Microphone access is blocked by your browser on unencrypted HTTP (${host}). Please access via HTTPS (https://${host}/), use the Upload File tab, or enable chrome://flags/#unsafely-treat-insecure-origin-as-secure.`
+            : 'Microphone access is not supported by your browser environment.';
           this.errorMessage.set(err);
           this.state.set('FAILED');
           throw new Error(err);
@@ -195,7 +219,11 @@ export class RecordingService implements OnDestroy {
         this.audioSourceType.set('SYSTEM_MIXED');
 
         if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
-          const err = 'Screen/Tab system audio capture is not supported by your browser. Please use Google Chrome, Microsoft Edge, or Firefox.';
+          const isHttpInsecure = typeof window !== 'undefined' && !window.isSecureContext;
+          const host = typeof window !== 'undefined' ? window.location.host : '';
+          const err = isHttpInsecure
+            ? `Screen/Tab system audio capture is blocked by your browser on unencrypted HTTP (${host}). Please access via HTTPS (https://${host}/), use the Upload File tab, or enable chrome://flags/#unsafely-treat-insecure-origin-as-secure.`
+            : 'Screen/Tab system audio capture is not supported by your browser. Please use Google Chrome, Microsoft Edge, or Firefox.';
           this.errorMessage.set(err);
           this.state.set('FAILED');
           throw new Error(err);

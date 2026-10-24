@@ -243,6 +243,33 @@ export class AppointmentService {
         { id: 's72', time: '02:00 PM', duration: '45 min', status: 'AVAILABLE' },
         { id: 's73', time: '03:00 PM', duration: '45 min', status: 'AVAILABLE' }
       ]
+    },
+    {
+      id: 'DOC-008',
+      name: 'Dr. Ankit Kumar',
+      initials: 'AK',
+      specialty: 'Associate Cardiologist',
+      department: 'Cardiology',
+      email: 'ankitkumar021303@gmail.com',
+      phone: '+1 (555) 201-4408',
+      room: 'Suite 201',
+      experience: 'Senior Resident Specialist',
+      qualification: 'MD Cardiology',
+      isNewUpcoming: false,
+      shiftTiming: '09:00 AM - 05:00 PM',
+      available: true,
+      dutyStatus: 'On duty',
+      queueCount: 3,
+      slots: [
+        { id: 'DOC-008-s1', time: '09:00 AM', duration: '30 min', status: 'BOOKED', bookedPatientId: '#00847261', bookedPatientName: 'Marcus Delgado' },
+        { id: 'DOC-008-s2', time: '09:45 AM', duration: '30 min', status: 'BOOKED', bookedPatientId: '#00928174', bookedPatientName: 'Arjun Nair' },
+        { id: 'DOC-008-s3', time: '10:30 AM', duration: '30 min', status: 'BOOKED', bookedPatientId: '#00391847', bookedPatientName: 'Priya Sharma' },
+        { id: 'DOC-008-s4', time: '11:15 AM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 'DOC-008-s5', time: '02:00 PM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 'DOC-008-s6', time: '02:45 PM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 'DOC-008-s7', time: '03:30 PM', duration: '30 min', status: 'AVAILABLE' },
+        { id: 'DOC-008-s8', time: '04:15 PM', duration: '30 min', status: 'AVAILABLE' }
+      ]
     }
   ]);
 
@@ -263,14 +290,14 @@ export class AppointmentService {
       condition: 'Hypertension Stage 1',
       lastVisit: 'July 14, 2026',
       vitals: { bp: '138/88 mmHg', hr: '72 bpm', pain: '5-6/10', spo2: '98%', temp: '36.6 °C' },
-      assignedDoctorId: 'DOC-001',
-      assignedDoctorName: 'Dr. Yuki Tanaka',
+      assignedDoctorId: 'DOC-008',
+      assignedDoctorName: 'Dr. Ankit Kumar',
       assignedTimeSlot: '09:00 AM',
       assignedDuration: '30 min',
       isPreferredDoctorChoice: true,
-      preferredDoctorName: 'Dr. Yuki Tanaka',
+      preferredDoctorName: 'Dr. Ankit Kumar',
       visitType: 'Follow-up',
-      bookingNotes: 'Patient requested Dr. Yuki Tanaka specifically for cardiology follow-up.',
+      bookingNotes: 'Patient requested Dr. Ankit Kumar specifically for cardiology follow-up.',
       totalPastSessions: 1
     },
     {
@@ -288,13 +315,14 @@ export class AppointmentService {
       condition: 'Hypothyroidism',
       lastVisit: 'May 02, 2026',
       vitals: { bp: '118/76 mmHg', hr: '68 bpm', pain: '0/10', spo2: '99%', temp: '36.8 °C' },
-      assignedDoctorId: 'DOC-001',
-      assignedDoctorName: 'Dr. Yuki Tanaka',
-      assignedTimeSlot: '09:45 AM',
+      assignedDoctorId: 'DOC-008',
+      assignedDoctorName: 'Dr. Ankit Kumar',
+      assignedTimeSlot: '10:30 AM',
       assignedDuration: '30 min',
-      isPreferredDoctorChoice: false,
+      isPreferredDoctorChoice: true,
+      preferredDoctorName: 'Dr. Ankit Kumar',
       visitType: 'Consultation',
-      bookingNotes: 'Assigned based on cardiology queue availability.',
+      bookingNotes: 'Patient requested Dr. Ankit Kumar for clinical review.',
       totalPastSessions: 1
     },
     {
@@ -405,18 +433,19 @@ export class AppointmentService {
       gender: 'M',
       phone: '+1 (555) 890-1234',
       demographics: '51M · #00928174',
-      arrivalTime: '09:50 AM',
-      arrivalStatus: 'ARRIVED',
+      arrivalTime: '09:15 AM',
+      arrivalStatus: 'SCHEDULED',
       reason: 'Elevated home BP readings, palpitation episodes',
       condition: 'Arrhythmia screening',
       lastVisit: '—',
       vitals: { bp: '144/92 mmHg', hr: '88 bpm', pain: '0/10', spo2: '97%', temp: '36.9 °C' },
-      assignedDoctorId: undefined,
-      assignedDoctorName: undefined,
-      assignedTimeSlot: undefined,
+      assignedDoctorId: 'DOC-008',
+      assignedDoctorName: 'Dr. Ankit Kumar',
+      assignedTimeSlot: '09:45 AM',
+      assignedDuration: '30 min',
       isPreferredDoctorChoice: false,
       visitType: 'Consultation',
-      bookingNotes: 'Walk-in patient awaiting doctor allocation.',
+      bookingNotes: 'Allocated to Dr. Ankit Kumar for Arrhythmia screening.',
       totalPastSessions: 0
     },
     {
@@ -450,12 +479,49 @@ export class AppointmentService {
   scheduledPatientsCount = computed(() => this.patients().filter(p => p.assignedDoctorId && p.arrivalStatus !== 'COMPLETED').length);
   activeDoctorsOnDuty = computed(() => this.doctors().filter(d => d.available && d.dutyStatus === 'On duty').length);
 
+  savePatientsToCache(patients: ClinicPatient[]): void {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('cliniq_patients_cache', JSON.stringify(patients));
+        window.dispatchEvent(new CustomEvent('cliniq_patients_cache_updated', { detail: patients }));
+      } catch (e) {
+        console.warn('Failed to cache patients:', e);
+      }
+    }
+  }
+
+  loadPatientsFromCache(): ClinicPatient[] | null {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cliniq_patients_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load cached patients:', e);
+      }
+    }
+    return null;
+  }
+
   constructor() {
-    this.fetchDataFromBackend();
+    // 1. Immediately hydrate from cache to prevent empty screen on reload
+    const cachedPatients = this.loadPatientsFromCache();
+    if (cachedPatients && cachedPatients.length > 0) {
+      this.patients.set(cachedPatients);
+    }
     this.syncFromLocalStorage();
+    this.fetchDataFromBackend();
 
     if (typeof window !== 'undefined') {
-      window.addEventListener('storage', () => {
+      window.addEventListener('storage', (event) => {
+        if (event.key === 'cliniq_patients_cache') {
+          const updated = this.loadPatientsFromCache();
+          if (updated) this.patients.set(updated);
+        }
         this.syncFromLocalStorage();
         this.fetchDataFromBackend();
       });
@@ -575,6 +641,7 @@ export class AppointmentService {
       if (patientsRes.status === 'fulfilled' && patientsRes.value?.data && Array.isArray(patientsRes.value.data)) {
         if (patientsRes.value.data.length > 0) {
           this.patients.set(patientsRes.value.data);
+          this.savePatientsToCache(patientsRes.value.data);
         }
       }
 
@@ -949,6 +1016,7 @@ export class AppointmentService {
       }
       return p;
     }));
+    this.savePatientsToCache(this.patients());
 
     // 3. Persist to Backend REST API
     try {
@@ -1020,6 +1088,7 @@ export class AppointmentService {
 
     // Update local state
     this.patients.update(list => [newPatient, ...list]);
+    this.savePatientsToCache(this.patients());
 
     // Persist to Backend REST API
     try {
@@ -1066,6 +1135,7 @@ export class AppointmentService {
       }
       return p;
     }));
+    this.savePatientsToCache(this.patients());
 
     try {
       await firstValueFrom(
@@ -1206,23 +1276,25 @@ export class AppointmentService {
       d.id.toLowerCase() === cleanFull
     );
 
-    const docId = matchedDoctor?.id || doctorId;
+    const docId = (matchedDoctor?.id || doctorId || '').toLowerCase();
     const docName = matchedDoctor?.name || doctorName;
     const docCleanName = docName.replace(/^Dr\.\s*/i, '').trim().toLowerCase();
+    const docDept = (matchedDoctor?.department || 'Cardiology').toLowerCase();
 
-    return this.patients().filter(p => {
-      // 1. Direct doctor ID match
-      if (docId && p.assignedDoctorId && p.assignedDoctorId.toLowerCase() === docId.toLowerCase()) {
+    // 1. Direct assignments to this doctor
+    const directMatches = this.patients().filter(p => {
+      // Direct doctor ID match
+      if (docId && p.assignedDoctorId && p.assignedDoctorId.toLowerCase() === docId) {
         return true;
       }
-      // 2. Assigned doctor name match
+      // Assigned doctor name match
       if (p.assignedDoctorName) {
         const pDocName = p.assignedDoctorName.replace(/^Dr\.\s*/i, '').trim().toLowerCase();
         if (pDocName === docCleanName || pDocName.includes(cleanName) || cleanName.includes(pDocName)) {
           return true;
         }
       }
-      // 3. Preferred doctor match if assigned or requested
+      // Preferred doctor match if assigned or requested
       if (p.preferredDoctorName && p.isPreferredDoctorChoice) {
         const pPrefName = p.preferredDoctorName.replace(/^Dr\.\s*/i, '').trim().toLowerCase();
         if (pPrefName === docCleanName || pPrefName.includes(cleanName) || cleanName.includes(pPrefName)) {
@@ -1231,6 +1303,32 @@ export class AppointmentService {
       }
       return false;
     });
+
+    if (directMatches.length > 0) {
+      return directMatches;
+    }
+
+    // 2. Intelligent Fallback: If no direct matches (e.g. newly signed-in doctor),
+    // include unassigned clinic patients waiting in triage and department patients
+    const fallbackMatches = this.patients().filter(p => {
+      // Unassigned walk-in patient in waiting room / arrived
+      if (!p.assignedDoctorId || p.arrivalStatus === 'ARRIVED') {
+        return true;
+      }
+      // Department match (e.g., Cardiology)
+      if (docDept.includes('cardio') && (
+        p.reason?.toLowerCase().includes('cardio') || 
+        p.reason?.toLowerCase().includes('hypertension') || 
+        p.reason?.toLowerCase().includes('heart') || 
+        p.condition?.toLowerCase().includes('hypertension') || 
+        p.condition?.toLowerCase().includes('arrhythmia')
+      )) {
+        return true;
+      }
+      return false;
+    });
+
+    return fallbackMatches.length > 0 ? fallbackMatches : this.patients().slice(0, 3);
   }
 
   /**
@@ -1348,6 +1446,7 @@ export class AppointmentService {
       }
       return p;
     }));
+    this.savePatientsToCache(this.patients());
 
     // Reset recording draft and active signals for this patient
     this.recordingService.resetPatientState(patientId);

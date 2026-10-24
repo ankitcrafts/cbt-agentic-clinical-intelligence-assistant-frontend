@@ -40,6 +40,21 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   http = inject(HttpClient);
 
   @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
+  @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
+
+  get isInsecureContext(): boolean {
+    return typeof window !== 'undefined' && !window.isSecureContext;
+  }
+
+  get currentHost(): string {
+    return typeof window !== 'undefined' ? window.location.host : '172.16.17.181';
+  }
+
+  showInsecureContextHelp = false;
+
+  toggleInsecureContextHelp(): void {
+    this.showInsecureContextHelp = !this.showInsecureContextHelp;
+  }
 
   // View state: 'queue' (Schedule & Patient List) | 'consultation' (Active Consultation View)
   viewMode: 'queue' | 'consultation' | string = 'queue';
@@ -278,6 +293,27 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   selectedSessionId: string = 'live';
 
   ngOnInit(): void {
+    // 1. Restore active consultation view mode if doctor was actively in consultation before refresh
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        const savedMode = sessionStorage.getItem('cliniq_doctor_view_mode');
+        const savedVisit = sessionStorage.getItem('cliniq_doctor_active_visit');
+        if (savedMode === 'consultation' && savedVisit) {
+          const parsed = JSON.parse(savedVisit);
+          if (parsed && parsed.visitId) {
+            this.visitDetails = parsed;
+            this.viewMode = 'consultation';
+            this.rightPanelMode = 'suggestions';
+            this.recordingService.switchPatient(parsed.visitId);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not restore consultation view from sessionStorage:', e);
+      }
+    }
+
+    // 2. Sync doctor from auth session and fetch latest appointments
+    this.appointmentService.syncFromLocalStorage();
     this.appointmentService.fetchDataFromBackend();
   }
 
@@ -384,6 +420,13 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.rightPanelMode = 'suggestions';
     this.activeTab = 'analysis';
     this.viewMode = 'consultation';
+
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.setItem('cliniq_doctor_view_mode', 'consultation');
+        sessionStorage.setItem('cliniq_doctor_active_visit', JSON.stringify(this.visitDetails));
+      } catch (e) {}
+    }
   }
 
   /**
@@ -518,6 +561,12 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   // Return to Today's Schedule
   backToQueue(): void {
     this.viewMode = 'queue';
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.setItem('cliniq_doctor_view_mode', 'queue');
+        sessionStorage.removeItem('cliniq_doctor_active_visit');
+      } catch (e) {}
+    }
   }
 
   setActiveTab(tab: 'analysis' | 'clinical' | 'confidence' | 'followup' | 'medicines' | 'soap') {
@@ -533,6 +582,9 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   setConsultationMode(mode: 'IN_PERSON' | 'REMOTE_TEAMS' | 'REMOTE_MEET' | 'REMOTE_WHATSAPP' | 'FILE_UPLOAD'): void {
     this.recordingService.setConsultationMode(mode as any);
     this.activeUploadError = null;
+    if (this.recordingService.state() === 'FAILED') {
+      this.recordingService.resetFailedState();
+    }
   }
 
   openTeleconsultGuide(): void {
@@ -594,6 +646,10 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   async startRecording(): Promise<void> {
     try {
       this.activeUploadError = null;
+      if (this.recordingService.consultationMode() === 'FILE_UPLOAD') {
+        this.fileInputRef?.nativeElement?.click();
+        return;
+      }
       const pid = this.visitDetails.visitId || this.mockData.activeConsultation().patientPid || 'P1245';
       const encId = 'CONS-' + pid.replace('#', '');
       await this.recordingService.startRecording({

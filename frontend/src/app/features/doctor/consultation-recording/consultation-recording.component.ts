@@ -17,6 +17,7 @@ export class ConsultationRecordingComponent implements OnInit, OnDestroy {
   recordingService = inject(RecordingService);
 
   @ViewChild('audioPlayer') audioPlayerRef?: ElementRef<HTMLAudioElement>;
+  @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
   isPlayingPreview = false;
   waveformBars = Array(28).fill(0);
@@ -36,6 +37,9 @@ export class ConsultationRecordingComponent implements OnInit, OnDestroy {
   setConsultationMode(mode: 'IN_PERSON' | 'TELECONSULTATION' | 'FILE_UPLOAD'): void {
     this.recordingService.setConsultationMode(mode);
     this.activeUploadError = null;
+    if (this.recordingService.state() === 'FAILED') {
+      this.recordingService.resetFailedState();
+    }
   }
 
   onDragOver(e: DragEvent): void {
@@ -84,6 +88,10 @@ export class ConsultationRecordingComponent implements OnInit, OnDestroy {
   async startRecording(): Promise<void> {
     try {
       this.activeUploadError = null;
+      if (this.recordingService.consultationMode() === 'FILE_UPLOAD') {
+        this.fileInputRef?.nativeElement?.click();
+        return;
+      }
       const activeCons = this.mockData.activeConsultation();
       await this.recordingService.startRecording({
         encounterId: activeCons.id || 'CONS-41233',

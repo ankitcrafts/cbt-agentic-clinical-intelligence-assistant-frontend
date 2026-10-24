@@ -223,6 +223,36 @@
           </div>
         </div>
 
+        <!-- Insecure Context HTTP Warning Banner (Shown when accessed via plain HTTP IP like 172.16.17.181) -->
+        <div *ngIf="isInsecureContext" class="insecure-context-banner" style="margin-bottom: 0.85rem; padding: 0.65rem 0.9rem; border-radius: 8px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fde68a; font-size: 0.8rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem;">
+          <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+            <i class="fa-solid fa-shield-halved" style="color: #fbbf24; font-size: 1rem; margin-top: 0.1rem;"></i>
+            <div>
+              <strong style="color: #fbbf24;">Browser Security Notice (HTTP IP Access):</strong>
+              <div style="margin-top: 0.2rem; color: #fef3c7; line-height: 1.35;">
+                Chrome &amp; Edge block live microphone and screen audio on unencrypted HTTP IP addresses. 
+                Access via <strong><a [href]="'https://' + currentHost + '/'" target="_blank" style="color: #38bdf8; text-decoration: underline;">https://{{ currentHost }}/</a></strong> (with SSL), enable the browser flag, or use the <strong>Upload File</strong> tab to process consultation audio directly.
+              </div>
+            </div>
+          </div>
+          <button type="button" (click)="toggleInsecureContextHelp()" style="white-space: nowrap; font-size: 0.72rem; padding: 0.25rem 0.55rem; border-radius: 4px; background: rgba(245, 158, 11, 0.25); border: 1px solid rgba(245, 158, 11, 0.45); color: #fff; cursor: pointer;">
+            <i class="fa-solid fa-circle-info"></i> {{ showInsecureContextHelp ? 'Hide Guide' : 'Setup Guide' }}
+          </button>
+        </div>
+
+        <!-- Expanded Insecure Context Setup Instructions -->
+        <div *ngIf="isInsecureContext && showInsecureContextHelp" style="margin-bottom: 0.85rem; padding: 0.85rem 1rem; border-radius: 8px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(56, 189, 248, 0.35); font-size: 0.78rem; color: #cbd5e1;">
+          <div style="font-weight: 700; color: #38bdf8; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+            <i class="fa-brands fa-chrome"></i> How to Unlock Mic &amp; Tab Audio in Google Chrome / Edge:
+          </div>
+          <ol style="margin: 0; padding-left: 1.25rem; line-height: 1.6;">
+            <li>Open a new browser tab and go to: <code style="background: rgba(255,255,255,0.1); padding: 0.1rem 0.35rem; border-radius: 3px; color: #fcd34d;">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></li>
+            <li>In the input box, enter: <code style="background: rgba(255,255,255,0.1); padding: 0.1rem 0.35rem; border-radius: 3px; color: #a7f3d0;">http://{{ currentHost }}</code></li>
+            <li>Change the dropdown to <strong>Enabled</strong> and click the <strong>Relaunch</strong> button at the bottom.</li>
+            <li>Refresh this page. In-Person Mic and Teams/Meet/WhatsApp tab audio capture will work immediately!</li>
+          </ol>
+        </div>
+
         <!-- Consultation Channel Switcher (In-Person vs MS Teams vs Google Meet vs WhatsApp vs File Upload) -->
         <div class="consultation-mode-selector-bar">
           <div class="mode-chips-wrapper">
@@ -362,8 +392,8 @@
 
         <!-- Controls Row -->
         <div class="recording-controls-row" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-          <!-- Start Recording Button (Shown when IDLE or no saved sessions exist) -->
-          <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || (!hasRecordings && currentState !== 'RECORDING' && currentState !== 'PAUSED')" (click)="startRecording()">
+          <!-- Start Recording Button (Shown when IDLE, FAILED, or no saved sessions exist) -->
+          <button type="button" class="btn-play-pause" *ngIf="currentState === 'IDLE' || currentState === 'FAILED' || (!hasRecordings && currentState !== 'RECORDING' && currentState !== 'PAUSED')" (click)="startRecording()">
             <ng-container [ngSwitch]="recordingService.consultationMode()">
               <i *ngSwitchCase="'IN_PERSON'" class="fa-solid fa-microphone"></i>
               <i *ngSwitchCase="'REMOTE_TEAMS'" class="fa-brands fa-microsoft" style="color: #818cf8;"></i>

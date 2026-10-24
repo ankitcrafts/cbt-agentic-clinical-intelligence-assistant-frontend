@@ -36,6 +36,7 @@
 2. **Local Storage Restrictions:** Do not store plain-text clinical diagnoses or unencrypted health records in browser `localStorage` or `sessionStorage`. Store only session JWT tokens with finite expiration.
 3. **Audio Stream Teardown:** Always explicitly call `MediaStreamTrack.stop()` when disconnecting or navigating away from the Doctor Consultation room to prevent background microphone listening.
 4. **HTTPS Enforced:** All production API communications must enforce TLS 1.3 encryption in transit.
+5. **Secure Context Verification for Media Devices:** Live hardware recording (`getUserMedia`, `getDisplayMedia`) must always inspect `window.isSecureContext` and provide graceful non-secure fallback (`FILE_UPLOAD` channel or setup guidance) when accessed via unencrypted IP addresses. Never execute `navigator.mediaDevices` calls within `FILE_UPLOAD` workflows.
 
 ---
 

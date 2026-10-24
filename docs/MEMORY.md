@@ -169,3 +169,18 @@ npx ng serve --port 4200
   2. Implemented dynamic client-side clinical synthesizers in `doctor-dashboard.component.ts`: `getDynamicDifferentialForCurrentPatient`, `getDynamicMedicinesForCurrentPatient`, `getDynamicRedFlagsForCurrentPatient`, `getDynamicFollowUpQuestionsForCurrentPatient`, `getDynamicConfidenceMetrics`, and `getDynamicSoapReport`.
   3. Handled multiple condition clusters (Diabetes, Hypertension, Tension Headache, Respiratory) ensuring all 5 CDS tabs respond dynamically to the active session.
 
+### Issue 7: MediaDevices Insecure Context Restrictions on Remote IP Endpoints (`172.16.17.181`)
+* **Symptom:** When accessing the production deployment at `http://172.16.17.181/`:
+  - In-Person recording fails with `"Microphone access is not supported by your browser environment."`
+  - MS Teams / Google Meet / WhatsApp teleconsultation recording fails with `"Screen/Tab system audio capture is not supported by your browser."`
+  - Switching to "Upload File" preserves the error state and clicking the primary button triggers tab screen capture instead of opening the file picker.
+* **Root Cause:**
+  1. Under the W3C WebRTC / Media Capture specification, browsers (Google Chrome, Edge, Safari) designate non-localhost plain HTTP IP addresses (`http://172.16.17.181`) as Insecure Contexts (`window.isSecureContext === false`). In insecure contexts, `navigator.mediaDevices` (`getUserMedia` and `getDisplayMedia`) is deliberately disabled and set to `undefined`.
+  2. In `recording.service.ts`, `startRecording()` defaulted all non-`IN_PERSON` modes to screen display media capture, causing `FILE_UPLOAD` to invoke `navigator.mediaDevices.getDisplayMedia`.
+  3. Channel switcher in `doctor-dashboard.component.ts` lacked `@ViewChild('fileInput')` linkage and did not reset the `FAILED` state when switching modes.
+* **Resolution:**
+  1. Enabled dual HTTP (port 80) and HTTPS (port 443 with self-signed TLS certificates) on production Nginx and `docker-compose.prod.yml`. Accessing via `https://172.16.17.181/` satisfies the Secure Context requirement natively.
+  2. Isolated `FILE_UPLOAD` mode in `recording.service.ts` and `doctor-dashboard.component.ts` to trigger native `<input type="file">` file dialogs without querying `navigator.mediaDevices`.
+  3. Added auto-reset of `FAILED` error state on mode switching (`resetFailedState()`).
+  4. Added prominent in-app guidance with step-by-step Chrome flag instructions (`chrome://flags/#unsafely-treat-insecure-origin-as-secure`) for users preferring plain HTTP.
+

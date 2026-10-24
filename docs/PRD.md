@@ -141,4 +141,5 @@ sequenceDiagram
 * **FR-8.2 Full-Stack Container Orchestration:** Orchestrated with Docker Compose v2 across 4 isolated microservices (`cliniq-frontend-prod`, `cliniq-backend-prod`, `cliniq-postgres-prod`, `cliniq-redis-prod`).
 * **FR-8.3 Single-Origin Unified Ingress:** Single ingress port 80 handled by Nginx reverse proxy serving the Angular 19 SPA and routing API, RAG, and health endpoints to the backend with zero CORS issues.
 * **FR-8.4 Automated Telemetry Verification:** Real-time `/health` telemetry endpoint monitoring database health, tracing, and storage persistence. All 6 automated deployment tests verified passing (100%).
+* **FR-8.5 Multi-Modal Secure Audio Acquisition & Port 443 TLS:** Dual ingress on port 80 (HTTP) and port 443 (HTTPS TLS 1.2/1.3) with self-signed SSL certificates ensuring W3C Secure Context compliance for browser hardware capture (`navigator.mediaDevices`). Seamless channel fallback to direct file uploads (`FILE_UPLOAD`) with drag-and-drop support, isolated from browser media streams, and in-app browser configuration setup guides.
 
