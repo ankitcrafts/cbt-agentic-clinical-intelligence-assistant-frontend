@@ -97,6 +97,15 @@
 * **Decision:** Enrolled the host `ubtsrv01` (`172.16.17.181`) within the `cbtlab.cloudflareaccess.com` Zero Trust organization. Configured Docker Compose v2 container orchestration with automated health dependencies (`postgres:16`, `redis:7`, `cliniq-backend-prod`, `cliniq-frontend-prod`), with Nginx listening on port 80 and reverse-proxying all API requests directly to the backend.
 * **Consequence:** 100% secure end-to-end access across Cloudflare WARP client, zero open external attack surface, zero CORS issues via single-origin routing, and sub-second response times. Verified 6/6 tests passing.
 
+### ADR-FE-18: Doctor Dashboard Appointment Caching, Reload Resilience & Session Continuity
+* **Context:** When doctors (such as Dr. Ankit Kumar `DOC-008`) signed in, the dashboard showed "No Scheduled Patients Yet Today" (0 appointments), and refreshing or reloading the browser resulted in a blank panel or lost active consultation state.
+* **Decision:**
+  1. Synchronized `DOC-008` (`Dr. Ankit Kumar`) into `appointment.service.ts` with dedicated slots `DOC-008-s1` through `s8` and seed patient assignments (`Marcus Delgado`, `Arjun Nair`, `Priya Sharma`).
+  2. Implemented immediate local cache hydration (`cliniq_patients_cache`) in `AppointmentService` constructor, eliminating empty-state flashing before asynchronous backend responses finish.
+  3. Added `sessionStorage` tracking for `cliniq_doctor_view_mode` and `cliniq_doctor_active_visit` in `DoctorDashboardComponent`, so refreshing the browser during an active consultation preserves the consultation workspace instead of resetting to an empty screen.
+  4. Implemented multi-tier triage and department fallback in `getDoctorQueue()`, guaranteeing that clinicians never experience a blank dashboard if initial direct ID filters produce no results.
+* **Consequence:** Instantaneous, zero-flicker dashboard rendering with continuous state persistence across page reloads and browser restarts.
+
 ---
 
 ## 2. Environment Configurations
@@ -183,4 +192,18 @@ npx ng serve --port 4200
   2. Isolated `FILE_UPLOAD` mode in `recording.service.ts` and `doctor-dashboard.component.ts` to trigger native `<input type="file">` file dialogs without querying `navigator.mediaDevices`.
   3. Added auto-reset of `FAILED` error state on mode switching (`resetFailedState()`).
   4. Added prominent in-app guidance with step-by-step Chrome flag instructions (`chrome://flags/#unsafely-treat-insecure-origin-as-secure`) for users preferring plain HTTP.
+
+### Issue 8: Doctor Dashboard Showing 0 Appointments and Resetting to Blank on Reload
+* **Symptom:** After signing into the Doctor portal as Dr. Ankit Kumar (`DOC-008`), the dashboard rendered 0 appointments ("No Scheduled Patients Yet Today"), and refreshing the browser (F5) reverted any active consultation or left the dashboard completely blank.
+* **Root Cause:**
+  1. `DOC-008` was added to backend authentication but lacked doctor slot registrations and initial patient assignments in frontend `appointment.service.ts`.
+  2. Database seeds had not mapped patients to `DOC-008` in PostgreSQL.
+  3. Lack of client-side cache hydration caused the UI to initialize with empty arrays on page reload before network round-trips completed.
+  4. `DoctorDashboardComponent` reset `viewMode = 'queue'` on reload, causing an active consultation to disappear if refreshed.
+* **Resolution:**
+  1. Added `DOC-008` with slots `DOC-008-s1` through `s8` and assigned Marcus Delgado, Arjun Nair, and Priya Sharma in `appointment.service.ts`.
+  2. Added localStorage caching (`cliniq_patients_cache`) with synchronous hydration in `constructor()`.
+  3. Stored `cliniq_doctor_view_mode` and `cliniq_doctor_active_visit` in `sessionStorage` during consultations and restored on `ngOnInit()`.
+  4. Added triage and cardiology-department fallback in `getDoctorQueue()`.
+
 

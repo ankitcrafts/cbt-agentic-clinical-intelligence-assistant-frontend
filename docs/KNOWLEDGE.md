@@ -191,5 +191,9 @@ The production deployment on host `ubtsrv01` (`172.16.17.181`) is secured throug
   * Health Telemetry: `http://172.16.17.181/health` -> Nginx -> `http://backend:8000/health`
   * Swagger OpenAPI: `http://172.16.17.181/docs` -> Nginx -> `http://backend:8000/docs`
 
+---
 
-
+## 11. Clinical Outpatient Triage & Specialist Queue Auto-Assignment
+* **Specialist Directory Alignment:** Clinicians registered in EHR systems (`DOC-008` — Dr. Ankit Kumar, Senior Resident Specialist, Cardiology) must maintain pre-configured appointment availability slots (`09:00 AM`, `09:45 AM`, `10:30 AM`, etc.).
+* **Triage Routing Heuristics:** In outpatient clinical operations, when a patient presents with cardiac indications (e.g., elevated BP, arrhythmias, palpitation episodes, hypertension), the intake triage service dynamically pairs the patient with Cardiology specialists.
+* **Session Persistence Principles:** Outpatient clinicians frequently consult clinical records while shifting between physical patient rooms or refreshing EHR browser tabs. The user interface must preserve active visit context (`sessionStorage`) and queue rosters (`localStorage`) to guarantee uninterrupted care continuity.

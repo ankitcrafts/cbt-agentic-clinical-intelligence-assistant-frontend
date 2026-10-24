@@ -165,6 +165,10 @@ flowchart TD
 * **Braces Prevention:** Explicitly eliminates raw `{}` by verifying `Object.keys().length > 0` and sanitizing stringified JSON.
 * **Triage Inheritance:** If no vitals are spoken during dialogue, intake triage vitals (`${intakeVitals} (Intake)`) are presented seamlessly.
 
+### 2.6 Doctor Queue State Hydration, Cache Layer & Consultation Session Continuity
+* **Dual-Tier State Hydration:** To prevent dashboard flicker or blank panels when signing in or reloading, `AppointmentService` initializes its `patients` signal directly from `localStorage.getItem('cliniq_patients_cache')` inside its constructor.
+* **Consultation View Continuity:** Active consultation state (`viewMode = 'consultation'` and `visitDetails`) is persisted to `sessionStorage` (`cliniq_doctor_view_mode`, `cliniq_doctor_active_visit`). On page refresh (`F5`), `DoctorDashboardComponent.ngOnInit()` detects the stored session and immediately restores the active consultation view.
+* **Resilient Queue Fallback:** `getDoctorQueue(doctorName, doctorId)` first filters by exact doctor ID and normalized name. If no appointments are returned, it automatically queries unassigned triage patients (`arrivalStatus == 'ARRIVED'`) and department-matching patients (e.g. Cardiology), ensuring the clinician dashboard is never blank.
 
 ---
 

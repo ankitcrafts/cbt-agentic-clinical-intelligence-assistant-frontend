@@ -151,6 +151,16 @@ $slate-900:   #0f172a;
 * **Actionable Guide Toggle:** Interactive button with setup instructions toggle (`.showInsecureContextHelp`).
 * **Instruction Card:** Elevated dark container (`rgba(15, 23, 42, 0.95)`), cyan border (`1px solid rgba(56, 189, 248, 0.35)`), step-by-step Chrome flag guidance, and direct HTTPS link (`https://172.16.17.181/`).
 
+### 4.9 Doctor Queue Roster & Appointment Schedule Cards
+* **Header Greeting & Doctor ID Badge:** Displays doctor name, ID pill (`ID: DOC-008 · Cardiology`), hospital affiliation, and on-duty status pill.
+* **KPI Metrics Strip:** 4 distinct counter cards (Total Today, In Progress, Waiting, Remaining) with clean numerical metrics and descriptive status subtitles.
+* **Schedule Card List (`.schedule-card`):**
+  * Time slot indicator (`09:00 AM`, `09:45 AM`, `10:30 AM`).
+  * Patient initials badge circle, full patient name, demographics chip (`42M · #00847261`), and clinical visit reason.
+  * Arrival status pill (`IN_CONSULTATION` in green/emerald, `SCHEDULED` in slate/blue, `ARRIVED` in amber/yellow).
+  * One-click "Start Consultation" or "Resume Consultation" action button.
+* **Zero-Flicker Skeleton & Empty State Prevention:** Cached signal data loads synchronously before HTTP responses, preventing the layout from collapsing into an empty state ("No Scheduled Patients Yet Today") on page refresh.
+
 ---
 
 ## 5. UI Micro-Interactions & Animations
