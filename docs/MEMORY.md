@@ -206,4 +206,30 @@ npx ng serve --port 4200
   3. Stored `cliniq_doctor_view_mode` and `cliniq_doctor_active_visit` in `sessionStorage` during consultations and restored on `ngOnInit()`.
   4. Added triage and cardiology-department fallback in `getDoctorQueue()`.
 
+### Issue 9: pgAdmin 4 Local vs Remote Container Database Desynchronization
+* **Symptom:** Developer's pgAdmin 4 only displayed 17 historical test rows ending on Oct 21 in `soap_feedback` and appeared not to reflect data saved from `https://172.16.17.181/`.
+* **Root Cause:**
+  1. pgAdmin 4 was connected to local Windows PostgreSQL (`localhost:5432/cliniq_db`), whereas the deployed application ran on remote server `172.16.17.181` inside Docker container `cliniq-postgres-prod` writing to database `cliniIQ`.
+  2. The production Docker Compose configuration did not map port 5432 to the host, preventing external pgAdmin connections.
+  3. The consultation modal in `doctor-dashboard.component.ts` only saved to `soap_feedback` when doctors clicked "Share SOAP" or "Save", but omitted saving when doctors clicked "Close & Complete Consultation".
+* **Resolution:**
+  1. Exposed port `5432:5432` on `cliniq-postgres-prod` in `docker-compose.prod.yml`.
+  2. Created mirror database `cliniq_db` and imported all historical rows from the local machine into the production container using dollar-quoted SQL strings.
+  3. Integrated `saveFinalSOAPToDatabase()` directly into `closeAndCompleteConsultation()` in `doctor-dashboard.component.ts`.
+  4. Updated backend scheduling routes to ensure automatic synchronization of both `DoctorModel` (`doctors` table) and `soap_feedback` table on session completion.
+
+---
+
+## 4. Architectural Decision Records (ADRs)
+
+### ADR 14: Relational Persistence Port Exposure & Dual-Trigger SOAP Synchronization
+* **Status:** Accepted (2026-10-27)
+* **Context:** Remote administrative verification of clinical database tables required direct SQL access to the containerized database from client machines running pgAdmin 4 over Cloudflare Zero Trust. Additionally, clinical assessments generated during consultations had to be guaranteed persistence in relational tables (`soap_feedback` and `doctors`).
+* **Decision:**
+  1. Publish PostgreSQL port `5432` from `cliniq-postgres-prod` to the host network interface.
+  2. Implement dual-trigger SOAP feedback persistence in both frontend and backend upon consultation completion.
+  3. Synchronize `DoctorModel` alongside `User` on all clinician lifecycle events.
+* **Consequences:** Eliminates data loss during rapid consultation closeouts and enables direct, secure SQL observability across the private network.
+
+
 

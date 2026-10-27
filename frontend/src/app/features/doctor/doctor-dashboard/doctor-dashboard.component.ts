@@ -2393,6 +2393,13 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       // Add to local patientSessions list
       this.patientSessions.push(newSessionRecord);
 
+      // Persist finalized SOAP note & review feedback to SOAPFeedback table in PostgreSQL
+      try {
+        this.saveFinalSOAPToDatabase();
+      } catch (soapErr) {
+        console.warn('Auto-save SOAP feedback on completion warning:', soapErr);
+      }
+
       // 4. Complete consultation on backend and update last visit date
       const res = await this.appointmentService.completeConsultation(patientId, docId, docName);
 

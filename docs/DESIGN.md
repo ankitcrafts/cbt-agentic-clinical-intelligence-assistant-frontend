@@ -161,6 +161,13 @@ $slate-900:   #0f172a;
   * One-click "Start Consultation" or "Resume Consultation" action button.
 * **Zero-Flicker Skeleton & Empty State Prevention:** Cached signal data loads synchronously before HTTP responses, preventing the layout from collapsing into an empty state ("No Scheduled Patients Yet Today") on page refresh.
 
+### 4.10 Consultation Completion & SOAP Persistence Flow
+* **"Close & Complete Consultation" Action:** Modal action button in `doctor-dashboard.component.html` that triggers `closeAndCompleteConsultation()`.
+* **Dual Persistence Pipeline:**
+  1. Calls `saveFinalSOAPToDatabase()` to commit Subjective, Objective, Assessment, Plan notes and feedback to `soap_feedback`.
+  2. Updates session status to `COMPLETED` and updates appointment record.
+  3. Displays a confirmation toast and transitions cleanly back to the doctor queue view.
+
 ---
 
 ## 5. UI Micro-Interactions & Animations
@@ -168,4 +175,5 @@ $slate-900:   #0f172a;
 * **Pulse Glow:** Subtle breathing animation around the microphone recording button when active (`@keyframes pulse-ring`).
 * **Dedicated Follow-up Protocol Tab:** Houses the full clinical protocol inquiry system with priority indicator pillars (High/Moderate/Routine), live ambient verbal prompting banners, and protocol fulfillment tracking.
 * **High-Contrast Active Notice Banner:** Professional, emoji-free prompt banner with an emerald-bordered gradient, pulsing live ambient indicator, structured clinical metadata tags, and accessible dismiss button for high visual clarity across all display modes.
+
 

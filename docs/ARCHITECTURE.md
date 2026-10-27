@@ -240,3 +240,16 @@ graph TD
   * **Resources:** 41 GB RAM, Docker 29.1.3, Docker Compose v2.40.3.
   * **Security & Ingress:** Cloudflare Zero Trust organization `cbtlab` (`cbtlab.cloudflareaccess.com`). Dual HTTP (80) & HTTPS (443) ingress.
   * **Status:** 100% operational. Accessible at `http://172.16.17.181/` and `https://172.16.17.181/`.
+
+---
+
+## 7. Relational Persistence Architecture & External Client Ingress
+
+* **Database Port Publishing (`5432:5432`):**
+  * `cliniq-postgres-prod` exposes container port 5432 to host `172.16.17.181`.
+  * Allows direct inspection and management from external database clients (such as pgAdmin 4 or DBeaver) operating over Cloudflare Zero Trust / LAN.
+  * Dual-database cluster supports both the production database `cliniIQ` and the historical/mirror database `cliniq_db`.
+* **Client-Side Guaranteed SOAP Persistence (`DoctorDashboardComponent`):**
+  * When a physician finishes a consultation, `closeAndCompleteConsultation()` in `doctor-dashboard.component.ts` invokes `saveFinalSOAPToDatabase()` prior to finalizing the session.
+  * This guarantees that even if the clinician closes the consultation modal without explicitly clicking "Share", the active SOAP note is dispatched to the backend and committed into the relational `soap_feedback` table.
+

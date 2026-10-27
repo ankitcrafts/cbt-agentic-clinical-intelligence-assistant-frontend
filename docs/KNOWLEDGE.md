@@ -197,3 +197,19 @@ The production deployment on host `ubtsrv01` (`172.16.17.181`) is secured throug
 * **Specialist Directory Alignment:** Clinicians registered in EHR systems (`DOC-008` — Dr. Ankit Kumar, Senior Resident Specialist, Cardiology) must maintain pre-configured appointment availability slots (`09:00 AM`, `09:45 AM`, `10:30 AM`, etc.).
 * **Triage Routing Heuristics:** In outpatient clinical operations, when a patient presents with cardiac indications (e.g., elevated BP, arrhythmias, palpitation episodes, hypertension), the intake triage service dynamically pairs the patient with Cardiology specialists.
 * **Session Persistence Principles:** Outpatient clinicians frequently consult clinical records while shifting between physical patient rooms or refreshing EHR browser tabs. The user interface must preserve active visit context (`sessionStorage`) and queue rosters (`localStorage`) to guarantee uninterrupted care continuity.
+
+---
+
+## 12. PostgreSQL Relational Administration & pgAdmin 4 Connectivity
+
+### 12.1 Local vs Production Database Architecture
+* **Local Windows Instance:** A local PostgreSQL 18 service running on Windows developer machines maintains `cliniq_db`, storing historical test data.
+* **Production Deployed Instance:** The production container `cliniq-postgres-prod` runs on `172.16.17.181` hosting both `cliniIQ` (primary production) and `cliniq_db` (mirror database).
+* **Port Ingress & Connection Configuration:**
+  * Host: `172.16.17.181`
+  * Port: `5432`
+  * Maintenance Database: `cliniIQ` (or `cliniq_db`)
+  * Username: `clinIQ_user`
+  * Password: `cliniq_secure_pass_2026`
+  * Network: Requires active Cloudflare Zero Trust (WARP client) tunnel or direct LAN connectivity to subnet `172.16.17.0/24`.
+
