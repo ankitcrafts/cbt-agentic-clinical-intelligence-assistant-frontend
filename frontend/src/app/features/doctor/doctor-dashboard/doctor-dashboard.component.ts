@@ -176,19 +176,14 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   // 6-Tab CDS Active Tab
   activeTab: 'analysis' | 'clinical' | 'confidence' | 'followup' | 'medicines' | 'soap' = 'analysis';
 
-  // Live Transcript Exchanges (Dynamic per patient, matching consultation dialog)
-  transcriptExchanges: any[] = [
-    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Good morning, Marcus. How have you been feeling since our last visit?' },
-    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: "Mostly okay, but I've been getting these headaches in the afternoon. Usually around 2 or 3pm." },
-    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'How often are these headaches occurring? Daily, a few times a week?' },
-    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Maybe four or five times a week. They last about an hour.' },
-    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'On a scale of 1 to 10, how would you rate the pain?' },
-    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Maybe a 5 or 6. Uncomfortable but I can still work.' },
-    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Where exactly do you feel the pain? Is it throbbing, sharp, or dull?' },
-    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'Dull pressure, like a tight band around my forehead and temples.' },
-    { isDoctor: true, initials: 'YT', speaker: 'Dr. Yuki Tanaka', text: 'Any visual changes, nausea, or sensitivity to light with them?' },
-    { isDoctor: false, initials: 'MD', speaker: 'Marcus Delgado', text: 'No, nothing like that. Just the dull ache and afternoon fatigue.' }
-  ];
+  // Live Transcript Exchanges (starts fresh and empty for active sessions)
+  transcriptExchanges: any[] = [];
+  liveActiveTranscriptExchanges: any[] = [];
+  liveActiveTranscript: string = '';
+  liveActiveSuggestions: any[] = [];
+  liveActiveAnalysis: any = null;
+  liveActiveSoapReport: any = null;
+
 
   // Interactive SOAP Editing & Reframing State
   editedSoapReport: { subjective: string; objective: string; assessment: string; plan: string } | null = null;
@@ -304,7 +299,26 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
             this.visitDetails = parsed;
             this.viewMode = 'consultation';
             this.rightPanelMode = 'suggestions';
-            this.recordingService.switchPatient(parsed.visitId);
+            this.selectedSessionId = 'live';
+            this.transcriptExchanges = [];
+            this.liveActiveTranscriptExchanges = [];
+            this.liveActiveTranscript = '';
+            this.liveActiveSuggestions = [];
+            this.liveActiveAnalysis = null;
+            this.liveActiveSoapReport = null;
+            this.aiSuggestionsList = [];
+            this.editedSoapReport = null;
+            this.isSoapManuallyEdited = false;
+            this.recordingService.resetPatientState(parsed.visitId);
+            this.recordingService.latestTranscript.set('');
+            this.recordingService.latestExchanges.set([]);
+            this.recordingService.latestSuggestions.set([]);
+            this.recordingService.latestClinicalAnalysis.set(null);
+            this.recordingService.getPatientConsultationSessions(parsed.visitId).subscribe({
+              next: (sessions) => {
+                this.patientSessions = sessions || [];
+              }
+            });
           }
         }
       } catch (e) {
@@ -349,9 +363,15 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     // Switch patient context in recording service
     this.recordingService.switchPatient(patientId);
     this.transcriptExchanges = [];
+    this.liveActiveTranscriptExchanges = [];
+    this.liveActiveTranscript = '';
+    this.liveActiveSuggestions = [];
+    this.liveActiveAnalysis = null;
+    this.liveActiveSoapReport = null;
     this.patientSessions = [];
     this.selectedSessionId = 'live'; // Always initialize in active live appointment session
     this.editedSoapReport = null;
+    this.isSoapManuallyEdited = false;
     this.patientSummaryText = '';
     this.answeredQuestionIds.clear();
     this.isFollowUpCompleted = false;
@@ -441,6 +461,11 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.recordingService.resetState();
 
     this.transcriptExchanges = [];
+    this.liveActiveTranscriptExchanges = [];
+    this.liveActiveTranscript = '';
+    this.liveActiveSuggestions = [];
+    this.liveActiveAnalysis = null;
+    this.liveActiveSoapReport = null;
     this.aiSuggestionsList = [];
     this.selectedSessionId = 'live';
     this.editedSoapReport = null;
@@ -483,7 +508,6 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   selectSession(session: any): void {
     this.selectedSessionId = session.id;
-    this.recordingService.loadConsultationSession(session);
     this.transcriptExchanges = session.conversation || [];
     this.editedSoapReport = session.soapReport || session.soap_report || null;
     this.isSoapManuallyEdited = !!this.editedSoapReport;
@@ -495,15 +519,20 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
 
   selectLiveSession(): void {
     this.selectedSessionId = 'live';
-    const patientId = this.visitDetails.visitId;
-    this.recordingService.switchPatient(patientId);
-    this.transcriptExchanges = this.recordingService.latestExchanges() || [];
-    this.aiSuggestionsList = this.recordingService.latestSuggestions() || [];
-    this.editedSoapReport = null;
+    this.transcriptExchanges = this.liveActiveTranscriptExchanges || [];
+    this.aiSuggestionsList = this.liveActiveSuggestions || [];
+    this.editedSoapReport = this.liveActiveSoapReport || null;
     this.isSoapManuallyEdited = false;
     this.patientSummaryText = '';
     this.answeredQuestionIds.clear();
     this.isFollowUpCompleted = false;
+    this.rightPanelMode = 'suggestions';
+
+    // Synchronize recording service live signals with the active session state
+    this.recordingService.latestTranscript.set(this.liveActiveTranscript || '');
+    this.recordingService.latestExchanges.set(this.liveActiveTranscriptExchanges || []);
+    this.recordingService.latestSuggestions.set(this.liveActiveSuggestions || []);
+    this.recordingService.latestClinicalAnalysis.set(this.liveActiveAnalysis || null);
   }
 
   get canRunClinicalAnalysis(): boolean {
@@ -540,6 +569,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         next: (res) => {
           console.log('Clinical analysis generated dynamically:', res);
           this.isProcessingAudio = false;
+          this.liveActiveAnalysis = res;
           this.editedSoapReport = null;
         },
         error: (err) => {
@@ -697,9 +727,19 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         console.log('Google Drive upload & Deepgram transcription success:', res);
-        this.isProcessingAudio = false;
         if (res.exchanges && res.exchanges.length > 0) {
+          this.liveActiveTranscriptExchanges = res.exchanges;
           this.transcriptExchanges = res.exchanges;
+        }
+        if (res.transcript) {
+          this.liveActiveTranscript = res.transcript;
+        }
+        const incomingSuggestions = res.aiSuggestions || (res as any).suggestions;
+        if (incomingSuggestions && incomingSuggestions.length > 0) {
+          this.liveActiveSuggestions = incomingSuggestions;
+        }
+        if (res.clinical_analysis) {
+          this.liveActiveAnalysis = res.clinical_analysis;
         }
         this.editedSoapReport = null;
         this.isSoapManuallyEdited = false;
@@ -723,18 +763,40 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   get currentTranscriptExchanges(): any[] {
-    const live = this.recordingService.latestExchanges();
-    return live && live.length > 0 ? live : this.transcriptExchanges;
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      return selected?.conversation || this.transcriptExchanges || [];
+    }
+    // For "+ Today's Active Session", return ONLY today's active session live exchanges!
+    // Never fall back to previous conversations.
+    return this.liveActiveTranscriptExchanges || [];
   }
 
   get currentAISuggestions(): any[] {
-    const live = this.recordingService.latestSuggestions();
-    const analysis = this.recordingService.latestClinicalAnalysis();
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      const candidateList = selected?.aiSuggestions 
+        || selected?.ai_suggestions 
+        || selected?.clinicalAnalysis?.ai_suggestions 
+        || selected?.clinicalAnalysis?.aiSuggestions 
+        || this.aiSuggestionsList 
+        || [];
+      return this.formatSuggestions(candidateList);
+    }
+
+    const live = this.liveActiveSuggestions && this.liveActiveSuggestions.length > 0
+      ? this.liveActiveSuggestions
+      : this.recordingService.latestSuggestions();
     const candidateList = (live && live.length > 0)
       ? live
       : (this.aiSuggestionsList && this.aiSuggestionsList.length > 0)
         ? this.aiSuggestionsList
-        : (analysis?.ai_suggestions || analysis?.aiSuggestions || []);
+        : [];
+
+    return this.formatSuggestions(candidateList);
+  }
+
+  private formatSuggestions(candidateList: any[]): any[] {
 
     if (candidateList && candidateList.length > 0) {
       return candidateList.map((s: any, idx: number) => {
@@ -1057,23 +1119,22 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   get currentDifferentialDiagnoses(): any[] {
-    const analysis = this.recordingService.latestClinicalAnalysis();
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      const rawDiff = selected?.clinicalAnalysis?.differential_diagnosis 
+        || selected?.clinicalAnalysis?.differentialDiagnosis
+        || selected?.clinical_analysis?.differential_diagnosis
+        || selected?.clinical_analysis?.differentialDiagnosis;
+      if (Array.isArray(rawDiff) && rawDiff.length > 0) {
+        return this.formatDifferentialDiagnoses(rawDiff);
+      }
+      return [];
+    }
+
+    const analysis = this.liveActiveAnalysis || this.recordingService.latestClinicalAnalysis();
     const rawDiff = analysis?.differential_diagnosis || analysis?.differentialDiagnosis;
     if (Array.isArray(rawDiff) && rawDiff.length > 0) {
-      return rawDiff.map((d: any, idx: number) => {
-        const pct = Math.round(d.percentage || (d.confidence ? d.confidence * 100 : (d.confidence_score ? d.confidence_score * 100 : 75)));
-        const risk = (d.risk || d.risk_level || (pct > 70 ? 'high' : pct > 40 ? 'medium' : 'low')).toLowerCase();
-        return {
-          rank: d.rank || idx + 1,
-          title: d.title || d.name || d.condition || d.diagnosis || 'Clinical Assessment',
-          icdCode: d.icdCode || d.icd10_code || d.icd10 || d.icd_code || 'R69',
-          risk: risk,
-          riskLabel: risk,
-          percentage: pct,
-          color: d.color || (risk === 'high' ? '#0d9488' : risk === 'medium' ? '#f59e0b' : '#2dd4bf'),
-          description: d.description || d.reason || d.justification || d.recommended_plan || 'Evaluated based on clinical symptoms and encounter context.'
-        };
-      });
+      return this.formatDifferentialDiagnoses(rawDiff);
     }
     if (this.isFollowUpCompleted) {
       const dynamic = this.getDynamicDifferentialForCurrentPatient();
@@ -1087,8 +1148,45 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return [];
   }
 
+  private formatDifferentialDiagnoses(rawDiff: any[]): any[] {
+    return rawDiff.map((d: any, idx: number) => {
+      const pct = Math.round(d.percentage || (d.confidence ? d.confidence * 100 : (d.confidence_score ? d.confidence_score * 100 : 75)));
+      const risk = (d.risk || d.risk_level || (pct > 70 ? 'high' : pct > 40 ? 'medium' : 'low')).toLowerCase();
+      return {
+        rank: d.rank || idx + 1,
+        title: d.title || d.name || d.condition || d.diagnosis || 'Clinical Assessment',
+        icdCode: d.icdCode || d.icd10_code || d.icd10 || d.icd_code || 'R69',
+        risk: risk,
+        riskLabel: risk,
+        percentage: pct,
+        color: d.color || (risk === 'high' ? '#0d9488' : risk === 'medium' ? '#f59e0b' : '#2dd4bf'),
+        description: d.description || d.reason || d.justification || d.recommended_plan || 'Evaluated based on clinical symptoms and encounter context.'
+      };
+    });
+  }
+
   get currentRedFlags(): any[] {
-    const analysis = this.recordingService.latestClinicalAnalysis();
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      const flags = selected?.clinicalAnalysis?.red_flags 
+        || selected?.clinicalAnalysis?.redFlags 
+        || selected?.clinical_analysis?.red_flags 
+        || selected?.clinical_analysis?.redFlags;
+      if (Array.isArray(flags) && flags.length > 0) {
+        return flags.map((f: any) => typeof f === 'string' ? {
+          severity: 'WARNING',
+          title: f,
+          recommendation: 'Assess clinically during consultation'
+        } : {
+          severity: f.severity || 'WARNING',
+          title: f.title || f.warning || f.sign || 'Clinical warning indicator',
+          recommendation: f.recommendation || f.plan || 'Monitor during evaluation'
+        });
+      }
+      return [];
+    }
+
+    const analysis = this.liveActiveAnalysis || this.recordingService.latestClinicalAnalysis();
     const flags = analysis?.red_flags || analysis?.redFlags || analysis?.entities?.warning_signs;
     if (Array.isArray(flags) && flags.length > 0) {
       return flags.map((f: any) => typeof f === 'string' ? {
@@ -1114,7 +1212,27 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   get currentGuidelineMedicines(): any[] {
-    const analysis = this.recordingService.latestClinicalAnalysis();
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      const meds = selected?.clinicalAnalysis?.guideline_medicines 
+        || selected?.clinicalAnalysis?.guidelineMedicines 
+        || selected?.clinical_analysis?.guideline_medicines 
+        || selected?.clinical_analysis?.guidelineMedicines;
+      if (Array.isArray(meds) && meds.length > 0) {
+        return meds.map((m: any) => ({
+          name: m.name || m.drug_name || 'Prescription item',
+          drugClass: m.drugClass || m.drug_class || m.class || 'Therapeutic Agent',
+          grade: m.grade || 'Grade A',
+          source: m.source || 'NICE / BNF',
+          dosage: m.dosage || m.dose || 'As clinically directed',
+          recommendation: m.recommendation || m.clinical_indication || 'Guideline-directed therapy',
+          warning: m.warning || m.contraindications || 'Review patient contraindications before prescribing.'
+        }));
+      }
+      return [];
+    }
+
+    const analysis = this.liveActiveAnalysis || this.recordingService.latestClinicalAnalysis();
     const meds = analysis?.guideline_medicines || analysis?.guidelineMedicines || analysis?.medicines;
     if (Array.isArray(meds) && meds.length > 0) {
       return meds.map((m: any) => ({
@@ -1134,6 +1252,23 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   get currentConfidenceMetrics(): any {
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      const raw = selected?.clinicalAnalysis?.confidence_metrics 
+        || selected?.clinicalAnalysis?.confidenceMetrics
+        || selected?.clinical_analysis?.confidence_metrics
+        || selected?.clinical_analysis?.confidenceMetrics;
+      if (raw && (raw.overallScore != null || raw.overall_confidence != null || raw.top_differential_confidence_percent != null)) {
+        const score = raw.overallScore ?? Math.round((raw.overall_confidence ? raw.overall_confidence * 100 : raw.top_differential_confidence_percent) ?? 70);
+        return {
+          overallScore: score,
+          overallLevel: score >= 70 ? 'High — Clinical Consensus' : 'Moderate — Review',
+          subtext: raw.subtext || 'Historical session confidence calculation',
+          domains: this.getDynamicConfidenceMetrics().domains
+        };
+      }
+    }
+
     if (this.isFollowUpCompleted) {
       return {
         overallScore: 86,
@@ -1148,7 +1283,7 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
         ]
       };
     }
-    const analysis = this.recordingService.latestClinicalAnalysis();
+    const analysis = this.liveActiveAnalysis || this.recordingService.latestClinicalAnalysis();
     const raw = analysis?.confidence_metrics || analysis?.confidenceMetrics;
     if (raw && (raw.overallScore != null || raw.overall_confidence != null || raw.top_differential_confidence_percent != null)) {
       const score = raw.overallScore ?? Math.round((raw.overall_confidence ? raw.overall_confidence * 100 : raw.top_differential_confidence_percent) ?? 72);
@@ -1178,7 +1313,14 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   get currentSoapReport(): any {
-    const analysis = this.recordingService.latestClinicalAnalysis();
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      const soap = selected?.soapReport || selected?.soap_report;
+      if (soap && soap.subjective && soap.assessment && soap.plan) {
+        return soap;
+      }
+    }
+    const analysis = this.liveActiveAnalysis || this.recordingService.latestClinicalAnalysis();
     const live = analysis?.soap_report || analysis?.soapReport;
     if (live && live.subjective && live.assessment && live.plan) {
       return live;
