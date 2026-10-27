@@ -186,6 +186,15 @@ flowchart TD
 * **Consultation View Continuity:** Active consultation state (`viewMode = 'consultation'` and `visitDetails`) is persisted to `sessionStorage` (`cliniq_doctor_view_mode`, `cliniq_doctor_active_visit`). On page refresh (`F5`), `DoctorDashboardComponent.ngOnInit()` detects the stored session and immediately restores the active consultation view.
 * **Resilient Queue Fallback:** `getDoctorQueue(doctorName, doctorId)` first filters by exact doctor ID and normalized name. If no appointments are returned, it automatically queries unassigned triage patients (`arrivalStatus == 'ARRIVED'`) and department-matching patients (e.g. Cardiology), ensuring the clinician dashboard is never blank.
 
+### 2.7 Clinical Context Guard & Protocol Redirection Architecture
+* **Dual-Tier Dialogue Sanitization:** Both the client (`doctor-dashboard.component.ts: isOutOfContextDialogue()`) and microservice pipeline (`pipeline_service.py: _is_non_clinical()`) evaluate dialogue lexical tokens. When non-clinical discourse (academic reviews, software presentations, panel discussions, or technical chitchat) is identified without verified medical symptom tokens:
+  * **Summary & Key Findings:** The summary explicitly records the transcript as unverified presentation discourse and maintains the 3-field Key Findings layout (Chief Complaint, Symptoms, Vitals).
+  * **Clinical Decision Support:** Differential diagnoses are held in provisional status with 20% baseline certainty, preventing unwarranted diagnostic labels in EHR records. When dialogue contains urinary tokens (or matches registered complaints like nocturnal frequency), high-yield urological hypotheses (Nocturia/LUTS, BPH, OAB, Diabetes with Osmotic Diuresis) are populated dynamically.
+  * **Confidence Engine:** Caps baseline certainty at 20% (Low — Non-Clinical Dialogue) and prompts clinicians with targeted subtext to engage the patient via Follow-up inquiries.
+  * **Redirection Inquiries:** Generates 5 high-yield clinical redirection questions forcing conversation back to primary symptoms, onset chronology, acute red flags (dysuria, hematuria, urosepsis), chronic history, and functional morbidity.
+  * **Pharmacotherapy Safety Guard:** Withholds medication ordering under a "Grade A Safety Hold" until clinical dialogue validates symptoms.
+  * **SOAP Generation:** Maps non-clinical speech to Z00.00 unverified encounter in Assessment and establishes a clinical redirection plan.
+
 ---
 
 ## 3. Real-Time Audio Capture & Streaming Pipeline

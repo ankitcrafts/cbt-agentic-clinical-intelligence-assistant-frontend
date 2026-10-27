@@ -180,4 +180,15 @@ $slate-900:   #0f172a;
 * **Dedicated Follow-up Protocol Tab:** Houses the full clinical protocol inquiry system with priority indicator pillars (High/Moderate/Routine), live ambient verbal prompting banners, and protocol fulfillment tracking.
 * **High-Contrast Active Notice Banner:** Professional, emoji-free prompt banner with an emerald-bordered gradient, pulsing live ambient indicator, structured clinical metadata tags, and accessible dismiss button for high visual clarity across all display modes.
 
+---
+
+## 6. Out-of-Context Alert Banner & Clinical Redirection Styling
+
+* **Alert Banner Design System (`.out-of-context-alert-banner`):**
+  * **Visual Tokens:** `background: linear-gradient(135deg, rgba(245, 158, 11, 0.09) 0%, rgba(239, 68, 68, 0.05) 100%)`, `border: 1px solid rgba(245, 158, 11, 0.35)`, `border-radius: 10px`, `padding: 0.75rem 1.25rem`.
+  * **Alert Icon Pill (`.alert-icon-pill`):** Deep amber circular badge (`rgba(245, 158, 11, 0.18)`) with `color: #d97706` and centered FontAwesome warning icon (`fa-triangle-exclamation`).
+  * **Typography Tokens:** Title in bold amber (`color: #b45309`, `font-size: 0.82rem`), body copy in dark slate (`font-size: 0.78rem`, `line-height: 1.45`).
+  * **Direct Action Button (`.btn-jump-followup`):** High-contrast amber-crimson action button (`background: #b45309`, `color: #ffffff`, `font-weight: 600`, `font-size: 0.75rem`), transitioning on hover to `#92400e`, enabling the clinician to jump straight to the Follow-up tab with one click.
+  * **Visibility Lifecycle:** Displayed conditionally via `*ngIf="isOutOfContextDialogue() && !isFollowUpCompleted"`. Once the clinician conducts the follow-up inquiries or clinical audio is received, the banner dissolves via smooth CSS opacity fade-out.
+
 

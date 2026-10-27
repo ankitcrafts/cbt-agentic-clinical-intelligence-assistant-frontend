@@ -713,6 +713,25 @@
             </div>
           </div>
 
+          <!-- Non-Clinical / Out-of-Context Alert Banner -->
+          <div class="out-of-context-alert-banner animated-fade-in" *ngIf="isOutOfContextDialogue() && !isFollowUpCompleted">
+            <div class="alert-banner-left">
+              <div class="alert-icon-pill">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div class="alert-text-wrap">
+                <span class="alert-title">Non-Clinical Dialogue Detected · Redirection Protocol Active</span>
+                <span class="alert-message">
+                  Consultation audio contains non-medical dialogue. Operating under the <strong>Clinical Redirection Protocol</strong>. Ask the inquiries in the <strong>Follow-up</strong> tab to force the conversation back to <strong>{{ visitDetails.patientName }}</strong>'s health complaint: <em>"{{ visitDetails.reason }}"</em>.
+                </span>
+              </div>
+            </div>
+            <button type="button" class="btn-jump-followup" (click)="setActiveTab('followup')" title="Open Follow-up Redirection Protocol">
+              <i class="fa-solid fa-clipboard-list"></i>
+              <span>Follow-up Tab</span>
+            </button>
+          </div>
+
           <!-- Active Follow-Up Live Notification Banner -->
           <div class="active-notice-banner animated-fade-in" *ngIf="activeFollowUpNotice">
             <div class="notice-content-left">

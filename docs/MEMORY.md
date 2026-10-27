@@ -227,14 +227,15 @@ npx ng serve --port 4200
   4. The template getter `currentTranscriptExchanges` fell back to `this.transcriptExchanges` whenever live recording had not yet occurred, surfacing previous session turns.
 * **Resolution:**
   1. Separated live active recording state from past session historical inspection by introducing `liveActiveTranscriptExchanges: []`, `liveActiveTranscript: ''`, and `liveActiveAnalysis: null`.
-### Issue 9: Extraneous Administrative Clutter in KEY FINDINGS Card Grid
-* **Symptom:** In `doctor-dashboard.component.ts`, when viewing fresh consultation sessions or after completing follow-up inquiries, the KEY FINDINGS section rendered non-clinical administrative metrics (e.g. `PATIENT`, `PROTOCOL STATUS`, `DIAGNOSTIC CERTAINTY`, `VISIT TYPE`, `PATIENT DEMOGRAPHICS`, `SCHEDULED TIME`, `SESSION STATUS`, `DURATION / ONSET`, `SEVERITY`) alongside medical findings.
-* **Root Cause:** The `currentKeyFindings` getter contained separate fallback arrays populated with appointment scheduling and consultation metadata rather than maintaining pure triage metrics. Additionally, when `selectedSessionId !== 'live'`, `currentKeyFindings` relied on `recordingService.latestClinicalAnalysis()` which could be out-of-sync with the selected past session.
+### Issue 11: Audio Upload Freezing on Processing Banner & Locked "Run Clinical Analysis"
+* **Symptom:** In `doctor-dashboard.component.ts`, after uploading consultation audio, the transcript was rendered successfully, but the banner remained frozen showing *"Uploading audio to Google Drive & generating real-time transcript with Deepgram Nova-3..."* and the "Run Clinical Analysis" button remained disabled with an indefinite spinning spinner.
+* **Root Cause:**
+  1. `uploadRecording()` omitted `this.isProcessingAudio = false;` in its `next: (res) =>` callback. `isProcessingAudio` remained `true` indefinitely, locking the UI banner and disabling the analysis button.
+  2. The upload response returned snake_case suggestions (`res.ai_suggestions`) while client properties expected `aiSuggestions` or `suggestions`, leading to inconsistent suggestion ingestion.
 * **Resolution:**
-  1. Consolidated `currentKeyFindings` to strictly and always return only 3 clinical cards: `CHIEF COMPLAINT`, `SYMPTOMS`, and `VITALS`.
-  2. Implemented `currentActiveAnalysis` getter to unify data extraction across live consultations and historical sessions (`selected.clinicalAnalysis || selected.clinical_analysis`).
-  3. Added `getDynamicSymptomsFromContext()` heuristic pipeline inferring relevant clinical symptoms based on presenting reason, triage condition, or active transcript before NLP completion.
-  4. Updated `styles.scss` `.finding-card` with `&:last-child:nth-child(odd) { grid-column: 1 / -1; }` ensuring the 3rd card (Vitals) spans cleanly across both columns.
+  1. Added `this.isProcessingAudio = false;` to both `next` and `error` blocks in `uploadRecording()`.
+  2. Ingested polymorphic suggestion formats (`res.ai_suggestions || res.aiSuggestions || (res as any).suggestions`) and updated both `liveActiveSuggestions` and `aiSuggestionsList`.
+  3. Synchronized `liveActiveAnalysis` with `recordingService.latestClinicalAnalysis` so all CDS getters have immediate access to pipeline results.
 
 ---
 
@@ -266,6 +267,20 @@ npx ng serve --port 4200
   2. Ensure all 3 metrics resolve dynamically across all states: intake triage, active dialogue analysis, and archived historical encounters.
   3. Lay out the 3 cards in a 2-column grid where Chief Complaint and Symptoms occupy Row 1, and Vitals spans Row 2 full-width.
 * **Consequences:** Streamlines clinician cognitive load, adheres to standard medical presentation guidelines, and preserves responsive aesthetics across dark and light modes.
+
+### ADR 17: Clinical Context Guard & Protocol Redirection Architecture
+* **Status:** Accepted (2026-10-28)
+* **Context:** When ambient or uploaded audio captures non-clinical dialogue (academic presentations, project panel reviews, software code discussion), standard CDS engines risk hallucinating clinical disease labels and premature drug regimens. The system must recognize non-clinical speech, safely defer clinical conclusions, and actively equip the clinician to steer the conversation back to the patient's presenting health problem.
+* **Decision:**
+  1. Implement dual-tier lexical sanitization (`doctor-dashboard.component.ts: isOutOfContextDialogue()` and `pipeline_service.py: _is_non_clinical()`).
+  2. Guard all 6 CDS tabs during out-of-context speech:
+     - *Summary & Key Findings:* Mark dialogue unverified while strictly preserving the 3-card triage layout.
+     - *Clinical Decision:* Present provisional candidates with low diagnostic certainty (20%). Provide condition-specific differential for Nocturia & LUTS (R35.1), BPH (N40.1), OAB (N32.81), and Type 2 Diabetes (E11.9).
+     - *Confidence:* Set baseline certainty to 20% (Low — Non-Clinical Dialogue) with protocol completion subtext.
+     - *Follow-up:* Generate 5 high-yield clinical redirection inquiries designed to force conversation back to symptoms, onset, red flags, and chronic illness.
+     - *Medicines:* Place pharmacotherapy under a "Clinical Safety Guard" withholding prescriptions.
+     - *SOAP Report:* Document non-clinical transcript in Subjective, baseline vitals in Objective, inconclusive Z00.00 examination in Assessment, and redirection inquiries in Plan.
+* **Consequences:** Prevents diagnostic hallucination, enforces patient safety, and provides doctors with an actionable protocol to redirect non-clinical consultations.
 
 
 

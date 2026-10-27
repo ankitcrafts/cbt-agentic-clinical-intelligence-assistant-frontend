@@ -222,4 +222,21 @@ The production deployment on host `ubtsrv01` (`172.16.17.181`) is secured throug
   3. **Vitals (Objective Baseline):** Quantitative physiological metrics (BP, HR, SpO2, Temp, Glucose/Blood Sugar) providing immediate hemodynamic stability context.
 * **Contextual Heuristics:** In pre-NLP intake states, symptoms are dynamically inferred from triage reason matching validated medical clusters (Endocrine/Diabetes, Cardiovascular/Hypertension, Respiratory/Infection, Neurological/Headache, Gastrointestinal, Musculoskeletal, Preconception/Fertility). Upon audio transcription or entity extraction, NLP-extracted entities automatically supersede baseline heuristics.
 
+---
+
+## 14. Clinical Redirection Protocol & Nocturia / LUTS Diagnostic Ontology
+* **Non-Clinical Dialogue Risk & Clinical Safety:** In ambient listening environments, speech may capture non-clinical conversations (academic project presentations, software panels, technical slide discussions, or ambient chitchat). Passing non-clinical tokens directly into RAG diagnosis engines risks severe diagnostic hallucination and premature drug ordering. ClinIQ actively guards against this by triggering the **Clinical Redirection Protocol**.
+* **5-Question Clinical Redirection Strategy:**
+  1. **Primary Complaint Re-anchoring:** "What specific physical symptoms or health concerns brought you in for clinical consultation today?"
+  2. **Symptom Chronology & Acuity:** "When did your urinary symptoms or night-time awakenings first begin, and how many times do you wake up each night?"
+  3. **Acute Red-Flag Screening:** "Are you experiencing acute warning signs like burning urination, blood in urine, fever, flank pain, or sudden dizziness?"
+  4. **Chronic Comorbidity & Drug Reconciliation:** "Do you have any diagnosed medical conditions such as diabetes, high blood pressure, or prostate issues, and what regular medications do you take?"
+  5. **Morbidity & Quality of Life:** "How is this urinary frequency affecting your sleep quality, daily energy, and overall health?"
+* **Nocturia & Lower Urinary Tract Symptoms (LUTS) Ontology:**
+  * **Nocturia (ICD-10 R35.1):** Waking to void during the main sleep period. Waking hourly indicates severe sleep fragmentation driven by nocturnal polyuria, decreased bladder compliance, or detrusor instability.
+  * **Benign Prostatic Hyperplasia (ICD-10 N40.1):** Common etiology in adult males causing bladder outlet resistance, urinary hesitancy, post-void dribbling, and incomplete emptying.
+  * **Overactive Bladder (ICD-10 N32.81):** Detrusor overactivity resulting in sudden urgency and frequent small-volume nocturnal voids.
+  * **Type 2 Diabetes Mellitus with Osmotic Diuresis (ICD-10 E11.9):** High glycemic load exceeding renal threshold (180 mg/dL), provoking solute diuresis, polydipsia, and polyuria.
+  * **Evidence-Based Guideline Therapeutics (NICE CG97 / TA290):** Tamsulosin 0.4 mg once daily, Mirabegron 50 mg daily, evening fluid restriction 2 hours prior to sleep, 3-day frequency-volume bladder diary, and post-void residual bladder ultrasound.
+
 
