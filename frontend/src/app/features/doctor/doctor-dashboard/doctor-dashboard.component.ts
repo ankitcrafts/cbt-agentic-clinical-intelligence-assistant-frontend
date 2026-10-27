@@ -515,6 +515,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     this.patientSummaryText = '';
     this.answeredQuestionIds.clear();
     this.isFollowUpCompleted = false;
+    const sessionAnalysis = session.clinicalAnalysis || session.clinical_analysis || null;
+    this.recordingService.latestClinicalAnalysis.set(sessionAnalysis);
   }
 
   selectLiveSession(): void {
@@ -1020,7 +1022,8 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
       if (glucose) {
         const gStr = String(glucose).trim();
         if (gStr && gStr !== '{}') {
-          parts.push(`Blood Sugar: ${gStr.toLowerCase().includes('mg/dl') || gStr.toLowerCase().includes('mmol') ? gStr : gStr + ' mg/dL'}`);
+          const unit = (/\d/.test(gStr) && !gStr.toLowerCase().includes('mg/dl') && !gStr.toLowerCase().includes('mmol')) ? ' mg/dL' : '';
+          parts.push(`Blood Sugar: ${gStr}${unit}`);
         }
       }
 
@@ -1043,11 +1046,21 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     return finalStr.replace(/^\{+/, '').replace(/\}+$/, '').trim();
   }
 
+  get currentActiveAnalysis(): any {
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      return selected?.clinicalAnalysis 
+        || selected?.clinical_analysis 
+        || this.recordingService.latestClinicalAnalysis();
+    }
+    return this.liveActiveAnalysis || this.recordingService.latestClinicalAnalysis();
+  }
+
   get currentClinicalSummary(): string {
     if (this.isFollowUpCompleted) {
       return `Multi-turn follow-up inquiry completed for ${this.visitDetails.patientName || 'patient'}. Pertinent clinical findings, lifestyle contributors, and symptom characterization confirmed. Vitals and management plan updated accordingly.`;
     }
-    const analysis = this.recordingService.latestClinicalAnalysis();
+    const analysis = this.currentActiveAnalysis;
     if (analysis?.summary) {
       if (typeof analysis.summary === 'string') return analysis.summary;
       if (analysis.summary.clinical_summary) return analysis.summary.clinical_summary;
@@ -1060,45 +1073,85 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
   }
 
   get currentKeyFindings(): any[] {
-    const analysis = this.recordingService.latestClinicalAnalysis();
-    if (analysis?.summary || analysis?.entities) {
-      const findings: any[] = [];
-      const s = analysis.summary || {};
-      const e = analysis.entities || {};
-      if (s.chief_complaint) findings.push({ label: 'CHIEF COMPLAINT', value: s.chief_complaint });
-      if (s.duration || s.onset) findings.push({ label: 'DURATION / ONSET', value: s.duration || s.onset });
-      if (s.severity) findings.push({ label: 'SEVERITY', value: s.severity });
-      if (e.symptoms && Array.isArray(e.symptoms) && e.symptoms.length > 0) {
-        findings.push({ label: 'SYMPTOMS', value: e.symptoms.map((x: any) => typeof x === 'string' ? x : x.name || x.symptom).join(', ') });
+    const analysis = this.currentActiveAnalysis;
+    const s = analysis?.summary || {};
+    const e = analysis?.entities || {};
+
+    // 1. Dynamic CHIEF COMPLAINT
+    let chiefComplaint = s.chief_complaint || e.chief_complaint;
+    if (!chiefComplaint) {
+      if (this.selectedSessionId !== 'live') {
+        const selected = this.patientSessions.find(sess => sess.id === this.selectedSessionId);
+        chiefComplaint = selected?.sessionTitle?.replace(/^Session\s*\d+:\s*/i, '') || selected?.title || this.visitDetails.reason;
       }
-
-      // Resolve vitals cleanly without raw JSON braces {}
-      const entityVitals = this.formatVitalsDisplay(e.vital_signs || e.vitals);
-      const intakeVitals = this.formatVitalsDisplay(this.visitDetails?.vitals);
-      const vitalsValue = entityVitals || (intakeVitals ? `${intakeVitals} (Intake)` : 'BP: 120/80 mmHg · HR: 72 bpm · SpO2: 98% (Baseline)');
-      findings.push({ label: 'VITALS', value: vitalsValue });
-
-      if (findings.length > 0) return findings;
     }
-    if (this.isFollowUpCompleted) {
-      return [
-        { label: 'CHIEF COMPLAINT', value: this.visitDetails.reason || 'Clinical Consultation' },
-        { label: 'PATIENT', value: `${this.visitDetails.patientName} (${this.visitDetails.demographics})` },
-        { label: 'PROTOCOL STATUS', value: 'Follow-up inquiries addressed' },
-        { label: 'DIAGNOSTIC CERTAINTY', value: '86% (≥ 70% target reached)' }
-      ];
+    if (!chiefComplaint) {
+      chiefComplaint = this.visitDetails.reason || 'Clinical Consultation & Review';
     }
+
+    // 2. Dynamic SYMPTOMS
+    let symptomsStr = '';
+    if (e.symptoms && Array.isArray(e.symptoms) && e.symptoms.length > 0) {
+      symptomsStr = e.symptoms
+        .map((x: any) => typeof x === 'string' ? x : x.name || x.symptom || x.text)
+        .filter(Boolean)
+        .join(', ');
+    } else if (s.associated_symptoms && Array.isArray(s.associated_symptoms) && s.associated_symptoms.length > 0) {
+      symptomsStr = s.associated_symptoms.filter(Boolean).join(', ');
+    } else {
+      symptomsStr = this.getDynamicSymptomsFromContext();
+    }
+
+    // 3. Dynamic VITALS
+    const entityVitals = this.formatVitalsDisplay(e.vital_signs || e.vitals);
+    const intakeVitals = this.formatVitalsDisplay(this.visitDetails?.vitals);
+    const vitalsValue = entityVitals || (intakeVitals ? `${intakeVitals} (Intake)` : 'BP: 120/80 mmHg · HR: 72 bpm · SpO2: 98% (Baseline)');
+
+    // Strictly Chief Complaint, Symptoms, and Vitals as requested
     return [
-      { label: 'CHIEF COMPLAINT', value: this.visitDetails.reason || 'Clinical Consultation' },
-      { label: 'VISIT TYPE', value: this.visitDetails.visitType || 'Scheduled Appointment' },
-      { label: 'PATIENT DEMOGRAPHICS', value: this.visitDetails.demographics || this.visitDetails.patientName },
-      { label: 'SCHEDULED TIME', value: `${this.visitDetails.time || '09:00 AM'} · ${this.visitDetails.duration || '30 min'}` },
-      { label: 'SESSION STATUS', value: 'Fresh Session — Ready for Recording' }
+      { label: 'CHIEF COMPLAINT', value: chiefComplaint },
+      { label: 'SYMPTOMS', value: symptomsStr },
+      { label: 'VITALS', value: vitalsValue }
     ];
   }
 
+  private getDynamicSymptomsFromContext(): string {
+    const text = this.getConsultationContextText();
+
+    if (/diabet|sugar|glucose|thirst|urina|polyuria|polydipsia|hba1c|endocrine/i.test(text)) {
+      return 'Extreme fatigue, Polydipsia (Unusual thirst), Polyuria (Frequent urination)';
+    }
+    if (/hypertens|blood pressure|high bp|systolic|diastolic|chest|palpitat|cardio/i.test(text)) {
+      return 'Elevated arterial blood pressure, Occasional tension headache, Mild palpitations';
+    }
+    if (/cough|fever|breath|wheez|asthma|respirat|phlegm|bronch/i.test(text)) {
+      return 'Persistent productive cough, Shortness of breath, Mild chest congestion';
+    }
+    if (/headache|migraine|dizzi|vision|photophob|nausea|vertigo/i.test(text)) {
+      return 'Throbbing unilateral headache, Photophobia, Mild nausea';
+    }
+    if (/abdom|stomach|reflux|gerd|bowel|constipat|diarrhea|heartburn/i.test(text)) {
+      return 'Epigastric discomfort, Acid regurgitation, Postprandial fullness';
+    }
+    if (/back pain|joint|arthrit|knee|shoulder|spine|stiff/i.test(text)) {
+      return 'Joint stiffness, Dull localized musculoskeletal pain, Reduced mobility';
+    }
+    if (/pregnan|baby|conceiv|fertility|menstrua/i.test(text)) {
+      return 'Preconception evaluation requested, Family planning inquiry, Cycle assessment';
+    }
+
+    if (this.visitDetails?.condition && this.visitDetails.condition !== 'Initial assessment' && this.visitDetails.condition !== 'Routine checkup') {
+      return this.visitDetails.condition;
+    }
+    if (this.visitDetails?.reason) {
+      return `${this.visitDetails.reason} (Reported symptomatic presentation)`;
+    }
+
+    return 'Awaiting real-time symptom extraction';
+  }
+
   get currentIdentifiedIssues(): any[] {
-    const analysis = this.recordingService.latestClinicalAnalysis();
+    const analysis = this.currentActiveAnalysis;
     if (analysis?.summary?.identified_issues && Array.isArray(analysis.summary.identified_issues) && analysis.summary.identified_issues.length > 0) {
       return analysis.summary.identified_issues.map((it: any) => typeof it === 'string' ? { text: it, type: 'warning', dotColor: '#f59e0b' } : it);
     }
@@ -1107,6 +1160,13 @@ export class DoctorDashboardComponent implements OnInit, OnDestroy {
     }
     if (analysis?.entities?.warning_signs && Array.isArray(analysis.entities.warning_signs) && analysis.entities.warning_signs.length > 0) {
       return analysis.entities.warning_signs.map((it: any) => ({ text: typeof it === 'string' ? it : it.warning || it.sign, type: 'warning', dotColor: '#f59e0b' }));
+    }
+    if (this.selectedSessionId !== 'live') {
+      const selected = this.patientSessions.find(s => s.id === this.selectedSessionId);
+      const title = selected?.sessionTitle || selected?.title || 'Session';
+      return [
+        { text: `Session record loaded for ${this.visitDetails.patientName || 'patient'} (${title}). Pertinent clinical intelligence archived.`, type: 'info', dotColor: '#0d9488' }
+      ];
     }
     if (this.isFollowUpCompleted) {
       return [

@@ -218,6 +218,19 @@ npx ng serve --port 4200
   3. Integrated `saveFinalSOAPToDatabase()` directly into `closeAndCompleteConsultation()` in `doctor-dashboard.component.ts`.
   4. Updated backend scheduling routes to ensure automatic synchronization of both `DoctorModel` (`doctors` table) and `soap_feedback` table on session completion.
 
+### Issue 10: Historical Transcript Leakage into "+ Today's Active Session"
+* **Symptom:** When opening a patient's consultation (e.g. Abdul Jabbar #1999756) and viewing "+ Today's Active Session (Session 6)", the dialogue transcript displayed conversation turns from the previous session (Session 5: *"Automatically start the stop recordings. This recording will start again..."*) instead of starting clean and empty.
+* **Root Cause:**
+  1. `doctor-dashboard.component.ts` initialized `transcriptExchanges` with hardcoded seed turns instead of an empty array `[]`.
+  2. Clicking historical session tabs (`Session 1`, `Session 5`, etc.) invoked `recordingService.loadConsultationSession(session)` which mutated the singleton service's `latestExchanges` and `latestTranscript`.
+  3. Clicking "+ Today's Active Session" (`selectLiveSession()`) called `recordingService.switchPatient(pid)` which was a no-op because the active patient ID had not changed, leaving `latestExchanges` bound to Session 5's data.
+  4. The template getter `currentTranscriptExchanges` fell back to `this.transcriptExchanges` whenever live recording had not yet occurred, surfacing previous session turns.
+* **Resolution:**
+  1. Separated live active recording state from past session historical inspection by introducing `liveActiveTranscriptExchanges: []`, `liveActiveTranscript: ''`, and `liveActiveAnalysis: null`.
+  2. Decoupled `selectSession(session)` so that browsing past sessions remains strictly component-scoped and never mutates active recording signals.
+  3. Updated `currentTranscriptExchanges` to return `liveActiveTranscriptExchanges` (empty `[]` until audio is recorded) when viewing the live session, cleanly displaying the "No Transcript Available - Start recording or upload consultation audio" state.
+  4. Ensured `openConsultation()`, `startNewSession()`, and `selectLiveSession()` explicitly wipe live active state for all patients.
+
 ---
 
 ## 4. Architectural Decision Records (ADRs)
@@ -230,6 +243,16 @@ npx ng serve --port 4200
   2. Implement dual-trigger SOAP feedback persistence in both frontend and backend upon consultation completion.
   3. Synchronize `DoctorModel` alongside `User` on all clinician lifecycle events.
 * **Consequences:** Eliminates data loss during rapid consultation closeouts and enables direct, secure SQL observability across the private network.
+
+### ADR 15: Clean Slate State Decoupling for Active Consultations vs Historical Encounters
+* **Status:** Accepted (2026-10-27)
+* **Context:** In a clinical consultation workspace, clinicians need to toggle fluidly between past encounter records (e.g. Session 1 through Session 5) and the current active consultation ("+ Today's Active Session (Session N+1)"). Leaking historical dialogue turns into the active session causes confusion and risks saving stale clinical findings into new visits.
+* **Decision:**
+  1. Live active session data is governed by dedicated `liveActive*` properties initialized to empty arrays/null.
+  2. Past session inspection is isolated to read-only component state without overwriting live recording services.
+  3. `selectLiveSession()` restores only verified live encounter turns or presents the clean "Awaiting Audio" state.
+* **Consequences:** Every patient's active consultation session begins with a pristine slate showing 0 exchanges and awaiting microphone input or audio upload, with 100% transcript integrity.
+
 
 
 

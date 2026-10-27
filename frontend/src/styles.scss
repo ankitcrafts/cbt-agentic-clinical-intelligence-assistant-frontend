@@ -2524,6 +2524,10 @@ body {
               flex-direction: column;
               gap: 0.35rem;
 
+              &:last-child:nth-child(odd) {
+                grid-column: 1 / -1;
+              }
+
               .finding-label {
                 font-size: 0.68rem;
                 font-weight: 700;
@@ -2536,6 +2540,8 @@ body {
                 font-size: 0.88rem;
                 font-weight: 600;
                 color: var(--text-main);
+                line-height: 1.45;
+                word-break: break-word;
               }
             }
           }
