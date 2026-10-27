@@ -147,21 +147,37 @@ flowchart TD
 * **Candidate Fallback Hierarchy:** Normalizer checks `latestSuggestions()`, falls back to `aiSuggestionsList`, and finally searches nested `clinicalAnalysis.ai_suggestions` / `clinicalAnalysis.aiSuggestions`.
 * **Polymorphic Ingestion:** Transparently ingests raw LLM outputs (`{priority, category, title, description}`) as well as pre-serialized historical session items (`{id, type, tag, text}`) without data loss.
 
-### 2.4 Clinical Vitals Normalization & Display Pipeline
-
+### 2.4 Clinical Vitals Normalization & Key Findings Architecture
+ 
 ```mermaid
 flowchart TD
-    EntityExtract["Backend Entity Extraction (vital_signs / vitals)"] --> FrontendAnalysis["RecordingService.latestClinicalAnalysis()"]
-    TriageIntake["Patient Intake Vitals (visitDetails.vitals)"] --> FrontendVisit["Doctor Dashboard visitDetails"]
-    FrontendAnalysis --> VitalsFormatter["formatVitalsDisplay(rawVitals)"]
-    FrontendVisit --> VitalsFormatter
-    VitalsFormatter --> ParseValidation{"Valid Non-Empty Keys? (!= '{}')"}
-    ParseValidation -- Yes --> FormatMetrics["Format: BP, HR, SpO2, Temp, Wt, Pain, RR, Blood Sugar"]
-    ParseValidation -- No --> FallbackNotice["Fallback to Intake or Baseline Vitals"]
-    FormatMetrics --> FindingsCard["Render KEY FINDINGS: VITALS (Clean Text, No {})"]
-    FallbackNotice --> FindingsCard
+    subgraph DataSources["Clinical Data Sources"]
+        ActiveAnalysis["currentActiveAnalysis (Live or Selected Session)"]
+        TriageIntake["Patient Intake Vitals & Triage Reason"]
+        ContextExtractor["getDynamicSymptomsFromContext() Heuristics"]
+    end
+
+    subgraph KeyFindingsRouter["Key Findings Resolver (3 Pure Fields)"]
+        CC["1. CHIEF COMPLAINT: analysis.summary.chief_complaint || visitDetails.reason"]
+        SYM["2. SYMPTOMS: analysis.entities.symptoms || getDynamicSymptomsFromContext()"]
+        VIT["3. VITALS: formatVitalsDisplay(vitals) || intakeVitals || Baseline"]
+    end
+
+    subgraph UIStructure["Key Findings Grid (repeat(2, 1fr))"]
+        Card1["Card 1: CHIEF COMPLAINT (Col 1, Row 1)"]
+        Card2["Card 2: SYMPTOMS (Col 2, Row 1)"]
+        Card3["Card 3: VITALS (Col 1/-1 Full-Width, Row 2)"]
+    end
+
+    ActiveAnalysis --> KeyFindingsRouter
+    TriageIntake --> KeyFindingsRouter
+    ContextExtractor --> KeyFindingsRouter
+    CC --> Card1
+    SYM --> Card2
+    VIT --> Card3
 ```
 
+* **Exclusion of Peripheral Metadata:** Extraneous administrative metadata (patient demographics, scheduled time, protocol status, session status) are completely decoupled from Key Findings, preserving dedicated focus on clinical triage indicators.
 * **Braces Prevention:** Explicitly eliminates raw `{}` by verifying `Object.keys().length > 0` and sanitizing stringified JSON.
 * **Triage Inheritance:** If no vitals are spoken during dialogue, intake triage vitals (`${intakeVitals} (Intake)`) are presented seamlessly.
 

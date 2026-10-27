@@ -227,9 +227,14 @@ npx ng serve --port 4200
   4. The template getter `currentTranscriptExchanges` fell back to `this.transcriptExchanges` whenever live recording had not yet occurred, surfacing previous session turns.
 * **Resolution:**
   1. Separated live active recording state from past session historical inspection by introducing `liveActiveTranscriptExchanges: []`, `liveActiveTranscript: ''`, and `liveActiveAnalysis: null`.
-  2. Decoupled `selectSession(session)` so that browsing past sessions remains strictly component-scoped and never mutates active recording signals.
-  3. Updated `currentTranscriptExchanges` to return `liveActiveTranscriptExchanges` (empty `[]` until audio is recorded) when viewing the live session, cleanly displaying the "No Transcript Available - Start recording or upload consultation audio" state.
-  4. Ensured `openConsultation()`, `startNewSession()`, and `selectLiveSession()` explicitly wipe live active state for all patients.
+### Issue 9: Extraneous Administrative Clutter in KEY FINDINGS Card Grid
+* **Symptom:** In `doctor-dashboard.component.ts`, when viewing fresh consultation sessions or after completing follow-up inquiries, the KEY FINDINGS section rendered non-clinical administrative metrics (e.g. `PATIENT`, `PROTOCOL STATUS`, `DIAGNOSTIC CERTAINTY`, `VISIT TYPE`, `PATIENT DEMOGRAPHICS`, `SCHEDULED TIME`, `SESSION STATUS`, `DURATION / ONSET`, `SEVERITY`) alongside medical findings.
+* **Root Cause:** The `currentKeyFindings` getter contained separate fallback arrays populated with appointment scheduling and consultation metadata rather than maintaining pure triage metrics. Additionally, when `selectedSessionId !== 'live'`, `currentKeyFindings` relied on `recordingService.latestClinicalAnalysis()` which could be out-of-sync with the selected past session.
+* **Resolution:**
+  1. Consolidated `currentKeyFindings` to strictly and always return only 3 clinical cards: `CHIEF COMPLAINT`, `SYMPTOMS`, and `VITALS`.
+  2. Implemented `currentActiveAnalysis` getter to unify data extraction across live consultations and historical sessions (`selected.clinicalAnalysis || selected.clinical_analysis`).
+  3. Added `getDynamicSymptomsFromContext()` heuristic pipeline inferring relevant clinical symptoms based on presenting reason, triage condition, or active transcript before NLP completion.
+  4. Updated `styles.scss` `.finding-card` with `&:last-child:nth-child(odd) { grid-column: 1 / -1; }` ensuring the 3rd card (Vitals) spans cleanly across both columns.
 
 ---
 
@@ -252,6 +257,15 @@ npx ng serve --port 4200
   2. Past session inspection is isolated to read-only component state without overwriting live recording services.
   3. `selectLiveSession()` restores only verified live encounter turns or presents the clean "Awaiting Audio" state.
 * **Consequences:** Every patient's active consultation session begins with a pristine slate showing 0 exchanges and awaiting microphone input or audio upload, with 100% transcript integrity.
+
+### ADR 16: Key Findings 3-Field Dynamic Clinical Consolidation
+* **Status:** Accepted (2026-10-27)
+* **Context:** Clinicians require rapid, uncluttered situational awareness when inspecting the Analysis & Summary tab. Extraneous administrative metadata (patient demographics, scheduled times, session status) distract from diagnostic triage.
+* **Decision:**
+  1. Strictly constrain `currentKeyFindings` to 3 core metrics: CHIEF COMPLAINT, SYMPTOMS, and VITALS.
+  2. Ensure all 3 metrics resolve dynamically across all states: intake triage, active dialogue analysis, and archived historical encounters.
+  3. Lay out the 3 cards in a 2-column grid where Chief Complaint and Symptoms occupy Row 1, and Vitals spans Row 2 full-width.
+* **Consequences:** Streamlines clinician cognitive load, adheres to standard medical presentation guidelines, and preserves responsive aesthetics across dark and light modes.
 
 
 

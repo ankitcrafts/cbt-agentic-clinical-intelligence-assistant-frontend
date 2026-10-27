@@ -213,3 +213,13 @@ The production deployment on host `ubtsrv01` (`172.16.17.181`) is secured throug
   * Password: `cliniq_secure_pass_2026`
   * Network: Requires active Cloudflare Zero Trust (WARP client) tunnel or direct LAN connectivity to subnet `172.16.17.0/24`.
 
+---
+
+## 13. Key Findings Clinical Triage Ontology & 3-Metric Protocol
+* **Clinical Rationale:** The standard SOAP triage model mandates that intake situational intelligence must immediately communicate:
+  1. **Chief Complaint (CC):** The primary presenting concern expressed in the patient's own words or triage note.
+  2. **Symptoms (Hx / Subjective):** The characterization, duration, and topography of symptoms (e.g. polyuria, polydipsia, fatigue, headache, cough).
+  3. **Vitals (Objective Baseline):** Quantitative physiological metrics (BP, HR, SpO2, Temp, Glucose/Blood Sugar) providing immediate hemodynamic stability context.
+* **Contextual Heuristics:** In pre-NLP intake states, symptoms are dynamically inferred from triage reason matching validated medical clusters (Endocrine/Diabetes, Cardiovascular/Hypertension, Respiratory/Infection, Neurological/Headache, Gastrointestinal, Musculoskeletal, Preconception/Fertility). Upon audio transcription or entity extraction, NLP-extracted entities automatically supersede baseline heuristics.
+
+

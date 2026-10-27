@@ -134,8 +134,12 @@ $slate-900:   #0f172a;
 
 ### 4.6 Key Findings & Vitals Card Tokens
 * **Card Container (`.finding-card`):** Rounded pill card with subtle border (`border: 1px solid var(--border-light)`), elevation on hover (`box-shadow: 0 2px 8px rgba(0,0,0,0.04)`).
+* **Grid Architecture (`.key-findings-grid`):** 2-column grid (`grid-template-columns: repeat(2, 1fr); gap: 0.75rem;`). Contains exactly 3 cards:
+  * **Card 1: CHIEF COMPLAINT** (Column 1, Row 1)
+  * **Card 2: SYMPTOMS** (Column 2, Row 1)
+  * **Card 3: VITALS** (Column 1 / -1 Full-Width Span, Row 2 via `&:last-child:nth-child(odd) { grid-column: 1 / -1; }`)
 * **Eyebrow Label (`.finding-label`):** 11px uppercase bold caption (`font-weight: 700`, `letter-spacing: 0.05em`, color `#64748b`).
-* **Value Text (`.finding-val`):** 13px clean text typography (`color: #0f172a`, dark mode `#f8fafc`).
+* **Value Text (`.finding-val`):** 13px clean text typography (`color: #0f172a`, dark mode `#f8fafc`, `line-height: 1.45`, `word-break: break-word`).
 * **Formatting Format:** Vitals formatted as bullet-separated standard clinical tokens (`BP: 120/80 mmHg · HR: 72 bpm · SpO2: 98% · Temp: 36.6 °C`). Raw JSON braces (`{}`) strictly forbidden.
 
 ### 4.7 Dynamic 5-Tab CDS Screen Layout & Component Specs
